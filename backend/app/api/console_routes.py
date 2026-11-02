@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from ..repositories.runs import ActiveRunExists
 from ..repositories.telemetry import Reading
-from .schemas import CompleteTaskIn, CreateRun, EventIn, PhotoTaskIn
+from .schemas import CompleteTaskIn, CreateRun, EventIn, PhotoTaskIn, VideoTaskIn, VoiceTaskIn
 from .sse import telemetry_events
 
 router = APIRouter(prefix="/v1")
@@ -19,6 +19,75 @@ router = APIRouter(prefix="/v1")
 def require_simulation(request: Request) -> None:
     if not request.app.state.simulation_enabled:
         raise HTTPException(403, "simulation is disabled for this plant")
+
+
+def _decode_base64(value: str, label: str) -> bytes:
+    import base64
+
+    try:
+        return base64.b64decode(value, validate=True)
+    except ValueError:
+        raise HTTPException(422, f"{label} is not valid base64")
+
+
+def _save_upload(data: bytes, filename: str) -> tuple[str, str]:
+    import hashlib
+    import os
+    from pathlib import Path
+
+    digest = hashlib.sha256(data).hexdigest()
+    upload_dir = Path(os.environ.get("UPLOAD_DIR", "uploads"))
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    path = upload_dir / filename
+    path.write_bytes(data)
+    return digest, str(path)
+
+
+async def _find_task(state, incident_id: str, task_id: UUID):
+    tasks = [t for t in await state.investigation.field_tasks(incident_id) if str(t["id"]) == str(task_id)]
+    if not tasks:
+        raise HTTPException(404, "unknown task for this incident")
+    return tasks[0]
+
+
+async def _process_voice(state, incident_id: str, task: dict, audio_bytes: bytes,
+                         photo_readings: dict[str, float], language_bias: list[str]) -> dict:
+    """Transcribe, structure, compare, persist, and trace one voice note."""
+    from ..evidence.voice import MetaVoiceClient, WonderObservationAnalyzer
+    from ..investigator.__main__ import meta_key
+    from ..investigator.wonder import WonderClient
+
+    digest, path = _save_upload(audio_bytes, f"{task['id']}-voice.wav")
+    voice = MetaVoiceClient(meta_key())
+    wonder = WonderClient(meta_key())
+    try:
+        transcript = await voice.transcribe_wav(
+            audio_bytes, language_bias=language_bias,
+            keywords=[*task["tags"], "cartridge", "pressure", "psi", "V-113", "backwash"])
+        analyzed = await WonderObservationAnalyzer(wonder).analyze(
+            transcript.text, photo_readings, list(task["tags"]))
+    finally:
+        await voice.aclose()
+        await wonder.aclose()
+    payload = {
+        "transcript": transcript.text,
+        "session_id": transcript.session_id,
+        "audio_duration_ms": transcript.audio_duration_ms,
+        "structured": analyzed["structured"],
+        "comparison": analyzed["comparison"],
+        "model": transcript.model,
+    }
+    record = await state.investigation.create_voice_observation(
+        incident_id, task_id=task["id"], transcript=transcript.text,
+        language_bias=language_bias, structured=analyzed["structured"],
+        comparison=analyzed["comparison"], audio_sha256=digest, audio_path=path,
+        model=transcript.model)
+    payload["id"] = str(record["id"])
+    await state.investigation.add_trace(
+        incident_id, kind="observation", actor="operator",
+        content=f"Voice ({analyzed['comparison']['status']}): {transcript.text[:400]}",
+        evidence=list(task["tags"]))
+    return payload
 
 
 @router.get("/healthz")
@@ -164,6 +233,8 @@ async def incident_detail(request: Request, incident_id: str):
         "flag": await inv.flag_for_incident(incident_id),
         "hypotheses": await inv.hypotheses(incident_id),
         "field_tasks": await inv.field_tasks(incident_id),
+        "action_proposals": await inv.proposals(incident_id),
+        "voice_observations": await inv.voice_observations(incident_id),
         "trace": await inv.trace(incident_id),
         "investigation": (
             {"status": checkpoint["status"], "steps_used": checkpoint["steps_used"], "focus": checkpoint["focus"]}
@@ -223,30 +294,15 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
     re-shoot. The original photo is kept under uploads/ (git-ignored) with its
     hash recorded on the task.
     """
-    import base64
-    import hashlib
-    import os
-    from pathlib import Path
-
     state = request.app.state
     inv = state.investigation
-    tasks = [t for t in await inv.field_tasks(incident_id) if str(t["id"]) == str(task_id)]
-    if not tasks:
-        raise HTTPException(404, "unknown task for this incident")
-    task = tasks[0]
+    task = await _find_task(state, incident_id, task_id)
     if task["status"] != "pending":
         raise HTTPException(409, "task is not pending")
     if task["kind"] != "gauge_photo":
         raise HTTPException(422, "photo submission is only for gauge_photo tasks")
-    try:
-        image_bytes = base64.b64decode(body.image_base64, validate=True)
-    except ValueError:
-        raise HTTPException(422, "image_base64 is not valid base64")
-    digest = hashlib.sha256(image_bytes).hexdigest()
-    upload_dir = Path(os.environ.get("UPLOAD_DIR", "uploads"))
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    photo_path = upload_dir / f"{task_id}.jpg"
-    photo_path.write_bytes(image_bytes)
+    image_bytes = _decode_base64(body.image_base64, "image_base64")
+    digest, photo_path = _save_upload(image_bytes, f"{task_id}.jpg")
 
     from ..evidence.gauge import GaugePipeline, WonderGaugeReader
     from ..evidence.sam import SamClient, SamError
@@ -279,9 +335,140 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
         for tag, value in accepted.items()
     ]
     await state.telemetry.insert_field_readings(state.plant_id, readings, run_id=run.id if run else None)
+    voice_payload = None
+    if body.audio_base64:
+        try:
+            voice_payload = await _process_voice(
+                state, incident_id, task, _decode_base64(body.audio_base64, "audio_base64"),
+                accepted, ["Marathi", "English"])
+        except Exception as exc:  # voice must not erase valid photo evidence
+            voice_payload = {"error": f"voice processing failed: {exc.__class__.__name__}"}
     await inv.complete_field_task(task_id, {
         "readings": accepted, "note": body.note, "source": "gauge_photo",
-        "photo_sha256": digest, "photo_path": str(photo_path), "gauges": details,
+        "photo_sha256": digest, "photo_path": photo_path, "gauges": details,
+        "voice": voice_payload,
     })
     await _resume(state, incident_id)
-    return {"completed": True, "readings_stored": len(readings), "readings": details}
+    return {"completed": True, "readings_stored": len(readings), "readings": details, "voice": voice_payload}
+
+
+@router.post("/incidents/{incident_id}/tasks/{task_id}/voice")
+async def submit_task_voice(request: Request, incident_id: str, task_id: UUID, body: VoiceTaskIn):
+    """Transcribe a WAV note and compare any spoken values with photo evidence."""
+    state = request.app.state
+    task = await _find_task(state, incident_id, task_id)
+    result = task["result"] or {}
+    photo_readings = {str(k): float(v) for k, v in (result.get("readings") or {}).items()}
+    try:
+        payload = await _process_voice(
+            state, incident_id, task, _decode_base64(body.audio_base64, "audio_base64"),
+            photo_readings, body.language_bias)
+    except Exception as exc:
+        raise HTTPException(502, f"voice pipeline failed: {exc.__class__.__name__}: {exc}")
+    return {"recorded": True, "voice": payload}
+
+
+@router.post("/incidents/{incident_id}/proposals/{proposal_id}/approve")
+async def approve_proposal(request: Request, incident_id: str, proposal_id: UUID):
+    """Commander approval: create the staged V-113 field task and pause Wonder."""
+    state = request.app.state
+    inv = state.investigation
+    proposal = await inv.proposal(proposal_id)
+    if proposal is None or proposal["incident_id"] != incident_id:
+        raise HTTPException(404, "unknown proposal for this incident")
+    if proposal["status"] != "pending":
+        raise HTTPException(409, "proposal is not pending")
+    task = await inv.create_field_task(
+        incident_id, kind="valve_action", asset_ids=[proposal["asset_id"]], tags=[],
+        instruction=(
+            "Record one continuous clip of V-113: show the lever parallel to the pipe for one second, "
+            "move it to 45 degrees and hold for at least two seconds, then move it to 90 degrees "
+            "perpendicular to the pipe. Keep the lever and a straight pipe run visible."))
+    await inv.approve_proposal(proposal_id, task["id"])
+    checkpoint = await inv.checkpoint(incident_id)
+    if checkpoint:
+        await inv.save_checkpoint(
+            incident_id, status="waiting_field", steps_used=checkpoint["steps_used"],
+            continuation=checkpoint["continuation"], focus=checkpoint["focus"], model=checkpoint["model"])
+    await inv.add_trace(incident_id, kind="action", actor="operator",
+                        content="Commander approved the V-113 backwash proposal.", evidence=["V-113"])
+    return {"approved": True, "field_task_id": str(task["id"])}
+
+
+@router.post("/incidents/{incident_id}/proposals/{proposal_id}/reject")
+async def reject_proposal(request: Request, incident_id: str, proposal_id: UUID):
+    state = request.app.state
+    inv = state.investigation
+    proposal = await inv.proposal(proposal_id)
+    if proposal is None or proposal["incident_id"] != incident_id:
+        raise HTTPException(404, "unknown proposal for this incident")
+    if proposal["status"] != "pending":
+        raise HTTPException(409, "proposal is not pending")
+    await inv.set_proposal_status(proposal_id, "rejected", result={"rejected_by": "commander"})
+    checkpoint = await inv.checkpoint(incident_id)
+    if checkpoint:
+        continuation = list(checkpoint["continuation"])
+        continuation.append({"role": "user", "content": "The commander rejected the proposed valve action. Continue investigating or state what further evidence is needed; do not propose the same action without new evidence."})
+        await inv.save_checkpoint(
+            incident_id, status="investigating", steps_used=checkpoint["steps_used"],
+            continuation=continuation, focus=checkpoint["focus"], model=checkpoint["model"])
+    await inv.add_trace(incident_id, kind="action", actor="operator",
+                        content="Commander rejected the V-113 backwash proposal.", evidence=["V-113"])
+    return {"rejected": True}
+
+
+@router.post("/incidents/{incident_id}/tasks/{task_id}/video")
+async def complete_task_video(request: Request, incident_id: str, task_id: UUID, body: VideoTaskIn):
+    """SAM lever clip -> staged policy -> simulator action only after a pass."""
+    state = request.app.state
+    inv = state.investigation
+    task = await _find_task(state, incident_id, task_id)
+    if task["status"] != "pending":
+        raise HTTPException(409, "task is not pending")
+    if task["kind"] != "valve_action":
+        raise HTTPException(422, "video submission is only for valve_action tasks")
+    video_bytes = _decode_base64(body.video_base64, "video_base64")
+    suffix = ".mov" if body.mime_type == "video/quicktime" else ".mp4"
+    digest, video_path = _save_upload(video_bytes, f"{task_id}{suffix}")
+
+    from ..evidence.sam import SamClient
+    from ..evidence.valve import analyze_valve_clip
+    from ..investigator.__main__ import meta_key
+
+    sam = SamClient(meta_key())
+    try:
+        analysis = await analyze_valve_clip(
+            sam, video_bytes, f"{task_id}{suffix}", body.mime_type, fps=body.fps)
+    except Exception as exc:
+        raise HTTPException(502, f"lever segmentation failed: {exc.__class__.__name__}: {exc}")
+    finally:
+        await sam.aclose()
+    policy = analysis["policy"]
+    base_result = {"note": body.note, "source": "valve_video", "video_sha256": digest,
+                   "video_path": video_path, "video_file_id": analysis["file_id"],
+                   "duration_s": body.duration_s, "fps": body.fps,
+                   "track": analysis["track"], "policy": policy}
+    if policy["status"] != "passed":
+        await inv.add_trace(incident_id, kind="observation", actor="code",
+                            content=f"Valve clip {policy['status']}: {'; '.join(policy['reasons'])}",
+                            evidence=list(task["asset_ids"]))
+        return {"completed": False, **base_result,
+                "reason": "The staged rule was not proven. Keep the task open and submit a clearer continuous clip."}
+
+    run = await state.runs.active(state.plant_id)
+    if run is None or run.status != "running" or not run.scenario:
+        raise HTTPException(409, "no running scenario is available to receive the verified backwash")
+    event_id = await state.runs.add_event(run.id, "valve_action", {"action": "backwash_completed"})
+    if event_id is None:
+        raise HTTPException(409, "simulator did not acknowledge the verified backwash")
+    result = {**base_result, "simulator_event_id": str(event_id), "simulator_action": "backwash_completed"}
+    await inv.complete_field_task(task_id, result)
+    proposal = await inv.proposal_for_task(task_id)
+    if proposal:
+        await inv.set_proposal_status(proposal["id"], "executed", result={
+            "field_task_id": str(task_id), "simulator_event_id": str(event_id), "policy": policy})
+    await inv.add_trace(incident_id, kind="action", actor="code",
+                        content="Staged V-113 sequence passed; simulator backwash action acknowledged. Awaiting verifier.",
+                        evidence=["V-113"])
+    await _resume(state, incident_id)
+    return {"completed": True, **result}

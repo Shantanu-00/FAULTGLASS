@@ -120,6 +120,124 @@ class InvestigationRepository:
             )
             return await cur.fetchall()
 
+    # ---- action proposals --------------------------------------------------
+    async def create_proposal(self, incident_id: str, *, asset_id: str, action: str,
+                              rationale: str, sop_id: str | None) -> dict[str, Any]:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                """
+                insert into action_proposals (incident_id, asset_id, action, rationale, sop_id)
+                values (%s, %s, %s, %s, %s)
+                returning id, incident_id, asset_id, action, rationale, sop_id, status,
+                          field_task_id, result, created_at, approved_at, executed_at
+                """,
+                (incident_id, asset_id, action, rationale, sop_id),
+            )
+            return await cur.fetchone()
+
+    async def proposals(self, incident_id: str) -> list[dict[str, Any]]:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "select id, incident_id, asset_id, action, rationale, sop_id, status, field_task_id, "
+                "result, created_at, approved_at, executed_at from action_proposals "
+                "where incident_id = %s order by created_at",
+                (incident_id,),
+            )
+            return await cur.fetchall()
+
+    async def proposal(self, proposal_id: UUID) -> dict[str, Any] | None:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "select id, incident_id, asset_id, action, rationale, sop_id, status, field_task_id, "
+                "result, created_at, approved_at, executed_at from action_proposals where id = %s",
+                (proposal_id,),
+            )
+            return await cur.fetchone()
+
+    async def proposal_for_task(self, task_id: UUID) -> dict[str, Any] | None:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "select id, incident_id, asset_id, action, rationale, sop_id, status, field_task_id, "
+                "result, created_at, approved_at, executed_at from action_proposals where field_task_id = %s",
+                (task_id,),
+            )
+            return await cur.fetchone()
+
+    async def approve_proposal(self, proposal_id: UUID, task_id: UUID) -> bool:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "update action_proposals set status = 'approved', field_task_id = %s, approved_at = now() "
+                "where id = %s and status = 'pending'",
+                (task_id, proposal_id),
+            )
+            return cur.rowcount == 1
+
+    async def set_proposal_status(self, proposal_id: UUID, status: str, *,
+                                  result: dict[str, Any] | None = None) -> bool:
+        executed = ", executed_at = now()" if status == "executed" else ""
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                f"update action_proposals set status = %s, result = %s::jsonb{executed} where id = %s",
+                (status, json.dumps(result or {}), proposal_id),
+            )
+            return cur.rowcount == 1
+
+    async def executed_proposals(self) -> list[dict[str, Any]]:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "select id, incident_id, asset_id, action, rationale, sop_id, status, field_task_id, "
+                "result, created_at, approved_at, executed_at from action_proposals "
+                "where status = 'executed' order by executed_at"
+            )
+            return await cur.fetchall()
+
+    async def resolve_incident(self, incident_id: str, *, root_cause: str, resolution: str) -> bool:
+        async with self._pool.connection() as conn:
+            async with conn.transaction():
+                cur = await conn.execute(
+                    "update incidents set status = 'resolved', closed_at = now(), closed_by = 'verifier', "
+                    "root_cause = %s, resolution = %s where incident_id = %s and status = 'open'",
+                    (root_cause, resolution, incident_id),
+                )
+                changed = cur.rowcount == 1
+                if changed:
+                    await conn.execute(
+                        "update signal_flags set status = 'resolved' "
+                        "where incident_id = %s and status in ('open', 'picked_up')",
+                        (incident_id,),
+                    )
+            return changed
+
+    # ---- voice observations -------------------------------------------------
+    async def create_voice_observation(
+        self, incident_id: str, *, task_id: UUID | None, transcript: str,
+        language_bias: list[str], structured: dict[str, Any], comparison: dict[str, Any],
+        audio_sha256: str, audio_path: str, model: str,
+    ) -> dict[str, Any]:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                """
+                insert into voice_observations
+                  (incident_id, task_id, transcript, language_bias, structured, comparison,
+                   audio_sha256, audio_path, model)
+                values (%s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s)
+                returning id, incident_id, task_id, transcript, language_bias,
+                          structured, comparison, created_at
+                """,
+                (incident_id, task_id, transcript, language_bias, json.dumps(structured),
+                 json.dumps(comparison), audio_sha256, audio_path, model),
+            )
+            return await cur.fetchone()
+
+    async def voice_observations(self, incident_id: str) -> list[dict[str, Any]]:
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "select id, incident_id, task_id, transcript, language_bias, structured, comparison, created_at "
+                "from voice_observations where incident_id = %s order by created_at",
+                (incident_id,),
+            )
+            return await cur.fetchall()
+
     # ---- field tasks -----------------------------------------------------
     async def create_field_task(self, incident_id: str, *, kind: str, asset_ids: list[str],
                                 tags: list[str], instruction: str) -> dict[str, Any]:

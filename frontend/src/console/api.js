@@ -31,7 +31,15 @@ export const api = {
   incident: (id) => request('GET', `/v1/incidents/${encodeURIComponent(id)}`),
   completeTask: (incidentId, taskId, readings, note) =>
     request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/complete`, { readings, note }),
-  completeTaskPhoto: (incidentId, taskId, imageBase64, note) =>
-    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/photo`, { image_base64: imageBase64, note }),
+  completeTaskPhoto: (incidentId, taskId, imageBase64, note, audioBase64 = null) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/photo`, { image_base64: imageBase64, audio_base64: audioBase64, note }),
+  submitTaskVoice: (incidentId, taskId, audioBase64, languageBias = ['Marathi', 'English']) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/voice`, { audio_base64: audioBase64, language_bias: languageBias }),
+  completeTaskVideo: (incidentId, taskId, videoBase64, mimeType, fps, durationS, note) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/video`, { video_base64: videoBase64, mime_type: mimeType, fps, duration_s: durationS, note }),
+  approveProposal: (incidentId, proposalId) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/proposals/${proposalId}/approve`),
+  rejectProposal: (incidentId, proposalId) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/proposals/${proposalId}/reject`),
   streamUrl: () => `${BASE}/v1/telemetry/stream`,
 };

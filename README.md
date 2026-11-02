@@ -6,9 +6,10 @@ Implemented so far: the versioned plant pack, process simulator with a Modbus
 PLC emulator, edge poller with offline outbox, FastAPI ingest/console API,
 live operations console with a reasoning view, 3D plant twin,
 plant-memory/SOP/past-incident seed data, the **Baseten Spark telemetry
-watcher**, and the **Muse Wonder investigator** described below. The
-gauge/voice/valve pipelines, the Field Companion, and deployment are not
-built yet (see the build order in docs/DEMO.md).
+watcher**, the **Muse Wonder investigator**, the **SAM gauge and valve
+evidence pipelines**, the **Marathi voice pipeline**, the deterministic
+**verifier**, and the mobile **Field Companion** described below. Deployment
+and the recorded demo are the remaining build-order step (docs/DEMO.md).
 
 The demo is fixed by [docs/DEMO.md](docs/DEMO.md) (the 3-minute LastMeter video, who does what,
 and corrections to the draft script). The fastest-deployment plan is
@@ -40,8 +41,8 @@ planning documents say.
 | Telemetry watcher (flag drift, never diagnose) | Baseten, `meta-models/muse-spark-open-1026` (hackathon slug; catalog slug `meta-models/muse-spark-open`) | **Implemented** | [backend/app/watcher/](backend/app/watcher/__main__.py) (`app.watcher`), client in [spark.py](backend/app/watcher/spark.py) | Plain-text summary card computed by code from Postgres telemetry (baseline, spread, distance per signal) | `NORMAL` / `WATCH` / `FLAG` plain text, parsed and checked in Python; validated results land in the `signal_flags` table and open an `incidents` row |
 | Lead investigator (plan, hypotheses, re-plan; Active Memory + Active Focus) | Meta, `muse-wonder-1.0` via Responses API | **Implemented** | [backend/app/investigator/](backend/app/investigator/__main__.py) (`app.investigator`), client in [wonder.py](backend/app/investigator/wonder.py), tools in [tools.py](backend/app/investigator/tools.py) | Incident brief (Spark flag + evidence), then model-driven tool retrieval: plant memory, SOPs, past incidents, telemetry; field-task results on resume | Tool calls executed and validated in Python; hypotheses, focus ledger, field tasks and the full trace persisted (`incident_hypotheses`, `field_tasks`, `investigation_checkpoints`, `incident_trace`). Design: [docs/INVESTIGATOR.md](docs/INVESTIGATOR.md) |
 | Gauge segmentation + needle cross-check | Meta, `sam-3.1` + `muse-wonder-1.0` vision | **Implemented** | [backend/app/evidence/sam.py](backend/app/evidence/sam.py), [gauge.py](backend/app/evidence/gauge.py); endpoint `POST /v1/incidents/{id}/tasks/{task_id}/photo` | Gauge photo (base64) for a pending `gauge_photo` field task | Per-gauge psi readings with agreement status (`agree`/`single_source`/`uncertain`/`unreadable`/`not_found`), stored as field telemetry. Design: [docs/SAM_EVIDENCE.md](docs/SAM_EVIDENCE.md) |
-| Valve lever tracking (angle from masks) | Meta, `sam-3.1` video | Estimator implemented; policy/verifier pending | [backend/app/evidence/lever.py](backend/app/evidence/lever.py) | Lever video clip (SAM tracks lever + pipe masks per frame) | Image-plane angle series + stage classification (OPEN/MID/CLOSED); approximate by design |
-| Marathi speech transcription | Meta, `muse-voice-transcribe-1.0` | Planned (step 5) | — | — | — |
+| Valve lever tracking + staged policy | Meta, `sam-3.1` video | **Implemented** | [backend/app/evidence/lever.py](backend/app/evidence/lever.py), [valve.py](backend/app/evidence/valve.py); endpoint `POST /v1/incidents/{id}/tasks/{task_id}/video` | Approved V-113 lever clip | OPEN→MID(hold)→CLOSED only. Pass triggers simulator; deterministic verifier in [backend/app/verifier/](backend/app/verifier/__main__.py) closes the incident. Design: [docs/VALVE_VOICE_FIELD.md](docs/VALVE_VOICE_FIELD.md) |
+| Marathi speech transcription + observation check | Meta, `muse-voice-transcribe-1.0` + `muse-wonder-1.0` | **Implemented** | [backend/app/evidence/voice.py](backend/app/evidence/voice.py); endpoints `.../tasks/{task_id}/voice` and optional audio on `.../photo` | WAV voice note (Marathi/English biased) | Transcript, structured readings, deterministic AGREE/DISAGREE/PARTIAL verdict against photo readings |
 | Gauge crop reading / transcript structuring (original plan) | Baseten, Muse Spark Open | Planned, behind the watcher interface | — | — | — |
 
 Baseten details an automated reader needs:

@@ -333,6 +333,53 @@ function renderInvestigation(detail) {
     ),
   );
 
+  el('action-proposals').replaceChildren(
+    ...(detail.action_proposals?.length
+      ? detail.action_proposals.map((proposal) => {
+          const card = h(
+            'div',
+            { class: `task ${proposal.status}` },
+            h('p', {}, `${proposal.action} on ${proposal.asset_id}: ${proposal.rationale}`),
+            h('span', { class: 'muted' }, proposal.status),
+          );
+          if (proposal.status === 'pending') {
+            card.append(
+              h('div', { class: 'task-form' },
+                h('button', {
+                  onclick: async () => {
+                    try {
+                      await api.approveProposal(detail.incident.incident_id, proposal.id);
+                      toast('Valve task dispatched to Field Companion');
+                      refreshIncidents();
+                    } catch (error) { toast(error.message); }
+                  },
+                }, 'Approve valve task'),
+                h('button', {
+                  onclick: async () => {
+                    try {
+                      await api.rejectProposal(detail.incident.incident_id, proposal.id);
+                      toast('Proposal rejected');
+                      refreshIncidents();
+                    } catch (error) { toast(error.message); }
+                  },
+                }, 'Reject'),
+              ),
+            );
+          }
+          return card;
+        })
+      : [h('p', { class: 'muted' }, 'No action proposals.')]),
+  );
+
+  el('voice-observations').replaceChildren(
+    ...(detail.voice_observations?.length
+      ? detail.voice_observations.map((voice) =>
+          h('div', { class: 'task completed' },
+            h('p', {}, voice.transcript),
+            h('span', { class: 'muted' }, voice.comparison?.status || 'recorded')))
+      : [h('p', { class: 'muted' }, 'No voice observations.')]),
+  );
+
   const tasks = el('field-tasks');
   tasks.replaceChildren(
     ...(detail.field_tasks.length

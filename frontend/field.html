@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>LastMeter · Field Companion</title>
+    <link rel="stylesheet" href="/src/field/field.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div>
+        <div class="brand">LastMeter</div>
+        <div class="sub">Field Companion · फील्ड सोबती</div>
+      </div>
+      <a href="/console.html">Commander</a>
+    </header>
+
+    <main>
+      <section class="status-card">
+        <div class="eyebrow">Current job · सध्याचे काम</div>
+        <h1 id="incident-title">Looking for a field task…</h1>
+        <p id="incident-meta" class="muted">The commander screen sends physical checks here.</p>
+        <button id="refresh" type="button">Refresh · रिफ्रेश</button>
+      </section>
+
+      <section id="tasks" class="tasks" aria-live="polite"></section>
+
+      <section class="done-card">
+        <h2>Completed evidence · जमा पुरावा</h2>
+        <div id="completed"></div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script type="module" src="/src/field/main.js"></script>
+  </body>
+</html>

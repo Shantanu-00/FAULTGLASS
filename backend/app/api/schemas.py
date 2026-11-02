@@ -47,6 +47,24 @@ class PhotoTaskIn(BaseModel):
     """Field-task completion from a photo: SAM + Wonder produce the readings."""
 
     image_base64: str = Field(min_length=100, max_length=30_000_000)
+    audio_base64: str | None = Field(default=None, max_length=45_000_000)
+    note: str = Field(default="", max_length=1000)
+
+
+class VoiceTaskIn(BaseModel):
+    """A WAV voice note for Muse Voice Transcribe and Wonder comparison."""
+
+    audio_base64: str = Field(min_length=100, max_length=45_000_000)
+    language_bias: list[str] = Field(default_factory=lambda: ["Marathi", "English"], max_length=5)
+
+
+class VideoTaskIn(BaseModel):
+    """A staged lever-action clip for SAM tracking and deterministic policy."""
+
+    video_base64: str = Field(min_length=100, max_length=90_000_000)
+    mime_type: Literal["video/mp4", "video/quicktime"] = "video/mp4"
+    fps: float | None = Field(default=None, gt=0, le=240)
+    duration_s: float | None = Field(default=None, gt=0, le=3600)
     note: str = Field(default="", max_length=1000)
 
 

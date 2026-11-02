@@ -38,7 +38,7 @@ def mask_points(det: Detection, raster: bytes | None, step: int = 3) -> list[tup
     """Mask pixel coordinates (image space, subsampled), or box corners fallback-free."""
     if not raster or det.mask_w <= 0 or det.mask_h <= 0:
         return []
-    x1, y1, x2, y2 = det.box
+    x1, y1, x2, y2 = det.mask_bounds or det.box
     sx = (x2 - x1) / max(det.mask_w, 1)
     sy = (y2 - y1) / max(det.mask_h, 1)
     pts = []
@@ -109,35 +109,78 @@ class LeverTrack:
 
 
 def build_track(lever: list[Detection], pipe: list[Detection]) -> LeverTrack:
-    """Combine per-frame lever/pipe detections into an angle series."""
-    pipe_by_frame = {d.frame: d for d in pipe}
-    lever_rasters = {d.frame: decode_raster(d) for d in lever}
-    counts = {f: (sum(lever_rasters[f]) if lever_rasters[f] else 0) for f in lever_rasters}
-    best = max(counts.values(), default=0)
-    frames: list[FrameAngle] = []
-    for det in sorted(lever, key=lambda d: d.frame):
-        pipe_det = pipe_by_frame.get(det.frame)
-        coverage = (counts[det.frame] / best) if best else 0.0
-        angle = None
-        if pipe_det is not None and coverage >= MIN_COVERAGE:
-            lever_axis = principal_axis(mask_points(det, lever_rasters[det.frame]))
-            pipe_axis = principal_axis(mask_points(pipe_det, decode_raster(pipe_det))) or \
-                principal_axis([(pipe_det.box[0], pipe_det.center[1]), (pipe_det.box[2], pipe_det.center[1])])
-            if lever_axis and pipe_axis:
-                angle = round(angle_between(lever_axis, pipe_axis), 1)
-        frames.append(FrameAngle(frame=det.frame, angle_deg=angle,
-                                 stage=classify_stage(angle) if angle is not None else "UNCERTAIN",
-                                 coverage=round(coverage, 2)))
-    return LeverTrack(frames=frames)
+    """Combine per-frame lever/pipe detections into an angle series.
+
+    A plant frame can contain several similar handles. Group detections by
+    SAM object id and keep the object with the greatest measured angle swing
+    (then the most frames): that is the operated lever, not a static handle
+    elsewhere in the shot. For the pipe, keep the largest mask per frame.
+    """
+    pipe_by_frame: dict[int, Detection] = {}
+    for det in pipe:
+        if det.frame not in pipe_by_frame or det.area > pipe_by_frame[det.frame].area:
+            pipe_by_frame[det.frame] = det
+
+    by_object: dict[int, list[Detection]] = {}
+    for det in lever:
+        by_object.setdefault(det.object_id, []).append(det)
+
+    candidates: list[tuple[float, int, LeverTrack]] = []
+    for detections in by_object.values():
+        rasters = {d.frame: decode_raster(d) for d in detections}
+        counts = {f: (sum(rasters[f]) if rasters[f] else 0) for f in rasters}
+        best = max(counts.values(), default=0)
+        frames: list[FrameAngle] = []
+        for det in sorted(detections, key=lambda d: d.frame):
+            pipe_det = pipe_by_frame.get(det.frame)
+            coverage = (counts[det.frame] / best) if best else 0.0
+            angle = None
+            if pipe_det is not None and coverage >= MIN_COVERAGE:
+                lever_axis = principal_axis(mask_points(det, rasters[det.frame]))
+                pipe_axis = principal_axis(mask_points(pipe_det, decode_raster(pipe_det))) or \
+                    principal_axis([(pipe_det.box[0], pipe_det.center[1]), (pipe_det.box[2], pipe_det.center[1])])
+                if lever_axis and pipe_axis:
+                    angle = round(angle_between(lever_axis, pipe_axis), 1)
+            frames.append(FrameAngle(frame=det.frame, angle_deg=angle,
+                                     stage=classify_stage(angle) if angle is not None else "UNCERTAIN",
+                                     coverage=round(coverage, 2)))
+        angles = [f.angle_deg for f in frames if f.angle_deg is not None]
+        swing = (max(angles) - min(angles)) if len(angles) >= 2 else 0.0
+        candidates.append((swing, len(frames), LeverTrack(frames=frames)))
+    if not candidates:
+        return LeverTrack(frames=[])
+    return max(candidates, key=lambda c: (c[0], c[1]))[2]
+
+
+LEVER_CONCEPTS = ("yellow valve handle", "valve lever", "valve handle")
+PIPE_CONCEPTS = ("metal pipe", "pipe")
 
 
 class LeverTracker:
-    """Two SAM video requests (lever, pipe) over the same clip URL."""
+    """SAM video requests (lever, pipe) over the same clip.
+
+    Concept wording matters on the real plant: its levers are yellow handles,
+    and SAM found "yellow valve handle" where "valve lever" found nothing.
+    Try the specific concept first, then the generic ones, per SAM's
+    one-concept-per-request rule.
+    """
 
     def __init__(self, sam: SamClient):
         self._sam = sam
 
+    async def _first_match(self, concepts, segment) -> list[Detection]:
+        for concept in concepts:
+            reply = await segment(concept)
+            if reply.detections:
+                return reply.detections
+        return []
+
     async def track(self, video_url: str) -> LeverTrack:
-        lever = await self._sam.segment_video(video_url, "valve lever")
-        pipe = await self._sam.segment_video(video_url, "pipe")
-        return build_track(lever.detections, pipe.detections)
+        lever = await self._first_match(LEVER_CONCEPTS, lambda c: self._sam.segment_video(video_url, c))
+        pipe = await self._first_match(PIPE_CONCEPTS, lambda c: self._sam.segment_video(video_url, c))
+        return build_track(lever, pipe)
+
+    async def track_file(self, file_id: str) -> LeverTrack:
+        lever = await self._first_match(LEVER_CONCEPTS, lambda c: self._sam.segment_video_file(file_id, c))
+        pipe = await self._first_match(PIPE_CONCEPTS, lambda c: self._sam.segment_video_file(file_id, c))
+        return build_track(lever, pipe)

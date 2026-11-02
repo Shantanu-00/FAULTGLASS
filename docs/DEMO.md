@@ -71,7 +71,7 @@ Muse Image is not used: it generates images and does not read them.
 2. Spark watcher writing signal flags: **done** (Baseten, see [SPARK_WATCHER.md](SPARK_WATCHER.md)); telemetry tools for Wonder: **done** (see [INVESTIGATOR.md](INVESTIGATOR.md)).
 3. SOPs and past incidents (written): **done**; memory tools and focus ledger: **done** (INVESTIGATOR.md). Field-task evidence is manual entry until step 4 replaces it.
 4. Gauge pipeline: SAM crops, Wonder read, needle-angle cross-check, front/back rule: **done** (see [SAM_EVIDENCE.md](SAM_EVIDENCE.md); live-verified on a synthetic dial photo, real plant photo still to run).
-5. Voice pipeline and observation check.
-6. Valve pipeline: lever and pipe masks, angle, policy.
-7. Field Companion, then Operations Console (reasoning view first).
+5. Voice pipeline and observation check: **done** (see [VALVE_VOICE_FIELD.md](VALVE_VOICE_FIELD.md); live ASR checked with synthesized English speech, real Marathi operator sample still to record).
+6. Valve pipeline: lever and pipe masks, angle, policy: **done** (same doc; commander-approved proposal, staged clip, simulator trigger only after a pass, deterministic verifier).
+7. Field Companion: **done** (`/field.html`); Operations Console reasoning view: **done** (built with the investigator).
 8. Deploy: Vercel, Lightsail, Supabase. Record.

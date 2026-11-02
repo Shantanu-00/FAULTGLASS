@@ -66,6 +66,12 @@ TOOL_DEFS: list[dict[str, Any]] = [
          "tags": {"type": "array", "items": {"type": "string"}},
          "instruction": {"type": "string"}},
         ["kind", "instruction"]),
+    _fn("propose_action", "Propose the only plant-changing action currently available: a V-113 backwash. This records a proposal for commander approval and ends the turn. It does not dispatch or move anything.",
+        {"asset_id": {"type": "string", "enum": ["V-113"]},
+         "action": {"type": "string", "enum": ["backwash"]},
+         "rationale": {"type": "string"},
+         "sop_id": {"type": "string"}},
+        ["asset_id", "action", "rationale"]),
 ]
 
 
@@ -89,6 +95,7 @@ class ToolExecutor:
         self._by_tag = {i.tag: i for i in pack.instruments}
         self.focus: dict[str, Any] = {}
         self.field_task_created: dict[str, Any] | None = None
+        self.action_proposed: dict[str, Any] | None = None
 
     async def execute(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         handler = getattr(self, f"_tool_{name}", None)
@@ -252,7 +259,26 @@ class ToolExecutor:
                       "next_step": args.get("next_step", ""), "focus_assets": args.get("focus_assets") or []}
         return {"focus_recorded": True}
 
+    async def _tool_propose_action(self, args: dict) -> dict:
+        if args.get("asset_id") != "V-113" or args.get("action") != "backwash":
+            return {"error": "only the V-113 backwash action is currently supported"}
+        rationale = (args.get("rationale") or "").strip()
+        if not rationale:
+            return {"error": "rationale is required"}
+        hypotheses = await self._inv.hypotheses(self._incident_id)
+        if not any(h["status"] in ("supported", "confirmed") for h in hypotheses):
+            return {"error": "a supported hypothesis is required before proposing a plant-changing action"}
+        proposal = await self._inv.create_proposal(
+            self._incident_id, asset_id="V-113", action="backwash",
+            rationale=rationale[:1000], sop_id=args.get("sop_id"))
+        view = {"proposal_id": str(proposal["id"]), "asset_id": proposal["asset_id"],
+                "action": proposal["action"], "status": proposal["status"], "sop_id": proposal["sop_id"]}
+        self.action_proposed = view
+        return {"action_proposed": view, "note": "Commander approval is required before a valve task is dispatched."}
+
     async def _tool_request_field_task(self, args: dict) -> dict:
+        if args.get("kind") == "valve_action":
+            return {"error": "valve movement requires commander approval; use propose_action"}
         asset_ids = args.get("asset_ids") or []
         tags = args.get("tags") or []
         known_assets = {a.id for a in self._pack.assets}

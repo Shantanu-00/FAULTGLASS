@@ -1,9 +1,9 @@
 # SAM evidence pipelines (gauge photo + lever angle)
 
 Status: **gauge pipeline implemented and live-verified on a synthetic dial
-photo**; lever-angle estimator implemented as deterministic code + tests,
-wired for clips (its first live clip is the backwash step). Field Companion
-mobile UI and the valve policy/verifier are later steps.
+photo**; lever-angle estimator, staged policy, verifier, and the Field
+Companion are now implemented too — see
+[VALVE_VOICE_FIELD.md](VALVE_VOICE_FIELD.md) for that half.
 
 ## Decisions (and why)
 
@@ -108,13 +108,13 @@ minutes; from the system's perspective it is two short, restartable turns.
 ## Operator communication (voice in, text out)
 
 - **Instructions to the operator are text**: the field task carries a
-  plain-language bounded instruction, shown large on the task card.
-  (A dedicated Field Companion mobile page is the next step.)
+  plain-language bounded instruction, shown large on the Field Companion
+  task card at `/field.html`.
 - **Voice in**: Muse Voice Transcribe (`muse-voice-transcribe-1.0`) —
   Marathi is in its 25 supported languages. The operator's spoken
-  observation is transcribed, then Wonder structures it and states
-  AGREE/DISAGREE against the photo reading. Not yet wired; it lands with
-  the Field Companion.
+  observation is transcribed, then Wonder structures it and Python states
+  AGREE/DISAGREE against the photo reading. Wired; see
+  [VALVE_VOICE_FIELD.md](VALVE_VOICE_FIELD.md).
 - **Voice out: Meta has no text-to-speech.** Meta's voice offering is
   speech-to-text only ("it does not synthesize speech", `docs/meta/
   overview.md`). Recommendation: **keep audio replies out of the Meta

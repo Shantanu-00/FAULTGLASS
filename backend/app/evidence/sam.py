@@ -42,6 +42,8 @@ class Detection:
     mask_w: int = 0
     mask_encoding: str = "~"
     mask_payload: str = ""
+    raster: bytes | None = field(default=None, repr=False, compare=False)
+    mask_bounds: tuple[int, int, int, int] | None = None
 
     @property
     def center(self) -> tuple[float, float]:
@@ -74,25 +76,66 @@ def parse_sam_text(text: str) -> list[Detection]:
 
 
 def decode_raster(det: Detection) -> bytes | None:
-    """Decode a mask payload to a row-major 0/1 raster via Meta's parser.
-
-    Returns None when decoding is unavailable; callers must treat geometry
-    derived from it as absent, not as zero.
-    """
+    """Return the row-major 0/1 mask raster decoded by Meta's official parser."""
+    if det.raster is not None:
+        return det.raster
     if not det.mask_payload or not det.mask_h or not det.mask_w:
         return None
     try:
-        import base64 as _b64  # payload is base85, parser handles it; this is a guard only
         from meta_sam_parser import SegmentationMask, decode_mask_to_raster
         mask = SegmentationMask(
-            height=det.mask_h, width=det.mask_w,
             encoding="one_bit" if det.mask_encoding == "!" else "lossless",
-            payload=det.mask_payload,
-        )
-        raster = decode_mask_to_raster(mask)
-        return bytes(raster)
+            payload=det.mask_payload, width=det.mask_w, height=det.mask_h)
+        return bytes(decode_mask_to_raster(mask))
     except Exception:
         return None
+
+
+def detections_from_records(records) -> list[Detection]:
+    """Combine official box + mask records into Detections with rasters."""
+    from meta_sam_parser import SegmentationBoxRecord, SegmentationMaskRecord, decode_mask_to_raster
+
+    boxes: dict[tuple[int, int], SegmentationBoxRecord] = {}
+    masks: dict[tuple[int, int], SegmentationMaskRecord] = {}
+    media_w = media_h = 0
+    for record in records:
+        frame = record.frame.frame_index if getattr(record, "frame", None) else 0
+        if isinstance(record, SegmentationBoxRecord):
+            boxes[(record.object_id, frame)] = record
+            media_w = max(media_w, record.right)
+            media_h = max(media_h, record.bottom)
+        elif isinstance(record, SegmentationMaskRecord):
+            masks[(record.object_id, frame)] = record
+    detections: list[Detection] = []
+    for key in sorted(set(boxes) | set(masks), key=lambda k: (k[1], k[0])):
+        box_rec = boxes.get(key)
+        mask_rec = masks.get(key)
+        if box_rec is not None:
+            box = (box_rec.left, box_rec.top, box_rec.right, box_rec.bottom)
+            confidence = box_rec.confidence
+        elif mask_rec is not None:
+            b = mask_rec.bounds
+            box = (b.left, b.top, b.right, b.bottom)
+            confidence = mask_rec.confidence
+        else:
+            continue
+        raster = None
+        mask_w = mask_h = 0
+        bounds = None
+        if mask_rec is not None:
+            try:
+                raster = bytes(decode_mask_to_raster(mask_rec.mask))
+            except Exception:
+                raster = None
+            mask_w, mask_h = mask_rec.mask.width, mask_rec.mask.height
+            b = mask_rec.bounds
+            bounds = (b.left, b.top, b.right, b.bottom)
+            confidence = confidence if confidence is not None else mask_rec.confidence
+        detections.append(Detection(
+            object_id=key[0], frame=key[1], box=box,
+            frame_size=(media_w, media_h), confidence=confidence,
+            mask_h=mask_h, mask_w=mask_w, raster=raster, mask_bounds=bounds))
+    return detections
 
 
 class SamError(RuntimeError):
@@ -122,7 +165,7 @@ class SamClient:
         self._model = model
         self._client = httpx.AsyncClient(
             base_url=base_url.rstrip("/"),
-            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            headers={"Authorization": f"Bearer {api_key}"},
             timeout=timeout_s,
             transport=transport,
         )
@@ -136,6 +179,7 @@ class SamClient:
         return await self._segment(
             [{"type": "input_text", "text": concept},
              {"type": "input_image", "image_url": image_data_url}],
+            media="image",
         )
 
     async def segment_video(self, video_url: str, concept: str, *,
@@ -144,10 +188,37 @@ class SamClient:
         return await self._segment(
             [{"type": "input_text", "text": prompt_text or concept},
              {"type": "input_video", "video_url": video_url}],
+            media="video",
         )
 
-    async def _segment(self, content: list[dict[str, Any]]) -> SamReply:
+    async def upload_file(self, data: bytes, filename: str, content_type: str) -> str:
+        """Upload media once through the Files API (purpose=user_data)."""
+        try:
+            response = await self._client.post(
+                "/files",
+                data={"purpose": "user_data"},
+                files={"file": (filename, data, content_type)},
+            )
+        except httpx.HTTPError as exc:
+            raise SamError(f"SAM file upload failed: {exc.__class__.__name__}") from exc
+        if response.status_code != 200:
+            raise SamError(f"SAM file upload returned HTTP {response.status_code}")
+        try:
+            return str(response.json()["id"])
+        except (ValueError, KeyError, TypeError) as exc:
+            raise SamError("SAM file upload response had no id") from exc
+
+    async def segment_video_file(self, file_id: str, concept: str) -> SamReply:
+        """Segment/track one concept in an uploaded clip."""
+        return await self._segment(
+            [{"type": "input_text", "text": concept},
+             {"type": "input_video", "file_id": file_id}],
+            media="video",
+        )
+
+    async def _segment(self, content: list[dict[str, Any]], *, media: str) -> SamReply:
         started = time.monotonic()
+        events: list[dict[str, Any]] = []
         text_parts: list[str] = []
         frames = 0
         try:
@@ -169,6 +240,7 @@ class SamClient:
                         event = json.loads(line[5:])
                     except ValueError:
                         continue
+                    events.append(event)
                     if event.get("type") == "response.output_text.delta":
                         delta = event.get("delta", "")
                         text_parts.append(delta)
@@ -177,8 +249,30 @@ class SamClient:
         except httpx.HTTPError as exc:
             raise SamError(f"SAM request failed: {exc.__class__.__name__}") from exc
         latency_ms = int((time.monotonic() - started) * 1000)
-        return SamReply(detections=parse_sam_text("".join(text_parts)),
-                        latency_ms=latency_ms, model=self._model, raw_frames=frames)
+        detections = await self._official_detections(events, media)
+        if detections is None:
+            detections = parse_sam_text("".join(text_parts))
+        return SamReply(detections=detections, latency_ms=latency_ms,
+                        model=self._model, raw_frames=frames)
+
+    @staticmethod
+    async def _official_detections(events: list[dict[str, Any]], media: str) -> list[Detection] | None:
+        """Parse through meta_sam_parser; None means fall back to wire regex."""
+        if not events:
+            return []
+        try:
+            from meta_sam_parser import (
+                image_segmentation_format, parse_responses_stream, video_segmentation_format)
+
+            async def source():
+                for event in events:
+                    yield event
+
+            fmt = video_segmentation_format() if media == "video" else image_segmentation_format()
+            result = await parse_responses_stream(source(), fmt).final_result()
+            return detections_from_records(result.records)
+        except Exception:
+            return None
 
     async def aclose(self) -> None:
         await self._client.aclose()

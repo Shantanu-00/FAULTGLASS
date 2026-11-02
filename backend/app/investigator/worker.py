@@ -46,7 +46,7 @@ How to work:
 - If the evidence needed has no API (analog gauges, valve levers, anything marked field-only), dispatch exactly one bounded field task with request_field_task, saying precisely what to photograph or read and where. Then stop; do not invent the reading.
 - When evidence is insufficient, ask for more data through a tool or a field task. Never answer that you cannot determine anything and stop while a check remains available.
 - You may not resolve or close the incident, move a valve, or state a cause as proven when it is only likely. Say "likely" where that is what the evidence supports.
-- Check in before any action that changes the plant: propose it in your conclusion and stop.
+- Check in before any action that changes the plant: call propose_action with the evidence-based rationale and stop. A commander separately approves it; never dispatch valve_action directly.
 
 Telemetry is SIMULATED for this demonstration; gauge and valve evidence will arrive as field-task results."""
 
@@ -118,11 +118,21 @@ class Investigator:
             readings = (task["result"] or {}).get("readings", {})
             note = (task["result"] or {}).get("note", "")
             detail = "; ".join(f"{tag} = {value}" for tag, value in readings.items()) or "no readings submitted"
+            extras = []
+            voice = (task["result"] or {}).get("voice")
+            if voice:
+                extras.append(
+                    "Voice observation: " + str(voice.get("comparison", {}).get("status", "recorded"))
+                    + " — " + str(voice.get("transcript", ""))[:300])
+            policy = (task["result"] or {}).get("policy")
+            if policy:
+                extras.append("Valve policy: " + str(policy.get("status")) + " (" + "; ".join(policy.get("reasons", [])) + ")")
             continuation.append({
                 "role": "user",
                 "content": (f"Field task completed ({task['kind']} on {', '.join(task['asset_ids']) or 'plant'}). "
                             f"Readings: {detail}. Operator note: {note or 'none'}. "
-                            "Reassess your hypotheses with this evidence and continue."),
+                            + (" ".join(extras) + ". " if extras else "")
+                            + "Reassess your hypotheses with this evidence and continue."),
             })
             await self._inv.add_trace(incident_id, kind="human_result", actor="operator",
                                       content=f"Field result: {detail}", evidence=list(readings.keys()))
@@ -158,6 +168,15 @@ class Investigator:
                     "output": json.dumps(result),
                 })
             focus = executor.focus or focus
+            if executor.action_proposed:
+                proposal = executor.action_proposed
+                await self._inv.add_trace(
+                    incident_id, kind="action", actor="model",
+                    content=f"Proposed {proposal['action']} on {proposal['asset_id']}; awaiting commander approval.",
+                    evidence=[proposal["asset_id"]])
+                await self._save(incident_id, "awaiting_approval", steps, continuation, focus)
+                log.info("%s awaiting_approval (%s)", incident_id, proposal["proposal_id"])
+                return "awaiting_approval"
             if executor.field_task_created:
                 task = executor.field_task_created
                 await self._inv.add_trace(
@@ -174,7 +193,8 @@ class Investigator:
         return "escalated"
 
     async def _trace_result(self, incident_id: str, name: str, args: dict, result: dict) -> None:
-        kind = {"recall_plant_memory": "recall", "recall_sop": "recall", "recall_incident": "recall"}.get(name, "tool_result")
+        kind = {"recall_plant_memory": "recall", "recall_sop": "recall", "recall_incident": "recall",
+                "propose_action": "action"}.get(name, "tool_result")
         if name == "record_hypothesis":
             kind = "hypothesis_rejected" if args.get("status") == "rejected" else "hypothesis"
         summary = json.dumps(result)[:500]
