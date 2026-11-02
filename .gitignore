@@ -79,3 +79,6 @@ Thumbs.db
 *.swo
 *~
 
+
+# Edge outbox
+edge_outbox.db*
