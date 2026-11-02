@@ -4,7 +4,7 @@
 -- written by an authenticated edge node; field rows only when a field task completes. Hidden
 -- simulator truth never lands here.
 --
--- Volume check: 16 signals at 1 Hz is about 1.4 million rows per day, so a single indexed table
+-- Volume check: 14 signals at 1 Hz is about 1.2 million rows per day, so a single indexed table
 -- is enough for the demo. Partition by month and add retention if real plants are connected.
 
 create table edge_nodes (
@@ -31,7 +31,7 @@ create table telemetry (
   source_id     text,
   edge_node_id  text references edge_nodes(edge_node_id),
   release_id    uuid references plant_releases(id),
-  run_id        text,                                  -- simulator or replay run
+  run_id        uuid,                                  -- sim_runs.id, added as a foreign key later
   primary key (plant_id, tag, observed_at),            -- also makes edge retries idempotent
   unique (ingest_id),
   check (value is not null or quality in ('bad', 'stale'))
