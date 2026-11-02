@@ -93,6 +93,21 @@ class TelemetryRepository:
             )
             return await cur.fetchall()
 
+    async def run_points(
+        self, plant_id: str, run_id: UUID, start: dt.datetime, end: dt.datetime
+    ) -> list[dict[str, Any]]:
+        """All readings for one run in a window, oldest first (watcher cards)."""
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                """
+                select tag, observed_at, value, quality from telemetry
+                where plant_id = %s and run_id = %s and observed_at >= %s and observed_at <= %s
+                order by observed_at
+                """,
+                (plant_id, run_id, start, end),
+            )
+            return await cur.fetchall()
+
     async def head_cursor(self, plant_id: str) -> int:
         async with self._pool.connection() as conn:
             cur = await conn.execute(

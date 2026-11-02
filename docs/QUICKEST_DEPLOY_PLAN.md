@@ -29,6 +29,9 @@ in `ARCHITECTURE.md` still apply. Model facts come from the docs mirrored in `do
 3. **Skip Baseten for the first pass.** `muse-spark-1.3` on the Meta API reads images, so
    use it for gauge crops and transcript normalisation. Add the Baseten Spark Open
    adapter behind the same interface in the last phase. The role stays swappable.
+   *Superseded 2026-11-02: a hackathon Baseten key for Muse Spark Open arrived,
+   so the Spark watcher was built on Baseten first — see
+   [SPARK_WATCHER.md](SPARK_WATCHER.md). Gauge/transcript roles stay planned.*
 4. **Auth: Supabase magic link or two seeded users** (`lead`, `technician`) with a role
    claim. Skip site-membership UI.
 5. **SSE with polling fallback.** The browser connects straight to the Lightsail URL

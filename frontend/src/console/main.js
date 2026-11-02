@@ -214,6 +214,9 @@ function updateFlags() {
         h('div', { class: 'flag-head' }, chip(flag.severity, flag.severity), h('time', {}, time(flag.raised_at)), h('span', { class: 'status' }, flag.status.replace('_', ' '))),
         h('p', {}, flag.summary),
         h('div', { class: 'tags' }, flag.tags.map((t) => h('code', {}, t))),
+        flag.model || flag.incident_id
+          ? h('div', { class: 'flag-meta' }, flag.model ? `via ${flag.model}` : '', flag.incident_id ? ` · incident ${flag.incident_id}` : '')
+          : null,
       ),
     ),
   );

@@ -70,6 +70,7 @@ h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacin
 .flag-head .status { margin-left: auto; text-transform: capitalize; }
 .flag p { margin: 8px 0; font-size: 13px; line-height: 1.4; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.flag-meta { margin-top: 8px; font-family: ui-monospace, "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
 .muted { color: var(--muted); font-size: 13px; }
 .run { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; margin: 0; font-size: 13px; }
 .run dt { color: var(--muted); }
