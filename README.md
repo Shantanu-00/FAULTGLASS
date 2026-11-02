@@ -42,6 +42,20 @@ FAULTGLASS/
 Runtime, framework, and dependency setup will be added with the first application
 code. Dependencies must be declared in this repository so it can run independently.
 
+## Plant twin (3D scene)
+
+The scene in `frontend/src/scene/` renders whatever plant pack it is given; the plant itself
+lives in `plants/waterplant/`. After editing the pack, re-export it and start the preview:
+
+```bash
+cd frontend
+npm install
+npm run plant      # plants/waterplant -> public/plants/waterplant.json (validated)
+npm run dev        # http://localhost:5173, demo states in the right-hand panel
+```
+
+URL parameters for screenshots: `?state=gauges&view=gauges&obs=1&capture=1`.
+
 ## Development conventions
 
 - Use the `main` branch as the starting point for development.

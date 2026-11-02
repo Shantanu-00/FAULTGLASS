@@ -92,7 +92,7 @@ validated. The system must handle a site with no standby path. The earlier word
 The application owns persistence and reassembles the planner's context after each
 pause. Model memory alone is not the storage mechanism.
 
-The sequence is evidence driven. A fixed “photo → open 25% → fully open” script is
+The sequence is evidence driven. A fixed “photo → lever to 45° → lever to 90° (closed)” script is
 not the intended general workflow. Missing equipment, unreadable evidence, failed
 actions, and incomplete recovery need to lead to a different next step.
 
