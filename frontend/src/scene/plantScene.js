@@ -16,7 +16,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { COLORS, PIPE, MAT } from './theme.js';
+import { COLORS, PIPE, MAT, isAbnormal } from './theme.js';
 import { buildEquipment, createRotameter, createTransmitter } from './equipment.js';
 import { createGauge } from './gauge.js';
 import './plantScene.css';
@@ -31,6 +31,7 @@ const PRESETS = {
   media: { kinds: ['media_vessel'], dir: [1, 0.55, 0.35], pad: 1.25 },
   ro: { kinds: ['ro_vessel_bank', 'ozone_generator', 'oxygen_concentrator'], dir: [0.1, 0.5, 1], pad: 1.35 },
   hp_pump: { ids: ['P-301'], dir: [0.6, 0.5, 1], pad: 3.2 },
+  backwash: { ids: ['MGF-101', 'V-113', 'V-114'], dir: [1, 0.42, 0.3], pad: 0.95 },
 };
 
 export function createPlantScene(container, model, { labels = true } = {}) {
@@ -259,12 +260,20 @@ export function createPlantScene(container, model, { labels = true } = {}) {
       const el = document.createElement('div');
       const api = it.instr.observe === 'telemetry';
       el.className = `pl-chip ${api ? 'is-api' : 'is-noapi'}`;
-      el.innerHTML = `<span>${tag}</span><b>${api ? 'API' : 'NO API'}</b>`;
+      el.innerHTML = `<span>${tag}</span><em>${api ? '' : 'not observed'}</em><b>${api ? 'API' : 'NO API'}</b>`;
+      if (!api) el.classList.add('is-unread');
       const obj = new CSS2DObject(el);
       obj.position.copy(it.widget.group.position).add(new THREE.Vector3(0, 0.13, 0));
       obj.center.set(0.5, 1);
       it.node.group.add(obj);
       chipEls.set(tag, { el, obj });
+    }
+    // equipment that carries an instrument chip on top keeps its own label at its base
+    for (const it of instruments.values()) {
+      const l = labelEls.get(it.host);
+      if (!l || it.widget.group.position.y < it.node.built.height - 0.6) continue;
+      l.obj.position.set(0, 0.12, 0.2);
+      l.obj.center.set(0.5, 0);
     }
   }
 
@@ -457,8 +466,15 @@ export function createPlantScene(container, model, { labels = true } = {}) {
     setInstrument(tag, value) {
       const it = instruments.get(tag);
       if (!it) return;
-      const label = it.instr.state_labels?.[String(Math.round(value))];
+      const label = value == null ? undefined : it.instr.state_labels?.[String(Math.round(value))];
       it.widget.setReading(value, label);
+      const chip = chipEls.get(tag);
+      if (chip) {
+        const em = chip.el.querySelector('em');
+        em.textContent = value == null ? 'not observed' : label ?? `${Number(value).toFixed(1)} ${it.instr.unit}`;
+        chip.el.classList.toggle('is-unread', value == null);
+        chip.el.classList.toggle('is-abnormal', isAbnormal(label));
+      }
       if (hmi) {
         if (tag === 'ST-RO') hmi.update({ cycle: label ?? null });
         if (tag === 'FC-RO') hmi.update({ fault: label ?? null });
@@ -466,7 +482,7 @@ export function createPlantScene(container, model, { labels = true } = {}) {
       }
     },
     setInstruments(map) { for (const [k, v] of Object.entries(map)) this.setInstrument(k, v); },
-    setValve(id, pct) { nodes.get(id)?.built.valve?.setPercent(pct); },
+    setValve(id, pct, { instant = false } = {}) { nodes.get(id)?.built.valve?.setPercent(pct, instant); },
     valveAngle(id) { return nodes.get(id)?.built.valve?.angleDeg() ?? null; },
     highlight(ids, kind = 'focus') {
       const next = new Set([].concat(ids ?? []));

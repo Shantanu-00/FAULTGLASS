@@ -39,6 +39,10 @@
   margin-bottom: 2px;
 }
 .pl-chip b { margin-left: 5px; font-weight: 700; }
+.pl-chip em { font-style: normal; font-weight: 500; margin-left: 6px; color: #1f2328; }
+.pl-chip.is-unread em { color: #7d8791; }
+.pl-chip.is-abnormal { border-color: #c62828; color: #c62828; }
+.pl-chip.is-abnormal em { color: #c62828; }
 .pl-chip.is-api { background: #ffffff; color: #1a6dd8; border: 1px solid #1a6dd8; }
 .pl-chip.is-noapi { background: #f4f4f2; color: #4f5a64; border: 1px dashed #7d8791; }
 .pl-chip.is-shown,

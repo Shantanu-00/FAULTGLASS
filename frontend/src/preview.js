@@ -25,15 +25,15 @@ const STATES = [
   { id: 'normal', title: '0 · Plant running', view: 'overview', tags: { ...RUNNING, ...UNREAD }, valves: SERVICE },
   { id: 'trip', title: '1 · HP pump low-suction trip', view: 'overview', tags: { ...TRIPPED, ...UNREAD }, valves: SERVICE, alarm: ['P-301', 'RO-301'], flow: [] },
   { id: 'dispatch', title: '2 · Field task: read the cartridge gauges', view: 'cartridge', tags: { ...TRIPPED, ...UNREAD }, valves: SERVICE, alarm: ['P-301'], task: BANK, flow: [], obs: true },
-  { id: 'gauges', title: '3 · Gauges read: line 3 restricted', view: 'gauges', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: SERVICE, alarm: ['P-301'], warning: LINE3, focus: LINE3, flow: [] },
+  { id: 'gauges', title: '3 · Gauges read: line 3 restricted', view: 'gauges', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: SERVICE, alarm: ['P-301'], warning: LINE3, focus: LINE3, flow: [], obs: true },
   { id: 'reason', title: '4 · Upstream cause: sand filter', view: 'overview', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: SERVICE, warning: LINE3, focus: ['MGF-101', 'CB-3F', 'CB-3B'], flow: [] },
-  { id: 'bw50', title: '5 · Backwash: V-113 to 50%', view: 'media', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: BACKWASH(50), task: ['V-113'], focus: ['MGF-101'], flowRoute: 'RT-M1-BACKWASH' },
-  { id: 'bw100', title: '6 · Backwash: V-113 full open', view: 'media', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: BACKWASH(100), task: ['V-113'], focus: ['MGF-101'], flowRoute: 'RT-M1-BACKWASH' },
+  { id: 'bw50', title: '5 · Backwash: V-113 to 50%', view: 'backwash', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: BACKWASH(50), task: ['V-113'], focus: ['MGF-101'], flowRoute: 'RT-M1-BACKWASH' },
+  { id: 'bw100', title: '6 · Backwash: V-113 full open', view: 'backwash', tags: { ...TRIPPED, ...GAUGES_FAULT }, valves: BACKWASH(100), task: ['V-113'], focus: ['MGF-101'], flowRoute: 'RT-M1-BACKWASH' },
   { id: 'recovered', title: '7 · Recovered, verifier passed', view: 'overview', tags: { ...RUNNING, ...GAUGES_OK }, valves: SERVICE },
 ];
 
 const views = document.getElementById('views');
-for (const v of ['overview', 'cartridge', 'gauges', 'media', 'ro', 'hp_pump']) {
+for (const v of ['overview', 'cartridge', 'gauges', 'media', 'backwash', 'ro', 'hp_pump']) {
   const b = document.createElement('button');
   b.textContent = v.replace('_', ' ');
   b.onclick = () => plant.flyTo(v);
@@ -57,7 +57,7 @@ obs.onchange = () => plant.setObservability(obs.checked);
 
 function apply(s, { instant = false } = {}) {
   plant.setInstruments(s.tags);
-  for (const [id, pct] of Object.entries(s.valves)) plant.setValve(id, pct);
+  for (const [id, pct] of Object.entries(s.valves)) plant.setValve(id, pct, { instant });
   plant.highlight(s.alarm ?? [], 'alarm');
   plant.highlight(s.warning ?? [], 'warning');
   plant.highlight(s.task ?? [], 'task');

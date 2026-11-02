@@ -73,3 +73,9 @@ export const MAT = {
   label: () => material('label', () => new THREE.MeshStandardMaterial({ color: COLORS.label, roughness: 0.9 })),
   glass: () => material('glass', () => new THREE.MeshStandardMaterial({ color: 0xe8f1f5, transparent: true, opacity: 0.45, roughness: 0.1 })),
 };
+
+// A state label is abnormal when it names a trip or fault, or starts with LOW_/HIGH_
+// (LOW_LEVEL, HIGH_PRESSURE_TRIP...). Anchored so labels like BELOW_HIGH stay normal.
+export function isAbnormal(label) {
+  return typeof label === 'string' && /TRIP|FAULT|^LOW_|^HIGH_/.test(label);
+}

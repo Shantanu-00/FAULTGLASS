@@ -5,7 +5,7 @@
 //   height                    for labels and camera framing
 // Dimensions are approximate and taken from the site footage.
 import * as THREE from 'three';
-import { MAT } from './theme.js';
+import { MAT, isAbnormal } from './theme.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
@@ -301,8 +301,9 @@ const BUILDERS = {
     const pipeStub = cyl(0.04, 0.3, MAT.stainless(), 16);
     pipeStub.position.y = y;
     g.add(pipeStub);
-    // lever pivots in the vertical plane that faces away from its vessel: 0 deg hangs along
-    // the pipe (open), 90 deg points straight out (closed)
+    // quarter-turn ball valve: the stem points away from the vessel and the lever turns about
+    // the stem, so it sweeps the plane across the pipe. 0 deg = lever along the pipe (open),
+    // 90 deg = lever across the pipe (closed)
     const pivot = new THREE.Group();
     pivot.position.y = y;
     const out = ctx.valveFacing(asset);
@@ -325,14 +326,15 @@ const BUILDERS = {
     const closedDeg = asset.spec?.lever_angle_deg?.closed ?? 90;
     const openDeg = asset.spec?.lever_angle_deg?.open ?? 0;
     let target = openDeg, current = openDeg;
-    const setPercent = (pct) => {
+    const setPercent = (pct, instant = false) => {
       const p = Math.min(Math.max(pct, 0), 100) / 100;
       target = closedDeg + (openDeg - closedDeg) * p;
+      if (instant) current = target;
     };
     const ns = asset.normal_state?.position;
     setPercent(ns === 'closed' ? 0 : ns === 'throttled' ? 40 : 100);
     current = target;
-    const apply = () => { arm.rotation.x = -THREE.MathUtils.degToRad(current); };
+    const apply = () => { arm.rotation.z = THREE.MathUtils.degToRad(current); };
     apply();
     return {
       group: g,
@@ -571,7 +573,7 @@ export function createTransmitter(instrument) {
   return {
     group: g,
     setReading(v, label) {
-      const abnormal = label && /TRIP|FAULT|LOW_LEVEL|HIGH_LEVEL|LOW_PRESSURE|HIGH_PRESSURE/.test(label);
+      const abnormal = isAbnormal(label);
       const running = label === 'RUNNING';
       const c = abnormal ? 0xc62828 : running ? 0x2e7d32 : 0x9aa1a8;
       ledMat.color.set(c);
