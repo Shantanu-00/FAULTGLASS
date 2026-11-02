@@ -1,17 +1,17 @@
 # FAULTGLASS
 
-PlantDebugger — a hackathon project (demo brand **LastMeter**).
+FAULTGLASS — physical asset fault debugging system for industrial plants.
 
 Implemented so far: the versioned plant pack, process simulator with a Modbus
 PLC emulator, edge poller with offline outbox, FastAPI ingest/console API,
 live operations console with a reasoning view, 3D plant twin,
 plant-memory/SOP/past-incident seed data, the **Baseten Spark telemetry
 watcher**, the **Muse Wonder investigator**, the **SAM gauge and valve
-evidence pipelines**, the **Marathi voice pipeline**, the deterministic
+evidence pipelines**, the deterministic
 **verifier**, and the mobile **Field Companion** described below. Deployment
 and the recorded demo are the remaining build-order step (docs/DEMO.md).
 
-The demo is fixed by [docs/DEMO.md](docs/DEMO.md) (the 3-minute LastMeter video, who does what,
+The demo is fixed by [docs/DEMO.md](docs/DEMO.md) (the 3-minute FAULTGLASS video, who does what,
 and corrections to the draft script). The fastest-deployment plan is
 [docs/QUICKEST_DEPLOY_PLAN.md](docs/QUICKEST_DEPLOY_PLAN.md); the filmed plant's model is in
 `plants/waterplant/`; Meta API docs are mirrored in `docs/meta/`.

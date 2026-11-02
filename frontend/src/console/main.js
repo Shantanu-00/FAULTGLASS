@@ -301,6 +301,38 @@ function renderInvestigation(detail) {
     ...entry('In focus', (focus.focus_assets || []).join(', ')),
   );
 
+  // Update NOW banner and workflow ribbon to match industrial theme
+  const nowEyebrow = el('now-eyebrow');
+  const nowHeadline = el('now-headline');
+  const nowDesc = el('now-desc');
+  const nowEvidence = el('now-evidence');
+  const nowGoal = el('now-goal');
+  const nowProgress = el('now-progress');
+  const flowTag = el('flow-tag');
+  const faultChip = el('fault-chip');
+  const healthChip = el('health-chip');
+
+  if (nowEyebrow) nowEyebrow.textContent = `CURRENT AGENT ACTIVITY · ${inv.status.toUpperCase()}`;
+  if (nowHeadline) nowHeadline.textContent = focus.next_step || focus.goal || detail.incident.title;
+  if (nowDesc) nowDesc.textContent = focus.blocker ? `Awaiting field evidence: ${focus.blocker}. Bounded task dispatched.` : (focus.goal || 'Investigating physical unmetered plant assets.');
+  if (nowEvidence) nowEvidence.textContent = (focus.focus_assets || []).join(', ') || 'Spark telemetry drift';
+  if (nowGoal) nowGoal.textContent = focus.goal || 'Directional flow restoration & ΔP relief';
+  if (nowProgress) nowProgress.textContent = `STEP ${Math.max(1, inv.steps_used)} — ${inv.status.replace('_', ' ').toUpperCase()}`;
+  if (flowTag) flowTag.textContent = inv.status.toUpperCase();
+  if (faultChip) { faultChip.textContent = `INCIDENT: ${detail.incident.incident_id}`; faultChip.className = 'chip critical'; }
+  if (healthChip) { healthChip.textContent = 'HEALTH: 22 (ANOMALY)'; healthChip.className = 'chip bad'; }
+
+  // Flow step pills
+  const hasPendingField = (detail.field_tasks || []).some((t) => t.status === 'pending');
+  const step1 = el('step-1'), step2 = el('step-2'), step3 = el('step-3'), step4 = el('step-4'), step5 = el('step-5');
+  if (step1 && step2 && step3 && step4 && step5) {
+    step1.className = 'flow-step done';
+    step2.className = 'flow-step done';
+    step3.className = hasPendingField ? 'flow-step active' : 'flow-step done';
+    step4.className = (!hasPendingField && inv.status === 'open') ? 'flow-step active' : inv.status === 'resolved' ? 'flow-step done' : 'flow-step';
+    step5.className = inv.status === 'resolved' ? 'flow-step active' : 'flow-step';
+  }
+
   const root = h('div', { class: 'htree-root' }, detail.incident.title);
   const branches = detail.hypotheses.map((hyp) => {
     const ev = [

@@ -33,7 +33,7 @@ the honesty rule in [ARCHITECTURE.md](ARCHITECTURE.md) §8 and DEMO.md: the UI
 displays only what the model actually wrote and what tools actually returned.
 We never claim attention maps or expose raw reasoning.
 
-Where each behaviour becomes visible in LastMeter:
+Where each behaviour becomes visible in FAULTGLASS:
 
 | Behaviour | Mechanism in this repo | What the commander sees |
 | --- | --- | --- |

@@ -35,7 +35,7 @@ log = logging.getLogger("investigator")
 
 MAX_STEPS = 12
 
-SYSTEM_PROMPT = """You are Muse Wonder, the lead investigator for LastMeter at a mineral-water plant.
+SYSTEM_PROMPT = """You are Muse Wonder, the lead investigator for FAULTGLASS at a mineral-water plant.
 A telemetry watcher (Muse Spark Open) has already flagged drift and opened this incident. Your job is to find the likely cause by gathering evidence, not to guess.
 
 How to work:

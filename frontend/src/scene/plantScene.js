@@ -1,4 +1,4 @@
-// LastMeter plant scene. Renders a plant pack's layout, equipment, pipes and instruments, and
+// FAULTGLASS plant scene. Renders a plant pack's layout, equipment, pipes and instruments, and
 // exposes a small state API for the console:
 //
 //   const plant = createPlantScene(container, model)    model = /plants/<id>.json

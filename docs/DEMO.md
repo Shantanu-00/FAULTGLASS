@@ -1,6 +1,6 @@
-# LastMeter demo: the 3-minute video (source of truth)
+# FAULTGLASS demo: the 3-minute video (source of truth)
 
-Demo brand: **LastMeter** (repo codename FAULTGLASS). Everything the product must do is the
+Demo brand: **FAULTGLASS**. Everything the product must do is the
 list below; anything not on screen in this video is out of scope until it is done.
 
 Honesty rules for the video: plant telemetry is labelled **SIMULATED**; the gauge and valve
@@ -29,7 +29,7 @@ Muse Image is not used: it generates images and does not read them.
 
 | Time | On screen | Voiceover gist |
 | --- | --- | --- |
-| 0:00-0:15 | Real footage: cartridge bank gauges, a lever, pipework. Console raises a signal flag from Spark: permeate flow 25% below baseline while suction pressure, motor current and TDS drift together. The PLC shows no alarm. | Industrial plants run on analog gauges and manual valves with no API. When flow drops without an alarm, SCADA cannot say why. LastMeter closes the last meter with Meta's multimodal models. |
+| 0:00-0:15 | Real footage: cartridge bank gauges, a lever, pipework. Console raises a signal flag from Spark: permeate flow 25% below baseline while suction pressure, motor current and TDS drift together. The PLC shows no alarm. | Industrial plants run on analog gauges and manual valves with no API. When flow drops without an alarm, SCADA cannot say why. FAULTGLASS closes the physical gap with Meta's multimodal models. |
 | 0:15-0:50 | Phone camera on the cartridge bank. SAM masks light up the dials. Wonder reads them: front row high, back row low, one line much lower. A pressure-drop figure appears. | SAM 3.1 isolates the dials in messy light, Muse Wonder reads the glass and knows front is inlet side, back is outlet side. |
 | 0:50-1:25 | Operator speaks Marathi. Live transcript, then a structured observation, then "AGREES / DISAGREES with photo". | Muse Voice Transcribe takes the operator's native Marathi; Wonder turns it into a checked observation. |
 | 1:25-2:05 | **Reasoning view:** focus ledger (goal, hypotheses crossed out one by one using telemetry tool calls, blocker, next step) beside the memory graph (plant layout node, SOP section, past incident, site knowledge, each cited). Agent concludes line 3 is restricted, names sand filter fines as the likely source (stated as likely, not proven), and asks to backwash. | Active Memory recalls the layout, the procedure and a past case. Active Focus works the hypotheses until the evidence is enough. |

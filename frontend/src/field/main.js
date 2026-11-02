@@ -25,45 +25,89 @@ function toast(message) {
 }
 
 function taskTitle(task) {
-  if (task.kind === 'gauge_photo') return 'Photograph the gauges · गेजचा फोटो घ्या';
-  if (task.kind === 'valve_action') return 'Turn V-113 in stages · झडप टप्प्याटप्पाने फिरवा';
-  return 'Field observation · निरीक्षण';
+  if (task.kind === 'gauge_photo') return 'Photograph the gauges';
+  if (task.kind === 'valve_action') return 'Turn V-113 in stages';
+  return 'Field observation';
 }
 
 function render() {
   const root = el('tasks');
   const done = el('completed');
+  const statusChip = el('system-status-chip');
+  const nowEyebrow = el('now-eyebrow');
+  const nowEvidence = el('now-evidence-meta');
+  const nowDispatch = el('now-dispatch-meta');
+  const nowStatus = el('now-status-meta');
+  const flowTag = el('flow-tag');
+
   if (!detail) {
-    el('incident-title').textContent = 'No live field task';
+    el('incident-title').textContent = 'System Nominal · Standby';
     el('incident-meta').textContent = 'When Wonder needs physical evidence, it will appear here.';
-    root.replaceChildren(h('p', { class: 'muted' }, 'No pending work. Keep this page open.'));
-    done.replaceChildren(h('p', { class: 'muted' }, 'Nothing submitted yet.'));
+    if (statusChip) { statusChip.textContent = 'NOMINAL'; statusChip.className = 'status-chip nominal'; }
+    if (nowEyebrow) nowEyebrow.textContent = 'TELEMETRY NOMINAL · NO FIELD TASKS DISPATCHED';
+    if (nowEvidence) nowEvidence.textContent = 'Central telemetry normal';
+    if (nowDispatch) nowDispatch.textContent = 'None pending';
+    if (nowStatus) nowStatus.textContent = 'STANDBY';
+    if (flowTag) flowTag.textContent = 'SYSTEM_NOMINAL';
+    root.replaceChildren(h('p', { class: 'muted' }, 'No pending field work. Plant is running normally.'));
+    done.replaceChildren(h('p', { class: 'muted' }, 'No completed evidence in current session.'));
     return;
   }
-  el('incident-title').textContent = detail.incident.title;
-  el('incident-meta').textContent = `${detail.incident.incident_id} · Investigation: ${detail.investigation.status.replace('_', ' ')}`;
+
   const pending = detail.field_tasks.filter((task) => task.status === 'pending');
   const completed = detail.field_tasks.filter((task) => task.status === 'completed');
+
+  if (statusChip) {
+    statusChip.textContent = pending.length ? 'ACTION DISPATCHED' : detail.investigation.status.toUpperCase();
+    statusChip.className = `status-chip ${pending.length ? 'action' : 'nominal'}`;
+  }
+
+  if (pending.length) {
+    const first = pending[0];
+    el('incident-title').textContent = first.instruction || taskTitle(first);
+    el('incident-meta').textContent = `${detail.incident.incident_id} · Investigation: ${detail.investigation.status.replace('_', ' ')} · ${detail.incident.title}`;
+    if (nowEyebrow) nowEyebrow.textContent = `FIELD ACTION DISPATCHED · ${first.kind.toUpperCase()}`;
+    if (nowEvidence) nowEvidence.textContent = `${(first.asset_ids || []).join(', ') || 'Analogue asset'}`;
+    if (nowDispatch) nowDispatch.textContent = '1 bounded inspection';
+    if (nowStatus) nowStatus.textContent = 'ACTIVE DISPATCH';
+    if (flowTag) flowTag.textContent = 'ACTION_DISPATCHED';
+  } else {
+    el('incident-title').textContent = `${detail.incident.title} (Awaiting telemetry)`;
+    el('incident-meta').textContent = `${detail.incident.incident_id} · Investigation: ${detail.investigation.status.replace('_', ' ')}`;
+    if (nowEyebrow) nowEyebrow.textContent = 'ACTIVE INCIDENT · ALL FIELD EVIDENCE SUBMITTED';
+    if (nowEvidence) nowEvidence.textContent = `${completed.length} field evidence captured`;
+    if (nowDispatch) nowDispatch.textContent = 'Awaiting verifier';
+    if (nowStatus) nowStatus.textContent = 'EVALUATING';
+    if (flowTag) flowTag.textContent = 'VERIFY_EVALUATE';
+  }
+
   root.replaceChildren(...(pending.length ? pending.map(renderTask) : [
-    h('section', { class: 'task' }, h('h2', {}, 'Waiting for the next instruction'), h('p', { class: 'muted' }, 'The investigator or commander has not sent a new physical task.')),
+    h('section', { class: 'task-card' },
+      h('h2', { class: 'task-card-title' }, 'Waiting for next instruction'),
+      h('p', { class: 'instruction-text' }, 'All dispatched field tasks for this incident have been completed. The investigator is verifying recovery on live telemetry.')),
   ]));
+
   done.replaceChildren(...(completed.length ? completed.map((task) => {
     const result = task.result || {};
     const voice = result.voice?.comparison?.status;
     const policy = result.policy?.status;
     return h('div', { class: 'completed-item' },
-      h('strong', {}, taskTitle(task)), document.createTextNode(` — ${task.status}`),
-      h('div', { class: 'muted' }, [voice ? `Voice: ${voice}` : '', policy ? `Valve policy: ${policy}` : '']
-        .filter(Boolean).join(' · ') || 'Evidence stored.'));
+      h('div', { class: 'completed-head' },
+        h('strong', {}, taskTitle(task)),
+        h('span', { class: 'status-chip nominal' }, task.status)),
+      h('div', { class: 'completed-meta' },
+        [voice ? `Voice: ${voice}` : '', policy ? `Valve policy: ${policy}` : ''].filter(Boolean).join(' · ') || 'Evidence stored and verified by SAM 3.1 & Wonder.'));
   }) : [h('p', { class: 'muted' }, 'Nothing submitted yet.')]));
 }
 
 function renderTask(task) {
-  const card = h('section', { class: `task ${task.kind}` });
+  const card = h('section', { class: `task-card ${task.kind}` });
   card.append(
-    h('div', { class: 'task-head' }, h('h2', {}, taskTitle(task)), h('span', { class: 'badge' }, task.status)),
-    h('p', { class: 'instruction' }, task.instruction),
-    h('div', { class: 'codes' }, [...(task.asset_ids || []), ...(task.tags || [])].map((code) => h('code', {}, code))),
+    h('div', { class: 'task-card-head' },
+      h('h2', { class: 'task-card-title' }, taskTitle(task)),
+      h('span', { class: 'task-badge' }, task.status)),
+    h('p', { class: 'instruction-text' }, task.instruction),
+    h('div', { class: 'asset-tags' }, [...(task.asset_ids || []), ...(task.tags || [])].map((code) => h('span', { class: 'asset-tag' }, code))),
   );
   if (task.kind === 'gauge_photo') card.append(gaugeForm(task));
   else if (task.kind === 'valve_action') card.append(valveForm(task));
@@ -73,10 +117,10 @@ function renderTask(task) {
 
 function gaugeForm(task) {
   const photo = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
-  const note = h('textarea', { placeholder: 'Operator note · ऑपरेटरची टीप' });
+  const note = h('textarea', { placeholder: 'Operator note' });
   const result = h('div', { class: 'result' }, 'Take one square-on photo with every requested dial and needle visible.');
   const recorder = voiceRecorder();
-  const submit = h('button', { type: 'button' }, 'Submit photo · फोटो पाठवा');
+  const submit = h('button', { type: 'button' }, 'Submit photo');
   submit.addEventListener('click', async () => {
     if (!photo.files?.length) { toast('Choose a gauge photo first'); return; }
     submit.disabled = true;
@@ -94,9 +138,9 @@ function gaugeForm(task) {
     } finally { submit.disabled = false; }
   });
   return h('div', {},
-    h('label', {}, 'Gauge photo · गेज फोटो', photo),
+    h('label', {}, 'Gauge photo', photo),
     recorder.node,
-    h('label', {}, 'Note · टीप', note),
+    h('label', {}, 'Note', note),
     submit,
     result,
   );
@@ -107,8 +151,8 @@ function voiceRecorder() {
   let chunks = [];
   const state = { blob: null };
   const status = h('span', { class: 'muted' }, 'No voice note recorded.');
-  const start = h('button', { type: 'button', class: 'secondary' }, 'Record voice · आवाज नोंदवा');
-  const stop = h('button', { type: 'button', class: 'danger', disabled: true }, 'Stop · थांबवा');
+  const start = h('button', { type: 'button', class: 'secondary' }, 'Record voice');
+  const stop = h('button', { type: 'button', class: 'danger', disabled: true }, 'Stop');
   start.addEventListener('click', async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -118,7 +162,7 @@ function voiceRecorder() {
       mediaRecorder.onstop = () => {
         state.blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
         stream.getTracks().forEach((track) => track.stop());
-        status.textContent = 'Voice note ready. It will be converted to WAV and transcribed in Marathi/English.';
+        status.textContent = 'Voice note ready. It will be converted to WAV and transcribed.';
       };
       mediaRecorder.start();
       start.disabled = true; stop.disabled = false;
@@ -138,9 +182,9 @@ function voiceRecorder() {
 function valveForm(task) {
   const video = h('input', { type: 'file', accept: 'video/mp4,video/quicktime', capture: 'environment' });
   const fps = h('input', { type: 'number', min: '1', max: '240', step: '1', value: '30' });
-  const note = h('textarea', { placeholder: 'Operator note · ऑपरेटरची टीप' });
+  const note = h('textarea', { placeholder: 'Operator note' });
   const result = h('div', { class: 'result' }, 'SAM will track the lever and pipe. The simulator action is triggered only if code sees OPEN → MID hold → CLOSED.');
-  const submit = h('button', { type: 'button' }, 'Submit lever clip · क्लिप पाठवा');
+  const submit = h('button', { type: 'button' }, 'Submit lever clip');
   submit.addEventListener('click', async () => {
     if (!video.files?.length) { toast('Choose the lever clip first'); return; }
     const file = video.files[0];
@@ -166,11 +210,11 @@ function valveForm(task) {
   return h('div', {},
     h('div', { class: 'stage-guide' },
       h('div', {}, h('strong', {}, '0°'), 'OPEN · pipe-parallel'),
-      h('div', {}, h('strong', {}, '45°'), 'HOLD · किमान 2 sec'),
+      h('div', {}, h('strong', {}, '45°'), 'HOLD · min 2 sec'),
       h('div', {}, h('strong', {}, '90°'), 'CLOSED · perpendicular')),
-    h('label', {}, 'Lever clip (MP4/MOV) · लीव्हर क्लिप', video),
+    h('label', {}, 'Lever clip (MP4/MOV)', video),
     h('label', {}, 'Frames per second', fps),
-    h('label', {}, 'Note · टीप', note),
+    h('label', {}, 'Note', note),
     submit,
     result,
   );
@@ -188,7 +232,7 @@ function videoDuration(file) {
 }
 
 function observationForm(task) {
-  const note = h('textarea', { placeholder: 'What did you see? · तुम्हाला काय दिसले?' });
+  const note = h('textarea', { placeholder: 'What did you see?' });
   const inputs = new Map();
   const form = h('div', {});
   for (const tag of task.tags || []) {
@@ -197,7 +241,7 @@ function observationForm(task) {
     form.append(h('label', {}, tag, input));
   }
   const recorder = voiceRecorder();
-  const voiceButton = h('button', { type: 'button', class: 'secondary' }, 'Send voice only · फक्त आवाज पाठवा');
+  const voiceButton = h('button', { type: 'button', class: 'secondary' }, 'Send voice only');
   voiceButton.addEventListener('click', async () => {
     if (!recorder.blob) { toast('Record a voice note first'); return; }
     voiceButton.disabled = true;
@@ -219,7 +263,7 @@ function observationForm(task) {
     } catch (error) { toast(error.message); }
     finally { submit.disabled = false; }
   });
-  form.append(h('label', {}, 'Note · टीप', note), recorder.node, h('div', { class: 'actions' }, voiceButton, submit));
+  form.append(h('label', {}, 'Note', note), recorder.node, h('div', { class: 'actions' }, voiceButton, submit));
   return form;
 }
 

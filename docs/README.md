@@ -9,4 +9,4 @@
 - [Wonder investigator](INVESTIGATOR.md): the implemented Muse Wonder
   investigation loop — Active Memory/Focus showcase design, staged
   initialisation, tools, guards, and continuity.
-- [Demo script](DEMO.md): the fixed 3-minute LastMeter video and build order.
+- [Demo script](DEMO.md): the fixed 3-minute FAULTGLASS video and build order.

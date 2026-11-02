@@ -3,33 +3,117 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>LastMeter · Field Companion</title>
+    <title>FAULTGLASS · Field Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/field/field.css" />
   </head>
   <body>
-    <header class="bar">
-      <div>
-        <div class="brand">LastMeter</div>
-        <div class="sub">Field Companion · फील्ड सोबती</div>
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="brand-group">
+        <div class="brand-badge">FG</div>
+        <div class="brand-titles">
+          <div class="brand-title">FAULTGLASS</div>
+          <div class="brand-sub">FIELD OPERATIONS / COMPANION</div>
+        </div>
       </div>
-      <a href="/console.html">Commander</a>
+      <nav class="nav-links">
+        <a class="nav-btn" href="/console.html">COMMANDER CONSOLE</a>
+        <a class="nav-btn" href="/index.html">PLANT TWIN</a>
+      </nav>
     </header>
 
+    <!-- TARGET SYSTEM SUB-BAR -->
+    <div class="target-bar">
+      <div class="target-info">
+        <span class="target-label">TARGET SYSTEM:</span>
+        <span class="target-name">WATER TREATMENT PLANT / COOLING & RO LOOP</span>
+      </div>
+      <div class="target-actions">
+        <span class="status-chip nominal" id="system-status-chip">NOMINAL</span>
+        <button id="refresh" type="button" class="action-btn">REFRESH</button>
+      </div>
+    </div>
+
+    <!-- ICONIC HIGH-CONTRAST "NOW" BANNER -->
+    <div class="now-banner">
+      <div class="now-tag-box">NOW</div>
+      <div class="now-center">
+        <div class="now-eyebrow" id="now-eyebrow">FIELD DISPATCH · AWAITING PHYSICAL ACTION</div>
+        <h1 class="now-headline" id="incident-title">Looking for a field task…</h1>
+        <p class="now-desc" id="incident-meta">The central investigator dispatches physical checks here when sensors run out of answers.</p>
+      </div>
+      <div class="now-meta">
+        <div class="now-meta-row">
+          <span class="now-meta-label">EVIDENCE:</span>
+          <span class="now-meta-val" id="now-evidence-meta">Sensor telemetry</span>
+        </div>
+        <div class="now-meta-row">
+          <span class="now-meta-label">DISPATCH:</span>
+          <span class="now-meta-val" id="now-dispatch-meta">One bounded job</span>
+        </div>
+        <div class="now-meta-row">
+          <span class="now-meta-label">STATUS:</span>
+          <span class="now-meta-val" id="now-status-meta">STANDBY</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFLOW STEP RIBBON -->
+    <div class="flow-ribbon">
+      <span class="flow-title">ADK FIELD LOOP — WORKFLOW PIPELINE</span>
+      <div class="flow-steps">
+        <span class="flow-step done" id="step-1">01 OBSERVE</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step done" id="step-2">02 SELECT NODE</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step active" id="step-3">03 FIELD TASK</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step" id="step-4">04 EVALUATE / VERIFY</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-step" id="step-5">05 CLOSE / ESCALATE</span>
+      </div>
+      <span class="flow-status-tag" id="flow-tag">ACTION_DISPATCHED</span>
+    </div>
+
+    <!-- MAIN BODY -->
     <main>
-      <section class="status-card">
-        <div class="eyebrow">Current job · सध्याचे काम</div>
-        <h1 id="incident-title">Looking for a field task…</h1>
-        <p id="incident-meta" class="muted">The commander screen sends physical checks here.</p>
-        <button id="refresh" type="button">Refresh · रिफ्रेश</button>
+      <!-- ACTIVE FIELD TASKS -->
+      <section class="section-card">
+        <div class="card-header">
+          <h2 class="card-title">CURRENT FIELD TASK</h2>
+          <span class="card-badge" id="task-count-badge">ACTIVE JOBS</span>
+        </div>
+        <div class="card-body">
+          <div id="tasks" class="tasks" aria-live="polite"></div>
+        </div>
       </section>
 
-      <section id="tasks" class="tasks" aria-live="polite"></section>
-
-      <section class="done-card">
-        <h2>Completed evidence · जमा पुरावा</h2>
-        <div id="completed"></div>
+      <!-- AUDIT TRAIL / COMPLETED EVIDENCE -->
+      <section class="section-card">
+        <div class="card-header">
+          <h2 class="card-title">AUDIT TRAIL / COMPLETED EVIDENCE</h2>
+          <span class="card-badge">VERIFIED BY SAM 3.1 & WONDER</span>
+        </div>
+        <div class="card-body">
+          <div id="completed"></div>
+        </div>
       </section>
+
+      <!-- COLLABORATIVE PLANT KNOWLEDGE -->
+      <aside class="collab-box">
+        <h3>WHAT THIS PLANT HAS TAUGHT THE AGENT</h3>
+        <p><strong>CF-201 Rule:</strong> Cartridge filter bank ΔP must be inspected straight-on with camera parallel to dial faces. Handwheel bypass BV-104 should be cracked in +10% increments to prevent water hammer into the high-pressure membrane bank.</p>
+      </aside>
     </main>
+
+    <!-- FOOTER -->
+    <footer class="bottom-footer">
+      <div>FAULTGLASS / FIELD OPERATIONS / COMPANION</div>
+      <div>telemetry · field task · evidence · verification</div>
+    </footer>
 
     <div id="toast" class="toast" role="status"></div>
     <script type="module" src="/src/field/main.js"></script>

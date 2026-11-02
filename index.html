@@ -127,14 +127,14 @@ button{font-family:inherit;cursor:pointer}
 
   <!-- RIGHT: FIELD PHONE -->
   <section class="panel phoneWrap">
-    <div class="ph"><h2>FIELD COMPANION</h2><span>TECHNICIAN · MARATHI</span></div>
+    <div class="ph"><h2>FIELD COMPANION</h2><span>FIELD TECHNICIAN</span></div>
     <div class="pb">
       <div class="phone">
         <div class="notch"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">🙏 Namaste, Ramesh</b><span style="font-size:10px;background:#0f766e;padding:3px 7px;border-radius:10px">ON SHIFT</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">Technician · Ramesh</b><span style="font-size:10px;background:#0f766e;padding:3px 7px;border-radius:10px">ON SHIFT</span></div>
         <p style="font-size:11px;color:#8fb0c2;margin:6px 0 10px">Field Companion · Treatment Room</p>
         <div id="phoneBody">
-          <div class="task">✅ <b>No task yet.</b><br>Plant is running normally.<br><span style="color:#8fb0c2">कोणतेही काम नाही. प्लांट सुरळीत आहे.</span></div>
+          <div class="task">✅ <b>No task yet.</b><br>Plant is running normally.</div>
           <div style="text-align:center;padding:22px 0;color:#5f8aa0;font-size:40px">🏭</div>
           <p style="font-size:12px;color:#8fb0c2;text-align:center;line-height:1.6">When Wonder needs eyes on a gauge<br>with no API, your task appears here.</p>
         </div>
@@ -187,31 +187,31 @@ filter:{title:'FILTER CLOG',flow:3.1,press:()=>'9.8 bar ↓',tds:'24 ppm',
  mem:['Incident #12 · 14 Mar: ΔP 1.4 bar → cartridge clog confirmed','SOP-07: ΔP > 1.2 bar = change / switch filter','Site note (Ramesh): “PG-2 drops first when CF-201A chokes”'],
  focus:'◎ FOCUS: Cartridge Filter CF-201 A/B — the only analogue-only chokepoint between healthy feed and falling RO output.',
  hyps:[['Cartridge filter clogged',72,'red'],['RO membrane scaling',18,''],['Low feed supply',10,'teal']],
- gaugeTitle:'Go to Cartridge Filter CF-201',gaugeMr:'कार्ट्रिज फिल्टरकडे जा. PG-1 आणि PG-2 चे फोटो काढा.',
+ gaugeTitle:'Go to Cartridge Filter CF-201',
  gauges:[ [3.4,4,'bar','PG-1 INLET'],[1.8,4,'bar','PG-2 OUTLET'] ],
  reading:'PG-1 3.4 bar − PG-2 1.8 bar = ΔP 1.6 bar  (> SOP limit 1.2 bar)',
  diag:'<b>Diagnosis: Cartridge filter CF-201A is clogged.</b> Feed, pump and tank are healthy — pressure is being lost exactly across the filter. RO membranes are starved, not scaled.',
- action:'Turn standby valve <b>V-7 to HALF open only (50%)</b>',actionMr:'V-7 व्हॉल्व्ह फक्त अर्धा (50%) उघडा. पूर्ण उघडू नका.',
+ action:'Turn standby valve <b>V-7 to HALF open only (50%)</b>',
  why:'Half only: a full sudden opening sends a pressure hammer into the HP pump. Half-open lets pressure equalise safely — then we verify.'},
 scaling:{title:'RO MEMBRANE SCALING',flow:4.8,press:()=>'16.5 bar ↑',tds:'45 ppm',
  mem:['Incident #09 · Jan: rising HP pressure + falling recovery → scaling','SOP-11: HP > 15.5 bar with normal filter ΔP = inspect RO','History: last CIP wash 94 days ago (due: 90)'],
  focus:'◎ FOCUS: RO Membranes RO-302 — filter ΔP must be checked first to rule out the cheaper cause.',
  hyps:[['RO membrane scaling',64,'red'],['Cartridge filter clogged',12,''],['Low feed supply',8,'teal']],
- gaugeTitle:'Go to RO Skid RO-302',gaugeMr:'RO कडे जा. फीड प्रेशर गेजचा फोटो काढा.',
+ gaugeTitle:'Go to RO Skid RO-302',
  gauges:[ [3.1,4,'bar','FILTER OUTLET (OK)'],[16.5,20,'bar','RO FEED PRESS'] ],
  reading:'Filter ΔP normal (0.3 bar) · RO feed 16.5 bar ↑ · TDS 45 ppm ↑',
  diag:'<b>Diagnosis: RO membrane scaling.</b> The filter is innocent — pressure is rising at the membranes themselves and salt rejection is falling. This is not a filter job.',
- action:'Turn CIP flush valve <b>V-9 to HALF open only (50%)</b>',actionMr:'CIP व्हॉल्व्ह V-9 फक्त अर्धा (50%) उघडा.',
+ action:'Turn CIP flush valve <b>V-9 to HALF open only (50%)</b>',
  why:'Half only: a controlled low-pressure flush first. Full opening against scaled membranes risks membrane damage.'},
 feed:{title:'LOW FEED SUPPLY',flow:4.2,press:()=>'8.1 bar ↓',tds:'19 ppm',
  mem:['Incident #07 · Nov: afternoon output dip traced to raw tank level','SOP-03: Raw tank < 25% = feed starvation, check supply first','Site note: borewell yield drops in summer afternoons'],
  focus:'◎ FOCUS: Raw Tank TK-101 + Feed Pump — is the plant thirsty before we blame any filter?',
  hyps:[['Low feed / raw tank emptying',68,'red'],['Cartridge filter clogged',16,''],['RO membrane scaling',9,'teal']],
- gaugeTitle:'Go to Raw Tank TK-101',gaugeMr:'कच्च्या पाण्याच्या टाकीकडे जा. लेव्हल गेजचा फोटो काढा.',
+ gaugeTitle:'Go to Raw Tank TK-101',
  gauges:[ [18,100,'%','RAW TANK LEVEL'],[0.6,4,'bar','FEED SUCTION'] ],
  reading:'Raw tank 18% (low) · Feed suction 0.6 bar (starved)',
  diag:'<b>Diagnosis: Feed starvation.</b> Filters and RO are healthy — there is simply not enough raw water arriving. Chasing the filter would waste an hour.',
- action:'Turn borewell supply valve <b>V-2 to HALF open only (50%)</b>',actionMr:'बोअरवेल व्हॉल्व्ह V-2 फक्त अर्धा (50%) उघडा.',
+ action:'Turn borewell supply valve <b>V-2 to HALF open only (50%)</b>',
  why:'Half only: refill gradually and watch tank level recover without stirring settled sediment into the filters.'}};
 function caption(t){const c=$('caption');if(!t){c.classList.add('hidden');return}c.textContent=t;c.classList.remove('hidden')}
 function typeReason(h){$('reason').innerHTML=h+' <span class="cursor"></span>'}
@@ -226,12 +226,12 @@ function buildTimeline(sc){
  return [
  ()=>{targetFlow=sc.flow;$('incidentPill').textContent='▲ INCIDENT · OUTPUT DROPPING';$('incidentPill').className='pill alert';$('blindspot').classList.remove('hidden');setStep('detect');caption('Output is falling. Central telemetry sees the symptom — but not the cause.');typeReason(`<p>🚨 <b>Alert:</b> RO product output falling — now heading below 5 m³/h. Feed flow, tank and pump telemetry still look normal.</p><p>Wonder opens Incident and starts reasoning…</p>`)},
  ()=>{setStep('reason');setMem(sc.mem);$('focus').textContent=sc.focus;$('wonderState').textContent='REASONING · muse-wonder-1.0';markFault(faultId);caption('Wonder recalls prior incidents and locks focus — watch Active Memory + Focus.');typeReason(`<p>🧠 Recalled <b>${sc.mem.length} relevant records</b> (left of Focus panel). Three hypotheses formed — but digital telemetry <b>cannot separate them</b>.</p><p>The deciding measurement lives on an <b>analogue gauge with no API</b>. I will not guess. I need eyes on site.</p>`);setHyps(sc.hyps)},
- ()=>{setStep('dispatch');caption('No digital answer exists — so Wonder dispatches a human, with one bounded task.');typeReason(`<p>� dispatch → <b>Field task created</b> for Ramesh. One equipment, one photo job. Incident is saved — it survives even if the phone or server restarts now.</p>`);phone(`<div class="task">🔔 <b>NEW TASK · ${sc.gaugeTitle}</b><br>${sc.gaugeMr}<br><span style="color:#8fb0c2">Photograph the gauge(s) straight-on. Nothing else.</span></div><button class="bigbtn" onclick="snapGauge()">📸 &nbsp;Snap gauge photo</button><button class="bigbtn alt" onclick="snapGauge()">🎙️ &nbsp;Add voice note (Marathi)</button>`)},
+ ()=>{setStep('dispatch');caption('No digital answer exists — so Wonder dispatches a human, with one bounded task.');typeReason(`<p> dispatch → <b>Field task created</b> for Ramesh. One equipment, one photo job. Incident is saved — it survives even if the phone or server restarts now.</p>`);phone(`<div class="task">🔔 <b>NEW TASK · ${sc.gaugeTitle}</b><br><span style="color:#8fb0c2">Photograph the gauge(s) straight-on. Nothing else.</span></div><button class="bigbtn" onclick="snapGauge()">📸 &nbsp;Snap gauge photo</button><button class="bigbtn alt" onclick="snapGauge()">🎙️ &nbsp;Add voice note</button>`)},
  ()=>{setStep('evidence');caption('Gauge photo arrives. SAM segments the dial, Spark reads the needle.');phone(`<div class="task">📸 <b>Photo captured</b> · straight-on, in frame</div><div class="gaugeBox sam"><div class="scan"></div><span class="samTag" style="top:8px;left:8px">SAM 3.1 · gauge · 98%</span>${sc.gauges.map(g=>gaugeSVG(g[0],g[1],g[2],g[3])).join('')}</div><div class="evidence" style="margin-top:9px">SAM → dial located ✓<br>Spark → ${sc.reading}</div><button class="bigbtn" onclick="advanceFromPhone()">Send evidence →</button>`)},
  ()=>{setStep('diagnose');caption('Evidence separates the hypotheses. One cause now explains everything.');typeReason(`<p>✅ Evidence in: <b>${sc.reading}</b></p><p>${sc.diag}</p>`);setHyps([[sc.hyps[0][0],94,'teal'],[sc.hyps[1][0],4,''],[sc.hyps[2][0],2,'']])},
- ()=>{setStep('act');caption('Wonder does not say “open the valve”. It says how much — half — and why.');typeReason(`<p>🛠️ <b>Validated action</b> (checked against SOP limits by the system, not just the model):</p><p>${sc.action}.<br><span style="color:#8fb0c2">${sc.why}</span></p>`);phone(`<div class="task">🛠️ <b>ACTION · ${sc.action}</b><br>${sc.actionMr}<br><span style="color:#fb7185">⚠ ${sc.why}</span></div><button class="bigbtn" onclick="doValve()">🔧 &nbsp;Turn valve to HALF (50%)</button>`)},
+ ()=>{setStep('act');caption('Wonder does not say “open the valve”. It says how much — half — and why.');typeReason(`<p>🛠️ <b>Validated action</b> (checked against SOP limits by the system, not just the model):</p><p>${sc.action}.<br><span style="color:#8fb0c2">${sc.why}</span></p>`);phone(`<div class="task">🛠️ <b>ACTION · ${sc.action}</b><br><span style="color:#fb7185">⚠ ${sc.why}</span></div><button class="bigbtn" onclick="doValve()">🔧 &nbsp;Turn valve to HALF (50%)</button>`)},
  ()=>{setStep('verify');caption('“Done” is not evidence. SAM verifies the valve from a perpendicular photo.');phone(`<div class="task">📐 <b>VERIFY · Photograph valve V-7 from directly above (perpendicular)</b><br><span style="color:#8fb0c2">SAM checks handle angle, not your word.</span></div><div class="gaugeBox sam"><span class="samTag" style="top:8px;left:8px">SAM 3.1 · valve handle · 97%</span><span class="samTag" style="top:34px;left:8px;background:#059669">ANGLE ≈ 50% ✓ PERPENDICULAR ✓</span>${valveSVG(50)}</div><div class="evidence" style="margin-top:9px">SAM VERDICT: handle at HALF ✓<br>Photo angle: perpendicular ✓<br>Action confirmed — watching recovery…</div><button class="bigbtn" onclick="advanceFromPhone()">Confirm verification →</button>`)},
- ()=>{setStep('recover');targetFlow=8.4;markFault(null);caption('Recovery is verified by telemetry over time — not by the model saying “fixed”.');typeReason(`<p>📈 Output climbing back toward <b>8.4 m³/h</b>. The system — not the model — will close this incident only after output, pressure and quality hold steady for the full verification window.</p><p>🏁 <b>Lesson:</b> the most important sensor in this plant was a ₹400 analogue gauge. FAULTGLASS gave it an API: <b>a person, a photo, and a model that knows what to ask for.</b></p>`);setHyps([]);$('focus').textContent='◎ FOCUS: Verification window — output, pressure, TDS must all hold before RESOLVED.';phone(`<div class="task">✅ <b>Task complete. Dhanyavaad, Ramesh!</b><br><span style="color:#8fb0c2">धन्यवाद! काम पूर्ण झाले.</span></div><div class="evidence">EVIDENCE SAVED<br>• Gauge photo + reading<br>• Valve photo · SAM 50% ✓<br>• Linked to ${sc.title} incident</div>`);later(3500,()=>{$('incidentPill').textContent='● RESOLVED · VERIFIED';$('incidentPill').className='pill';running=false;$('playBtn').disabled=false;$('nextBtn').disabled=true;caption('RESOLVED — verified by sustained telemetry. That is FAULTGLASS.')})}
+ ()=>{setStep('recover');targetFlow=8.4;markFault(null);caption('Recovery is verified by telemetry over time — not by the model saying “fixed”.');typeReason(`<p>📈 Output climbing back toward <b>8.4 m³/h</b>. The system — not the model — will close this incident only after output, pressure and quality hold steady for the full verification window.</p><p>🏁 <b>Lesson:</b> the most important sensor in this plant was a ₹400 analogue gauge. FAULTGLASS gave it an API: <b>a person, a photo, and a model that knows what to ask for.</b></p>`);setHyps([]);$('focus').textContent='◎ FOCUS: Verification window — output, pressure, TDS must all hold before RESOLVED.';phone(`<div class="task">✅ <b>Task complete · Verification pending</b></div><div class="evidence">EVIDENCE SAVED<br>• Gauge photo + reading<br>• Valve photo · SAM 50% ✓<br>• Linked to ${sc.title} incident</div>`);later(3500,()=>{$('incidentPill').textContent='● RESOLVED · VERIFIED';$('incidentPill').className='pill';running=false;$('playBtn').disabled=false;$('nextBtn').disabled=true;caption('RESOLVED — verified by sustained telemetry. That is FAULTGLASS.')})}
  ]}
 let timeline=[];
 function startScenario(key){clearTimers();scenario=SC[key];timeline=buildTimeline(scenario);stepIdx=-1;running=true;$('playBtn').disabled=true;$('nextBtn').disabled=false;document.querySelectorAll('[data-sc]').forEach(b=>b.classList.toggle('active',b.dataset.sc===key));nextStep()}

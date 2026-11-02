@@ -82,3 +82,10 @@ Thumbs.db
 
 # Edge outbox
 edge_outbox.db*
+
+# Agent and assistant configs
+.agents/
+.claude/
+.mcp.json
+skills-lock.json
+
