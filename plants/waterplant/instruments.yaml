@@ -52,6 +52,66 @@ instruments:
     freshness_s: 10
     limits: {nominal: 15, high_alarm: 25}
     note: Shown on the HMI. Raw counts are 0.1 ppm.
+  - tag: PIT-301
+    name: HP pump suction pressure
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 300]
+    attach: {port: P-301.in}
+    observe: telemetry
+    basis: assumed
+    source: SRC-PLC1
+    address: {table: input, offset: 1, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 3000, eng_min: 0, eng_max: 300}
+    freshness_s: 5
+    limits: {low_trip: 14.5, nominal: 16}
+    note: Transmitter assumed. Confirm against the controller I/O list. Raw counts are 0.1 psi.
+  - tag: PIT-302
+    name: HP pump discharge pressure
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 300]
+    attach: {port: P-301.out}
+    observe: telemetry
+    basis: assumed
+    source: SRC-PLC1
+    address: {table: input, offset: 2, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 3000, eng_min: 0, eng_max: 300}
+    freshness_s: 5
+    limits: {nominal: 180, high_trip: 261}
+    note: Transmitter assumed. Confirm against the controller I/O list. Raw counts are 0.1 psi.
+  - tag: JI-301
+    name: HP pump motor current
+    type: measurement
+    quantity: current
+    unit: A
+    range: [0, 30]
+    attach: {asset: P-301}
+    observe: telemetry
+    basis: assumed
+    source: SRC-PLC1
+    address: {table: input, offset: 3, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 300, eng_min: 0, eng_max: 30}
+    freshness_s: 5
+    limits: {nominal: 9}
+    note: Taken from the motor starter. Raw counts are 0.1 A.
+  - tag: FIT-301
+    name: RO permeate flow
+    type: measurement
+    quantity: flow
+    unit: L/h
+    range: [0, 5000]
+    attach: {edge: E-C04}
+    observe: telemetry
+    basis: assumed
+    source: SRC-PLC1
+    address: {table: input, offset: 4, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 5000, eng_min: 0, eng_max: 5000}
+    freshness_s: 5
+    limits: {nominal: 2000}
+    note: Transmitter assumed. Raw counts are litres per hour.
   - tag: ST-RO
     name: RO cycle state
     type: status

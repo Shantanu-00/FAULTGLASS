@@ -10,9 +10,9 @@ files:
   - {file: "WhatsApp Image 2026-11-01 at 19.53.33.jpeg", kind: photo, shows: "Single dial close-up, needle near 1.5 kg/cm2", items: [PI-201], use: gauge reading test image}
   - {file: "WhatsApp Image 2026-11-01 at 19.53.33 (1).jpeg", kind: photo, shows: "Single dial close-up", items: [PI-204], use: gauge reading test image}
   - {file: "Screenshot From 2026-11-02 11-50-26.png", kind: photo, shows: "Frame from a pan across the bank: eight housings, front row and back row, gauge on every dome", items: [PI-201, PI-202, PI-203, PI-204, PI-205, PI-206, PI-207, PI-208], use: whole-bank segmentation and scene reference}
-  - {file: "WhatsApp Video 2026-11-01 at 19.53.07.mp4", kind: video, seconds: 2.7, shows: "Hand turning a yellow lever ball valve on a media vessel pipe", items: [V-111], use: valve angle sequence}
-  - {file: "WhatsApp Video 2026-11-01 at 19.53.11.mp4", kind: video, seconds: 14.4, shows: "Lever on the pipe marked 14 swung through its positions, drain valve with yellow lever below", items: [V-111, V-115], use: valve angle sequence}
-  - {file: "WhatsApp Video 2026-11-01 at 19.53.13.mp4", kind: video, seconds: 4.4, shows: "Lever on a pipe marked 1A/14 turned", items: [V-111], use: valve angle sequence}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.07.mp4", kind: video, seconds: 2.7, shows: "Hand turning a yellow lever ball valve on a vessel pipe; which valve it is cannot be told from the clip", items: [V-113], use: valve angle sequence}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.11.mp4", kind: video, seconds: 14.4, shows: "Lever on the pipe marked 14 swung through its positions, drain valve with yellow lever below", items: [V-113], use: valve angle sequence}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.13.mp4", kind: video, seconds: 4.4, shows: "Lever on a pipe marked 1A/14 turned", items: [V-113], use: valve angle sequence}
   - {file: "WhatsApp Video 2026-11-01 at 19.53.18.mp4", kind: video, seconds: 20.5, shows: "Floor only, no equipment", items: [], use: none}
   - {file: "WhatsApp Video 2026-11-01 at 19.53.20.mp4", kind: video, seconds: 6.2, shows: "Wide view of Leg 1: HMI touchscreen on a pedestal, teal instrument boxes above the RO rack, large stainless tank on legs", items: [HMI-001, RO-301, TK-401], use: scene reference}
   - {file: "WhatsApp Video 2026-11-01 at 19.53.22.mp4", kind: video, seconds: 4.8, shows: "Vertical multistage pump with black motor and spec label", items: [P-301], use: scene reference}

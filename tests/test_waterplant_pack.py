@@ -36,7 +36,10 @@ def test_front_gauges_are_expected_above_20_psi_and_back_below(pack):
 def test_only_the_plc_points_are_streamed(pack):
     o = observability(pack)
     assert sorted(o["streamed"]) == sorted(
-        ["YS-101", "YS-301", "YS-401", "LSL-101", "LSH-401", "PSL-301", "PSH-301", "AIT-301", "ST-RO", "FC-RO"]
+        [
+            "YS-101", "YS-301", "YS-401", "LSL-101", "LSH-401", "PSL-301", "PSH-301", "AIT-301",
+            "PIT-301", "PIT-302", "JI-301", "FIT-301", "ST-RO", "FC-RO",
+        ]
     )
     assert "FI-301" in o["field_only"] and "FI-302" in o["field_only"]
 
@@ -99,5 +102,17 @@ def test_unverified_items_are_flagged_not_hidden(pack):
 
 def test_rows_import_ready(pack):
     rows = to_rows(pack, str(uuid.uuid4()), content_hash(pack))
-    assert len(rows["instruments"]) == 22 and len(rows["plant_edges"]) == len(pack.edges)
+    assert len(rows["instruments"]) == 26 and len(rows["plant_edges"]) == len(pack.edges)
     assert rows["plant_releases"][0]["layout"]["approximate"] is True
+
+
+def test_scene_export_carries_structure_but_no_readings_or_limits(pack):
+    from app.plant.scene import scene_model
+
+    m = scene_model(pack)
+    assert len(m["assets"]) == len(pack.assets) and len(m["edges"]) == len(pack.edges)
+    for i in m["instruments"]:
+        assert "limits" not in i and "nominal" not in str(i)
+    blind = {a["id"] for a in m["assets"] if a["blind"]}
+    assert {"CB-1F", "CB-3B", "MGF-101"} <= blind
+    assert set(m["layout"]["placements"]) >= {a.id for a in pack.assets if a.role != "group"}
