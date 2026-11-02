@@ -344,6 +344,40 @@ function renderInvestigation(detail) {
             h('div', { class: 'tags' }, [...(task.asset_ids || []), ...(task.tags || [])].map((t) => h('code', {}, t))),
             h('span', { class: 'muted' }, task.status),
           );
+          if (task.status === 'pending' && task.kind === 'gauge_photo') {
+            const file = h('input', { type: 'file', accept: 'image/*', capture: 'environment' });
+            const photoNote = h('input', { type: 'text', placeholder: 'Operator note (optional)' });
+            const result = h('div', { class: 'muted' });
+            card.append(
+              h('div', { class: 'task-form' },
+                file,
+                photoNote,
+                h('button', {
+                  onclick: async () => {
+                    if (!file.files?.length) { toast('Choose a gauge photo first'); return; }
+                    result.textContent = 'SAM masking gauges, Wonder reading dials…';
+                    try {
+                      const dataUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file.files[0]);
+                      });
+                      const out = await api.completeTaskPhoto(
+                        detail.incident.incident_id, task.id, String(dataUrl).split(',')[1], photoNote.value);
+                      result.textContent = out.completed
+                        ? `Read ${out.readings_stored} gauge(s): ${out.readings.map((r) => `${r.tag}=${r.value ?? '—'} (${r.status})`).join(', ')}`
+                        : (out.reason || 'Could not read the gauges; re-shoot.');
+                      if (out.completed) { toast('Gauge evidence stored — investigation resumed'); refreshIncidents(); }
+                    } catch (error) {
+                      result.textContent = error.message;
+                    }
+                  },
+                }, 'Submit gauge photo'),
+                result,
+              ),
+            );
+          }
           if (task.status === 'pending') {
             const inputs = new Map();
             const form = h('div', { class: 'task-form' });

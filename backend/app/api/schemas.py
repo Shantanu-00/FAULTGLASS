@@ -43,6 +43,13 @@ class CompleteTaskIn(BaseModel):
     note: str = Field(default="", max_length=1000)
 
 
+class PhotoTaskIn(BaseModel):
+    """Field-task completion from a photo: SAM + Wonder produce the readings."""
+
+    image_base64: str = Field(min_length=100, max_length=30_000_000)
+    note: str = Field(default="", max_length=1000)
+
+
 class EventIn(BaseModel):
     kind: Literal["scenario", "valve_action"]
     payload: dict[str, Any] = Field(default_factory=dict)

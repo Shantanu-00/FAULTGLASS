@@ -31,5 +31,7 @@ export const api = {
   incident: (id) => request('GET', `/v1/incidents/${encodeURIComponent(id)}`),
   completeTask: (incidentId, taskId, readings, note) =>
     request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/complete`, { readings, note }),
+  completeTaskPhoto: (incidentId, taskId, imageBase64, note) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/photo`, { image_base64: imageBase64, note }),
   streamUrl: () => `${BASE}/v1/telemetry/stream`,
 };

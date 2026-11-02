@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from ..repositories.runs import ActiveRunExists
 from ..repositories.telemetry import Reading
-from .schemas import CompleteTaskIn, CreateRun, EventIn
+from .schemas import CompleteTaskIn, CreateRun, EventIn, PhotoTaskIn
 from .sse import telemetry_events
 
 router = APIRouter(prefix="/v1")
@@ -201,9 +201,87 @@ async def complete_task(request: Request, incident_id: str, task_id: UUID, body:
     await state.telemetry.insert_field_readings(
         state.plant_id, readings, run_id=run.id if run else None)
     await inv.complete_field_task(task_id, {"readings": body.readings, "note": body.note, "source": "manual_entry"})
+    await _resume(state, incident_id)
+    return {"completed": True, "readings_stored": len(readings)}
+
+
+async def _resume(state, incident_id: str) -> None:
+    inv = state.investigation
     checkpoint = await inv.checkpoint(incident_id)
     if checkpoint and checkpoint["status"] == "waiting_field":
         await inv.save_checkpoint(
             incident_id, status="investigating", steps_used=checkpoint["steps_used"],
             continuation=checkpoint["continuation"], focus=checkpoint["focus"], model=checkpoint["model"])
-    return {"completed": True, "readings_stored": len(readings)}
+
+
+@router.post("/incidents/{incident_id}/tasks/{task_id}/photo")
+async def complete_task_photo(request: Request, incident_id: str, task_id: UUID, body: PhotoTaskIn):
+    """Gauge photo -> SAM masks -> zoomed crops -> Wonder reads -> field telemetry.
+
+    Only cross-checked (agree) or single-source readings are stored; uncertain
+    or unreadable gauges are reported and the task stays completable by a
+    re-shoot. The original photo is kept under uploads/ (git-ignored) with its
+    hash recorded on the task.
+    """
+    import base64
+    import hashlib
+    import os
+    from pathlib import Path
+
+    state = request.app.state
+    inv = state.investigation
+    tasks = [t for t in await inv.field_tasks(incident_id) if str(t["id"]) == str(task_id)]
+    if not tasks:
+        raise HTTPException(404, "unknown task for this incident")
+    task = tasks[0]
+    if task["status"] != "pending":
+        raise HTTPException(409, "task is not pending")
+    if task["kind"] != "gauge_photo":
+        raise HTTPException(422, "photo submission is only for gauge_photo tasks")
+    try:
+        image_bytes = base64.b64decode(body.image_base64, validate=True)
+    except ValueError:
+        raise HTTPException(422, "image_base64 is not valid base64")
+    digest = hashlib.sha256(image_bytes).hexdigest()
+    upload_dir = Path(os.environ.get("UPLOAD_DIR", "uploads"))
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    photo_path = upload_dir / f"{task_id}.jpg"
+    photo_path.write_bytes(image_bytes)
+
+    from ..evidence.gauge import GaugePipeline, WonderGaugeReader
+    from ..evidence.sam import SamClient, SamError
+    from ..investigator.__main__ import meta_key
+    from ..investigator.wonder import WonderClient
+
+    by_tag = {i.tag: i for i in state.pack.instruments}
+    expected = [by_tag[t] for t in task["tags"] if t in by_tag]
+    sam = SamClient(meta_key())
+    wonder = WonderClient(meta_key())
+    try:
+        pipeline = GaugePipeline(sam=sam, reader=WonderGaugeReader(wonder))
+        results = await pipeline.process(image_bytes, expected)
+    except SamError as exc:
+        raise HTTPException(502, f"segmentation failed: {exc}")
+    finally:
+        await sam.aclose()
+        await wonder.aclose()
+
+    accepted = {r.tag: r.value for r in results if r.value is not None and r.status in ("agree", "single_source")}
+    details = [r.to_json() for r in results]
+    if not accepted:
+        return {"completed": False, "readings": details,
+                "reason": "No gauge could be read with confidence; re-shoot closer, square-on, needle visible."}
+    now = dt.datetime.now(dt.timezone.utc)
+    run = await state.runs.active(state.plant_id)
+    readings = [
+        Reading(tag=tag, observed_at=now, value=value, raw_value=None,
+                unit=by_tag[tag].unit, quality="good", source_id="field_photo")
+        for tag, value in accepted.items()
+    ]
+    await state.telemetry.insert_field_readings(state.plant_id, readings, run_id=run.id if run else None)
+    await inv.complete_field_task(task_id, {
+        "readings": accepted, "note": body.note, "source": "gauge_photo",
+        "photo_sha256": digest, "photo_path": str(photo_path), "gauges": details,
+    })
+    await _resume(state, incident_id)
+    return {"completed": True, "readings_stored": len(readings), "readings": details}

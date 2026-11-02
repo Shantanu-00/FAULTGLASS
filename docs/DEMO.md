@@ -70,7 +70,7 @@ Muse Image is not used: it generates images and does not read them.
 1. Done: simulator and PLC emulator, edge streamer, ingest API, operations console (telemetry).
 2. Spark watcher writing signal flags: **done** (Baseten, see [SPARK_WATCHER.md](SPARK_WATCHER.md)); telemetry tools for Wonder: **done** (see [INVESTIGATOR.md](INVESTIGATOR.md)).
 3. SOPs and past incidents (written): **done**; memory tools and focus ledger: **done** (INVESTIGATOR.md). Field-task evidence is manual entry until step 4 replaces it.
-4. Gauge pipeline: SAM crops, Wonder read, needle-angle cross-check, front/back rule.
+4. Gauge pipeline: SAM crops, Wonder read, needle-angle cross-check, front/back rule: **done** (see [SAM_EVIDENCE.md](SAM_EVIDENCE.md); live-verified on a synthetic dial photo, real plant photo still to run).
 5. Voice pipeline and observation check.
 6. Valve pipeline: lever and pipe masks, angle, policy.
 7. Field Companion, then Operations Console (reasoning view first).
