@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AQUAPURE Bottling Plant • Otur Facility | Digital Twin (IN-MH-OTR-01)</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js (r128) and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #cbd5e1;
+      color: #0f172a;
+      user-select: none;
+    }
+
+    .font-mono-tag {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Clean Architectural Glass Overlay */
+    .plant-banner {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-pill {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(203, 213, 225, 0.8);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .section-pill:hover {
+      background: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+      transform: translateY(-1px);
+    }
+    .section-pill.active {
+      background: #0284c7;
+      border-color: #0369a1;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3);
+    }
+
+    #webgl-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      outline: none;
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  </style>
+</head>
+<body class="relative w-screen h-screen overflow-hidden bg-slate-200">
+
+  <!-- 3D WebGL Canvas -->
+  <div id="canvas-container" class="absolute inset-0 z-0">
+    <canvas id="webgl-canvas"></canvas>
+  </div>
+
+  <!-- CLEAN ARCHITECTURAL PLANT HEADER -->
+  <header class="absolute top-4 left-4 right-4 z-20 flex flex-wrap items-center justify-between gap-4 px-6 py-3 rounded-xl plant-banner">
+    <div class="flex items-center gap-3.5">
+      <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-sky-600 text-white shadow-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-900">
+            AQUAPURE PACKAGED DRINKING WATER PLANT
+          </h1>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono-tag font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            ONLINE
+          </span>
+        </div>
+        <div class="flex items-center gap-3 text-xs text-slate-500 font-mono-tag mt-0.5">
+          <span>OTUR, PUNE DIST., MH</span>
+          <span class="text-slate-300">•</span>
+          <span class="text-slate-700 font-semibold">FACILITY ID: IN-MH-OTR-01</span>
+          <span class="text-slate-300 hidden md:inline">•</span>
+          <span class="hidden md:inline">U-FLOW ARCHITECTURE (12,000 LPH)</span>
+          <span class="text-slate-300 hidden lg:inline">•</span>
+          <span class="hidden lg:inline text-slate-600">IS 14543 / ISO 22000</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLEAN SECTION NAVIGATION TABS -->
+    <nav class="flex items-center gap-1.5 overflow-x-auto py-0.5">
+      <button onclick="setCameraView('overview')" id="nav-overview" class="section-pill active px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+        <span>Overview</span>
+      </button>
+      <button onclick="setCameraView('outdoor')" id="nav-outdoor" class="section-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+        <span>Outdoor Wellhead</span>
+      </button>
+      <button onclick="setCameraView('sectionA')" id="nav-sectionA" class="section-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+        <span>Sec A: Pre-Treatment</span>
+      </button>
+      <button onclick="setCameraView('sectionB')" id="nav-sectionB" class="section-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1.5 border-amber-300">
+        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+        <span class="font-bold text-amber-900">Sec B: Cartridge Chokepoint</span>
+      </button>
+      <button onclick="setCameraView('sectionC')" id="nav-sectionC" class="section-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+        <span>Sec C: RO Skid</span>
+      </button>
+      <button onclick="setCameraView('sectionD')" id="nav-sectionD" class="section-pill px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+        <span>Sec D: Bottling</span>
+      </button>
+      <button onclick="setCameraView('topdown')" id="nav-topdown" class="section-pill px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700">
+        <span>2D U-Plan</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- YOUTUBE DEMO CONTROLLER (MINIMAL & CRISP) -->
+  <div class="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 p-1.5 rounded-xl plant-banner">
+    <div class="flex items-center gap-2 px-3 py-1 text-xs font-mono-tag font-semibold text-slate-600 border-r border-slate-200">
+      <span>DEMO STATE:</span>
+    </div>
+    <button onclick="triggerDemoState('normal')" id="demo-normal" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow-sm transition-all">
+      1. Normal Baseline (ΔP 0.2 bar)
+    </button>
+    <button onclick="triggerDemoState('choke')" id="demo-choke" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-amber-100 hover:text-amber-900 transition-all">
+      2. Silt Surge Clog (ΔP 2.4 bar)
+    </button>
+    <button onclick="triggerDemoState('switch')" id="demo-switch" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-sky-100 hover:text-sky-900 transition-all">
+      3. Standby Bleed &amp; Switch
+    </button>
+  </div>
+
+  <!-- TARGET INSPECTION CALLOUT (FOR SECTION B CHOKEPOINT DEMO) -->
+  <div id="chokepoint-card" class="absolute top-20 right-5 z-20 w-80 p-4 rounded-xl plant-banner border-amber-300 transition-all duration-300 opacity-0 pointer-events-none translate-x-4">
+    <div class="flex items-center justify-between pb-2 border-b border-slate-200">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+        <h3 class="text-xs font-bold font-mono-tag text-slate-900">SECTION B: UNINSTRUMENTED CHOKEPOINT</h3>
+      </div>
+      <button onclick="closeChokepointCard()" class="text-slate-400 hover:text-slate-700 p-0.5 rounded">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    
+    <div class="mt-3 space-y-2 text-xs">
+      <div class="flex justify-between items-center py-1 border-b border-slate-100 font-mono-tag">
+        <span class="text-slate-500">Inlet Gauge PI-201A:</span>
+        <span id="card-pi-in" class="font-bold text-slate-800">3.5 bar</span>
+      </div>
+      <div class="flex justify-between items-center py-1 border-b border-slate-100 font-mono-tag">
+        <span class="text-slate-500">Outlet Gauge PI-201B:</span>
+        <span id="card-pi-out" class="font-bold text-slate-800">3.3 bar</span>
+      </div>
+      <div class="flex justify-between items-center py-1 border-b border-slate-100 font-mono-tag">
+        <span class="text-slate-500">Differential ΔP:</span>
+        <span id="card-delta-p" class="font-bold text-emerald-600">0.2 bar (HEALTHY)</span>
+      </div>
+      <div class="flex justify-between items-center py-1 border-b border-slate-100 font-mono-tag">
+        <span class="text-slate-500">Manual Bypass HV-201:</span>
+        <span id="card-valve-status" class="font-bold text-slate-700">0° Closed (Duty Active)</span>
+      </div>
+      <div class="flex justify-between items-center py-1 font-mono-tag">
+        <span class="text-slate-500">Suction Switch PSL-201:</span>
+        <span id="card-psl-status" class="font-bold text-emerald-600">NORMAL (> 1.0 bar)</span>
+      </div>
+    </div>
+
+    <div class="mt-3 p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-snug">
+      <strong>Field Dark Zone:</strong> Analog Bourdon dials have no SCADA wires. Worker photographs dials; SAM 3.1 &amp; vision model extract needle angles.
+    </div>
+  </div>
+
+  <!-- INTERACTIVE CORNER EQUIPMENT INSPECTOR (OPENS ON CLICKING ANY OBJECT) -->
+  <aside id="corner-inspector" class="absolute bottom-20 right-5 z-30 w-84 sm:w-96 p-4 rounded-xl plant-banner border border-slate-300 transition-all duration-300 translate-y-6 opacity-0 pointer-events-none shadow-2xl">
+    <!-- Header with Close Button -->
+    <div class="flex items-start justify-between pb-2.5 border-b border-slate-200">
+      <div>
+        <span id="insp-zone" class="text-[10px] font-mono-tag font-bold tracking-wider uppercase text-sky-600">SECTION A • PRE-TREATMENT</span>
+        <h2 id="insp-name" class="text-sm font-bold text-slate-900 leading-tight mt-0.5">Multi-Grade Sand Filter</h2>
+        <span id="insp-tag" class="text-xs font-mono-tag text-slate-500">TAG: MGF-101</span>
+      </div>
+      <button onclick="closeInspector()" class="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Status & Description -->
+    <div class="mt-3 space-y-3">
+      <div class="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span id="insp-status" class="text-xs font-semibold text-emerald-800 font-mono-tag uppercase">100% OPERATIONAL / ONLINE</span>
+      </div>
+
+      <p id="insp-desc" class="text-xs text-slate-600 leading-relaxed">
+        Industrial sand and gravel media pressure vessel filtering suspended solids down to 20 microns.
+      </p>
+
+      <!-- Key Specifications Grid -->
+      <div class="pt-2 border-t border-slate-100">
+        <div class="text-[10px] font-mono-tag tracking-wider text-slate-400 uppercase mb-1.5 font-semibold">Technical Specifications</div>
+        <div id="insp-specs" class="space-y-1 text-xs text-slate-700">
+          <!-- Dynamic specs -->
+        </div>
+      </div>
+
+      <!-- Action Button: Center Camera on Machine -->
+      <div class="pt-1">
+        <button id="insp-focus-btn" onclick="focusCurrentEquipment()" class="w-full py-1.5 px-3 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-300 font-medium text-xs flex items-center justify-center gap-1.5 transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Center &amp; Orbit Machine
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- THREE.JS SCENE SCRIPT -->
+  <script>
+    // --- SIMULATION STATE ---
+    const plantState = {
+      demoMode: 'normal',
+      piInlet: 3.5,
+      piOutlet: 3.3,
+      valveAngle: 0,
+      pslTripped: false,
+      selectedId: null
+    };
+
+    // --- EQUIPMENT CATALOG FOR CLICK-TO-INSPECT CORNER MODAL ---
+    const equipmentCatalog = {
+      'wellhead': {
+        name: 'Deep Borewell Submersible Pump',
+        tag: 'PMP-001',
+        zone: 'OUTDOOR UTILITY YARD',
+        pos: [-14.0, 1.2, -7.5],
+        status: 'NOMINAL PUMPING (3.8 BAR)',
+        desc: 'Deep groundwater extraction borewell with heavy-casing collar, non-return check valve, and outdoor gate valve feeding raw water into the factory.',
+        specs: [
+          { k: 'Depth', v: '120 meters BGL' },
+          { k: 'Rated Flow', v: '12.0 m³/h @ 4.0 bar' },
+          { k: 'Motor Rating', v: '7.5 kW 3-Phase 415V' },
+          { k: 'Inlet Header', v: '200mm M.S. Flanged' }
+        ]
+      },
+      'raw-tank': {
+        name: 'Raw Water Storage & Settling Tank',
+        tag: 'TK-101',
+        zone: 'SECTION A • PRE-TREATMENT',
+        pos: [-7.0, 2.2, -7.5],
+        status: 'SETTLING & OXIDATION ACTIVE',
+        desc: 'Large heavy food-grade LLDPE tank providing hydraulic detention, particulate settling, and initial chlorine oxidation.',
+        specs: [
+          { k: 'Capacity', v: '25,000 Liters' },
+          { k: 'Level Sensor', v: 'Ultrasonic LT-01 (4-20mA)' },
+          { k: 'Chemical Dose', v: 'Sodium Hypochlorite (NaOCl)' },
+          { k: 'Material', v: 'Food-Grade Spiral LLDPE' }
+        ]
+      },
+      'feed-pump': {
+        name: 'Raw Water Booster Feed Pump',
+        tag: 'P-101',
+        zone: 'SECTION A • PRE-TREATMENT',
+        pos: [-7.0, 0.4, -3.5],
+        status: 'BOOST RUNNING (3.5 BAR)',
+        desc: 'Horizontal end-suction centrifugal pump delivering low-pressure motive energy through sand and carbon filter media beds.',
+        specs: [
+          { k: 'Head / Pressure', v: '3.6 bar (36 mWC)' },
+          { k: 'Capacity', v: '12.0 m³/h' },
+          { k: 'Casing', v: 'SS304 Centrifugal Volute' },
+          { k: 'Mounting', v: 'Concrete Inertia Base Pad' }
+        ]
+      },
+      'mgf-filter': {
+        name: 'Multi-Grade Sand Filter',
+        tag: 'MGF-101',
+        zone: 'SECTION A • PRE-TREATMENT',
+        pos: [-3.5, 2.0, -8.0],
+        status: 'FILTRATION NOMINAL (ΔP 0.2 BAR)',
+        desc: 'Graded silica sand and quartz media pressure vessel that filters suspended turbidity down to 20 microns.',
+        specs: [
+          { k: 'Shell Dimensions', v: '750 mm Dia x 1800 mm H' },
+          { k: 'Filtration Cutoff', v: '20 Microns' },
+          { k: 'Manifold', v: 'Front Flanged Multiport Valve' },
+          { k: 'Media Grades', v: 'Silex, Quartz, Coarse Sand' }
+        ]
+      },
+      'acf-filter': {
+        name: 'Activated Carbon Filter',
+        tag: 'ACF-102',
+        zone: 'SECTION A • PRE-TREATMENT',
+        pos: [-0.5, 2.0, -8.0],
+        status: 'DECHLORINATION ACTIVE (< 0.05 PPM)',
+        desc: 'High iodine-value granular activated carbon bed that strips free chlorine, organics, taste, and color to safeguard downstream RO membranes.',
+        specs: [
+          { k: 'Media Type', v: 'Acid-Washed Carbon (IV 900)' },
+          { k: 'Critical Target', v: '< 0.05 ppm Free Cl₂' },
+          { k: 'Vessel Material', v: 'FRP Structural Composite' },
+          { k: 'Empty Bed Time', v: '4.8 minutes EBCT' }
+        ]
+      },
+      'chem-skid': {
+        name: 'Pre-RO Chemical Conditioning Skid',
+        tag: 'SKD-103',
+        zone: 'SECTION A • PRE-TREATMENT',
+        pos: [-0.5, 0.6, -5.0],
+        status: 'METERING ACTIVE (ORP 165 MV)',
+        desc: 'Dual chemical conditioning injecting antiscalant to prevent calcium carbonate scaling, and SMBS to chemically neutralize residual chlorine.',
+        specs: [
+          { k: 'Antiscalant Dose', v: 'Phosphonate (3-5 ppm)' },
+          { k: 'Redox Agent', v: 'Sodium Metabisulfite (SMBS)' },
+          { k: 'Online Sensor', v: 'ORP Sensor AIT-101' },
+          { k: 'Safety Trip', v: 'Plant trips if ORP > 250 mV' }
+        ]
+      },
+      'cartridge-filters': {
+        name: 'Dual 5-Micron Cartridge Filter Housing',
+        tag: 'CF-201A / CF-201B',
+        zone: 'SECTION B • PRE-RO CHOKEPOINT',
+        pos: [-2.5, 1.2, -0.5],
+        status: 'PRIMARY DUTY IN-SERVICE',
+        desc: 'The uninstrumented analog dark zone: twin SS316 mirror housings holding 5µ spun polypropylene filter candles protecting the RO skid.',
+        specs: [
+          { k: 'Piping Setup', v: 'Duty (A) / Standby (B) Bypass' },
+          { k: 'Analog Gauges', v: 'PI-201A (Inlet), PI-201B (Outlet)' },
+          { k: 'Bypass Handle', v: 'Manual 90° Lever (HV-201)' },
+          { k: 'Safety Switch', v: 'Low-Pressure Switch (PSL-201)' }
+        ]
+      },
+      'hp-pump': {
+        name: 'Vertical High-Pressure Multistage Pump',
+        tag: 'P-301',
+        zone: 'SECTION C • RO DESALINATION',
+        pos: [1.2, 1.2, 1.0],
+        status: 'HIGH-PRESSURE BOOST (12.5 BAR)',
+        desc: 'Vertical in-line SS316 multistage centrifugal booster overcoming osmotic pressure across spiral-wound membranes.',
+        specs: [
+          { k: 'Operating Press', v: '10.0 - 15.0 bar' },
+          { k: 'Motor Rating', v: '11.0 kW / 2900 RPM' },
+          { k: 'Construction', v: 'Stainless Steel SS316 Stages' },
+          { k: 'Interlock Switch', v: 'High-Pressure Cutoff (PSH-301)' }
+        ]
+      },
+      'ro-skid': {
+        name: 'Reverse Osmosis Membrane Rack',
+        tag: 'RO-301',
+        zone: 'SECTION C • RO DESALINATION',
+        pos: [3.8, 1.2, -2.5],
+        status: 'PERMEATE FLOW 8.4 M³/H (70% RECOVERY)',
+        desc: 'Four 8040 FRP pressure vessels housing thin-film composite polyamide membranes for desalination and mineral separation.',
+        specs: [
+          { k: 'Vessels / Elements', v: '4x FRP 300 PSI / 8040 Polyamide' },
+          { k: 'Permeate Flowmeter', v: 'Digital Transmitter FIT-301' },
+          { k: 'Concentrate Line', v: 'Needle Valve NV-301 to Trench' },
+          { k: 'Permeate Quality', v: '< 20 ppm TDS (Pure)' }
+        ]
+      },
+      'pure-tank': {
+        name: 'Pure Water Sanitary SS316L Storage Tank',
+        tag: 'TK-401',
+        zone: 'SECTION D • POST-TREATMENT & BOTTLING',
+        pos: [10.5, 2.0, -6.5],
+        status: 'SANITARY HOLDING (BUFFER READY)',
+        desc: 'Mirror-polished sanitary stainless steel holding vessel buffering purified remineralized water before packaging.',
+        specs: [
+          { k: 'Material', v: 'SS316L Sanitary Mirror Finish' },
+          { k: 'Vent Filtration', v: '0.2µ Hydrophobic Filter VF-401' },
+          { k: 'Level Sensor', v: 'Continuous Transmitter LT-02' },
+          { k: 'Capacity', v: '15,000 Liters' }
+        ]
+      },
+      'uv-ozone': {
+        name: 'Polish Filter, UV Sterilizer & Ozone Skid',
+        tag: 'PF-401 / UV-401 / O3-401',
+        zone: 'SECTION D • POST-TREATMENT & BOTTLING',
+        pos: [12.0, 1.0, -4.0],
+        status: 'DUAL STERILIZATION (O₃ 0.3 PPM)',
+        desc: 'Dual physical and chemical disinfection: 0.2µ polish filter and 254nm ultraviolet chamber followed by Venturi ozone injection.',
+        specs: [
+          { k: 'Polish Cutoff', v: '0.2-Micron Absolute' },
+          { k: 'UV Dosage', v: '40 mJ/cm² (DNA Inactivation)' },
+          { k: 'Ozone Generator', v: 'Corona Discharge with Venturi' },
+          { k: 'Target Residual', v: '0.20 - 0.40 ppm Dissolved O₃' }
+        ]
+      },
+      'rfc-machine': {
+        name: 'Rotary RFC Packaging Monoblock',
+        tag: 'RFC-501',
+        zone: 'SECTION D • CLEANROOM PACKAGING',
+        pos: [12.5, 1.2, 2.0],
+        status: 'BOTTLING ACTIVE (120 BPM)',
+        desc: 'Positive-pressure HEPA cleanroom enclosure with rotary 3-in-1 Rinser-Filler-Capper machine packaging ozonated water into PET bottles.',
+        specs: [
+          { k: 'Operations', v: 'Ozonated Rinse + Fill + Capping' },
+          { k: 'Speed', v: '120 Bottles Per Minute' },
+          { k: 'Enclosure', v: 'ISO Class 6 Cleanroom Glass' },
+          { k: 'Conveyor', v: 'SS Slatted Outfeed Track' }
+        ]
+      }
+    };
+
+    // --- THREE.JS INITIALIZATION ---
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+
+    // Natural clean architectural daylight background
+    scene.background = new THREE.Color(0xf1f5f9);
+    scene.fog = new THREE.Fog(0xf1f5f9, 45, 130);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(2, 30, 36);
+
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.minDistance = 2;
+    controls.maxDistance = 85;
+    controls.target.set(0, 1.5, 0);
+
+    // --- DAYLIGHT ILLUMINATION ---
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xcfd8dc, 0.8);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfffdf5, 1.25);
+    sunLight.position.set(-22, 38, 25);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 140;
+    const shadowSize = 30;
+    sunLight.shadow.camera.left = -shadowSize;
+    sunLight.shadow.camera.right = shadowSize;
+    sunLight.shadow.camera.top = shadowSize;
+    sunLight.shadow.camera.bottom = -shadowSize;
+    sunLight.shadow.bias = -0.0003;
+    scene.add(sunLight);
+
+    const fillLight = new THREE.DirectionalLight(0xe2e8f0, 0.4);
+    fillLight.position.set(22, 18, -20);
+    scene.add(fillLight);
+
+    // --- AUTHENTIC INDUSTRIAL MATERIALS ---
+    const mats = {
+      outdoorGravel: new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9, metalness: 0.05 }),
+      concreteFloor: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.35, metalness: 0.08 }),
+      walkwayGreen: new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.4, metalness: 0.05 }),
+      safetyYellow: new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.3, metalness: 0.1 }),
+      wallPanel: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.8, metalness: 0.1 }),
+      westWallExterior: new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.7, metalness: 0.2 }),
+      steelCol: new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.35, metalness: 0.6 }),
+      trenchGrate: new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.85 }),
+
+      ss316: new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.22, metalness: 0.9 }),
+      ss316Mirror: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.08, metalness: 0.98 }),
+      castIron: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6, metalness: 0.4 }),
+      pumpBlue: new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.35, metalness: 0.3 }),
+      valveYellow: new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.25, metalness: 0.2 }),
+      valveRed: new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.25, metalness: 0.2 }),
+      brass: new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.25, metalness: 0.8 }),
+
+      rawTankBlue: new THREE.MeshStandardMaterial({ color: 0x0369a1, roughness: 0.3, metalness: 0.1 }),
+      frpWhite: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.28, metalness: 0.08 }),
+      frpTeal: new THREE.MeshStandardMaterial({ color: 0x0f766e, roughness: 0.3, metalness: 0.1 }),
+
+      // Cleanroom glass (depthWrite false prevents depth-clipping inner objects)
+      cleanGlass: new THREE.MeshStandardMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.22, roughness: 0.1, metalness: 0.1, depthWrite: false }),
+
+      // Water Bottle Materials (Crisp visible PET plastic with water inside)
+      petPlastic: new THREE.MeshStandardMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.75, roughness: 0.12, metalness: 0.08, depthWrite: true }),
+      waterCore: new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.65, roughness: 0.05 }),
+      bottleCapBlue: new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3, metalness: 0.15 }),
+
+      // Real Industrial Piping (IS 2379 Standard)
+      pipeRaw: new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.28, metalness: 0.4 }),
+      pipePreRO: new THREE.MeshStandardMaterial({ color: 0x0d9488, roughness: 0.28, metalness: 0.4 }),
+      pipeHighPress: new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.2, metalness: 0.85 }),
+      pipePermeate: new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.25, metalness: 0.5 }),
+      pipeReject: new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.28, metalness: 0.4 }),
+      pipeBottling: new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.22, metalness: 0.5 })
+    };
+
+    // References to dynamic objects and raycasting
+    let gaugeNeedleInlet = null;
+    let gaugeNeedleOutlet = null;
+    let bypassValveHandle = null;
+    let cameraLerpTarget = null;
+    let controlsLerpTarget = null;
+
+    const interactiveObjects = [];
+    const equipmentRoots = {};
+
+    function registerEquipment(id, group) {
+      group.userData = { id: id };
+      equipmentRoots[id] = group;
+      group.traverse(child => {
+        if (child.isMesh) {
+          child.userData = { id: id };
+          interactiveObjects.push(child);
+        }
+      });
+      scene.add(group);
+    }
+
+    // --- CANVAS-BASED DIAL TEXTURE ---
+    function createGaugeDialTexture(title, maxBar) {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(256, 256, 240, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      const startAngle = (135 * Math.PI) / 180;
+      const endAngle = (405 * Math.PI) / 180;
+      const totalTicks = maxBar * 2;
+
+      for (let i = 0; i <= totalTicks; i++) {
+        const ratio = i / totalTicks;
+        const ang = startAngle + ratio * (endAngle - startAngle);
+        const isMajor = i % 2 === 0;
+
+        const r1 = 230;
+        const r2 = isMajor ? 195 : 212;
+
+        const x1 = 256 + Math.cos(ang) * r1;
+        const y1 = 256 + Math.sin(ang) * r1;
+        const x2 = 256 + Math.cos(ang) * r2;
+        const y2 = 256 + Math.sin(ang) * r2;
+
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = isMajor ? 6 : 3;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        if (isMajor) {
+          const val = (i / 2).toString();
+          const tr = 165;
+          const tx = 256 + Math.cos(ang) * tr;
+          const ty = 256 + Math.sin(ang) * tr;
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 26px "JetBrains Mono", monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(val, tx, ty);
+        }
+      }
+
+      ctx.fillStyle = '#0369a1';
+      ctx.font = 'bold 30px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(title, 256, 320);
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '500 24px "Inter", sans-serif';
+      ctx.fillText('bar / kg/cm²', 256, 355);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.anisotropy = 8;
+      return tex;
+    }
+
+    function createAnalogBourdonGauge(tag, initialPressure, isOutlet = false) {
+      const g = new THREE.Group();
+
+      const caseMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 32), mats.ss316);
+      caseMesh.rotation.x = Math.PI / 2;
+      g.add(caseMesh);
+
+      const dialTex = createGaugeDialTexture(tag, 6);
+      const dialMat = new THREE.MeshBasicMaterial({ map: dialTex });
+      const dialFace = new THREE.Mesh(new THREE.CircleGeometry(0.165, 32), dialMat);
+      dialFace.position.z = 0.042;
+      g.add(dialFace);
+
+      const glass = new THREE.Mesh(new THREE.CircleGeometry(0.17, 32), mats.cleanGlass);
+      glass.position.z = 0.045;
+      g.add(glass);
+
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.16, 16), mats.brass);
+      stem.position.set(0, -0.16, 0);
+      g.add(stem);
+
+      const needlePivot = new THREE.Group();
+      needlePivot.position.set(0, 0, 0.043);
+
+      const needleBlade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.012, 0.11, 0.004),
+        new THREE.MeshBasicMaterial({ color: 0xdc2626 })
+      );
+      needleBlade.position.y = 0.055;
+      needlePivot.add(needleBlade);
+
+      const centerPin = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.008, 16), mats.brass);
+      centerPin.rotation.x = Math.PI / 2;
+      needlePivot.add(centerPin);
+
+      g.add(needlePivot);
+
+      if (isOutlet) {
+        gaugeNeedleOutlet = needlePivot;
+      } else {
+        gaugeNeedleInlet = needlePivot;
+      }
+
+      setNeedlePressure(needlePivot, initialPressure);
+      return g;
+    }
+
+    function setNeedlePressure(pivot, pressureBar) {
+      if (!pivot) return;
+      const startAngle = 2.356;
+      const sweep = 4.712;
+      const angle = startAngle - (pressureBar / 6.0) * sweep;
+      pivot.rotation.z = angle;
+    }
+
+    // --- 1. ARCHITECTURAL BUILDING (OUTDOOR YARD & INTERIOR FACTORY) ---
+    function buildFactoryArchitecture() {
+      const bldg = new THREE.Group();
+
+      // Outdoor gravel yard (West of Wall)
+      const outdoorFloor = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 22), mats.outdoorGravel);
+      outdoorFloor.rotation.x = -Math.PI / 2;
+      outdoorFloor.position.set(-13.75, 0, 0);
+      outdoorFloor.receiveShadow = true;
+      bldg.add(outdoorFloor);
+
+      // Yard perimeter security fence
+      const fencePostGeo = new THREE.BoxGeometry(0.08, 2.0, 0.08);
+      for (let z = -11; z <= 11; z += 3.5) {
+        const post = new THREE.Mesh(fencePostGeo, mats.steelCol);
+        post.position.set(-17.4, 1.0, z);
+        bldg.add(post);
+      }
+      const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 22), mats.steelCol);
+      topRail.position.set(-17.4, 1.95, 0);
+      bldg.add(topRail);
+
+      // Factory interior floor
+      const factoryFloor = new THREE.Mesh(new THREE.PlaneGeometry(27, 22), mats.concreteFloor);
+      factoryFloor.rotation.x = -Math.PI / 2;
+      factoryFloor.position.set(3.5, 0.005, 0);
+      factoryFloor.receiveShadow = true;
+      bldg.add(factoryFloor);
+
+      const grid = new THREE.GridHelper(27, 27, 0xcfd8dc, 0xe2e8f0);
+      grid.position.set(3.5, 0.01, 0);
+      bldg.add(grid);
+
+      // Main Arterial Pedestrian Walkway (Green Epoxy)
+      const walkMain = new THREE.Mesh(new THREE.PlaneGeometry(25, 2.0), mats.walkwayGreen);
+      walkMain.rotation.x = -Math.PI / 2;
+      walkMain.position.set(3.5, 0.015, 2.5);
+      bldg.add(walkMain);
+
+      function addWalkwayStripe(x, z, w, l) {
+        const s = new THREE.Mesh(new THREE.PlaneGeometry(w, l), mats.safetyYellow);
+        s.rotation.x = -Math.PI / 2;
+        s.position.set(x, 0.02, z);
+        bldg.add(s);
+      }
+      addWalkwayStripe(3.5, 1.5, 25, 0.1);
+      addWalkwayStripe(3.5, 3.5, 25, 0.1);
+
+      // Floor Drainage Trench for RO Reject
+      const trench = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.06, 9.0), mats.trenchGrate);
+      trench.position.set(3.5, 0.025, -2.5);
+      bldg.add(trench);
+
+      // Factory West Wall (Divider at X = -10.0)
+      const westWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.5, 22), mats.westWallExterior);
+      westWall.position.set(-10, 1.75, 0);
+      westWall.castShadow = true;
+      bldg.add(westWall);
+
+      // Wall Penetration Sleeve (Pipe seal at X = -10.0, Y = 2.2, Z = -7.5)
+      const wallSleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.5, 20), mats.ss316);
+      wallSleeve.rotation.z = Math.PI / 2;
+      wallSleeve.position.set(-10, 2.2, -7.5);
+      bldg.add(wallSleeve);
+
+      // Rear Wall (North Wall at Z = -11.0)
+      const northWall = new THREE.Mesh(new THREE.BoxGeometry(27, 3.5, 0.3), mats.wallPanel);
+      northWall.position.set(3.5, 1.75, -11);
+      northWall.castShadow = true;
+      bldg.add(northWall);
+
+      // Columns
+      const colPositions = [
+        [-10, -11], [-10, 0], [-10, 11],
+        [-1, -11],  [-1, 11],
+        [8, -11],   [8, 11],
+        [17, -11],  [17, 0],  [17, 11]
+      ];
+      colPositions.forEach(([cx, cz]) => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(0.35, 5.5, 0.35), mats.steelCol);
+        col.position.set(cx, 2.75, cz);
+        col.castShadow = true;
+        bldg.add(col);
+
+        const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.25, 0.65), mats.safetyYellow);
+        plinth.position.set(cx, 0.125, cz);
+        bldg.add(plinth);
+      });
+
+      scene.add(bldg);
+    }
+
+    // --- 2. OUTDOOR UTILITY YARD: DEEP BOREWELL ---
+    function buildOutdoorBorewell() {
+      const g = new THREE.Group();
+      g.position.set(-14.0, 0, -7.5);
+
+      const apron = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 2.6), mats.castIron);
+      apron.position.y = 0.125;
+      apron.castShadow = true;
+      g.add(apron);
+
+      [[-1.1, -1.1], [1.1, -1.1], [-1.1, 1.1], [1.1, 1.1]].forEach(([bx, bz]) => {
+        const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.9, 16), mats.safetyYellow);
+        bollard.position.set(bx, 0.45, bz);
+        g.add(bollard);
+      });
+
+      const casing = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.0, 24), mats.ss316);
+      casing.position.y = 0.65;
+      casing.castShadow = true;
+      g.add(casing);
+
+      const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.48, 0.12, 24), mats.castIron);
+      flange.position.y = 1.2;
+      g.add(flange);
+
+      const valveBody = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), mats.pumpBlue);
+      valveBody.position.set(0.6, 1.25, 0);
+      g.add(valveBody);
+
+      const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.03, 12, 24), mats.brass);
+      wheel.position.set(0.6, 1.5, 0);
+      wheel.rotation.x = Math.PI / 2;
+      g.add(wheel);
+
+      const pg = createAnalogBourdonGauge("PI-101", 3.8);
+      pg.position.set(1.1, 1.25, 0.25);
+      pg.rotation.y = Math.PI / 4;
+      g.add(pg);
+
+      registerEquipment('wellhead', g);
+    }
+
+    // --- 3. SECTION A: PRE-TREATMENT BAY ---
+    function buildSectionAPreTreatment() {
+      // (1) Raw Water Storage Tank TK-101 (at X = -7.0, Z = -7.5)
+      const tkGroup = new THREE.Group();
+      tkGroup.position.set(-7.0, 0, -7.5);
+
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 3.8, 32), mats.rawTankBlue);
+      tank.position.y = 1.9;
+      tank.castShadow = true;
+      tkGroup.add(tank);
+
+      const tankRoof = new THREE.Mesh(new THREE.ConeGeometry(1.65, 0.6, 32), mats.castIron);
+      tankRoof.position.y = 3.8 + 0.3;
+      tkGroup.add(tankRoof);
+
+      // Top inlet nozzle flange
+      const inFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.15, 16), mats.ss316);
+      inFlange.position.set(-1.0, 3.9, 0);
+      tkGroup.add(inFlange);
+
+      // Bottom discharge nozzle flange
+      const outFlange = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.25, 16), mats.ss316);
+      outFlange.rotation.x = Math.PI / 2;
+      outFlange.position.set(0, 0.35, 1.6);
+      tkGroup.add(outFlange);
+
+      const lt01 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.25, 16), mats.ss316);
+      lt01.position.set(0.6, 4.2, 0);
+      tkGroup.add(lt01);
+
+      registerEquipment('raw-tank', tkGroup);
+
+      // (2) Booster Feed Pump P-101 (at X = -7.0, Z = -3.5)
+      const pmpGroup = new THREE.Group();
+      pmpGroup.position.set(-7.0, 0, -3.5);
+
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.2, 0.8), mats.safetyYellow);
+      pad.position.y = 0.1;
+      pmpGroup.add(pad);
+
+      const motor = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.6, 16), mats.pumpBlue);
+      motor.rotation.z = Math.PI / 2;
+      motor.position.set(-0.25, 0.35, 0);
+      motor.castShadow = true;
+      pmpGroup.add(motor);
+
+      const volute = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16), mats.ss316);
+      volute.rotation.x = Math.PI / 2;
+      volute.position.set(0.28, 0.35, 0);
+      pmpGroup.add(volute);
+
+      registerEquipment('feed-pump', pmpGroup);
+
+      // (3) Multi-Grade Sand Filter MGF-101 (at X = -3.5, Z = -8.0)
+      const mgfGroup = buildFilterVessel(-3.5, -8.0, mats.frpWhite, "MGF-101");
+      registerEquipment('mgf-filter', mgfGroup);
+
+      // (4) Activated Carbon Filter ACF-102 (at X = -0.5, Z = -8.0)
+      const acfGroup = buildFilterVessel(-0.5, -8.0, mats.frpTeal, "ACF-102");
+      registerEquipment('acf-filter', acfGroup);
+
+      // (5) Pre-RO Chemical Conditioning Skid SKD-103 (at X = -0.5, Z = -5.0)
+      const chemSkid = new THREE.Group();
+      chemSkid.position.set(-0.5, 0, -5.0);
+      const chemFrame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 0.9), mats.castIron);
+      chemFrame.position.y = 0.05;
+      chemSkid.add(chemFrame);
+
+      [-0.4, 0.4].forEach(xOff => {
+        const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.65, 16), mats.frpWhite);
+        drum.position.set(xOff, 0.42, 0);
+        chemSkid.add(drum);
+
+        const dosingPump = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.15), mats.pumpBlue);
+        dosingPump.position.set(xOff, 0.82, 0);
+        chemSkid.add(dosingPump);
+      });
+      registerEquipment('chem-skid', chemSkid);
+    }
+
+    function buildFilterVessel(x, z, shellMat, tag) {
+      const v = new THREE.Group();
+      v.position.set(x, 0, z);
+
+      for (let i = 0; i < 3; i++) {
+        const ang = (i * Math.PI * 2) / 3;
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.7, 12), mats.ss316);
+        leg.position.set(Math.cos(ang) * 0.75, 0.35, Math.sin(ang) * 0.75);
+        v.add(leg);
+      }
+
+      const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 2.2, 24), shellMat);
+      shell.position.y = 1.8;
+      shell.castShadow = true;
+      v.add(shell);
+
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.8, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), shellMat);
+      dome.position.y = 2.9;
+      v.add(dome);
+
+      // Front multiport valve manifold
+      const manifold = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 16), mats.ss316);
+      manifold.position.set(0.9, 1.8, 0);
+      v.add(manifold);
+
+      const mpvBox = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.3, 0.25), mats.castIron);
+      mpvBox.position.set(0.95, 2.2, 0);
+      v.add(mpvBox);
+
+      return v;
+    }
+
+    // --- 4. SECTION B: THE CRITICAL PRE-RO CHOKEPOINT (DEMO FOCUS HERO) ---
+    function buildSectionBChokepoint() {
+      const g = new THREE.Group();
+      g.position.set(-2.5, 0, -0.5);
+
+      const skidFrame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.15, 1.4), mats.ss316);
+      skidFrame.position.y = 0.075;
+      skidFrame.receiveShadow = true;
+      g.add(skidFrame);
+
+      [-1.0, 1.0].forEach(x => {
+        [-0.55, 0.55].forEach(z => {
+          const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.15, 12), mats.castIron);
+          foot.position.set(x, 0.075, z);
+          g.add(foot);
+        });
+      });
+
+      // Twin 5-Micron Housings: CF-201A (Duty) & CF-201B (Standby)
+      [-0.55, 0.55].forEach(xOff => {
+        const canister = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 1.5, 24), mats.ss316Mirror);
+        canister.position.set(xOff, 0.95, 0);
+        canister.castShadow = true;
+        g.add(canister);
+
+        const domeHead = new THREE.Mesh(new THREE.SphereGeometry(0.28, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), mats.ss316);
+        domeHead.position.set(xOff, 1.7, 0);
+        g.add(domeHead);
+
+        const tHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 12), mats.ss316);
+        tHandle.rotation.z = Math.PI / 2;
+        tHandle.position.set(xOff, 1.9, 0);
+        g.add(tHandle);
+
+        const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.08, 24), mats.ss316);
+        ring.position.set(xOff, 0.2, 0);
+        g.add(ring);
+      });
+
+      // Headers
+      const inHeader = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 16), mats.ss316);
+      inHeader.rotation.z = Math.PI / 2;
+      inHeader.position.set(0, 0.45, -0.45);
+      g.add(inHeader);
+
+      const outHeader = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 16), mats.ss316);
+      outHeader.rotation.z = Math.PI / 2;
+      outHeader.position.set(0, 0.45, 0.45);
+      g.add(outHeader);
+
+      // Hero Analog Bourdon Gauges
+      const pgInlet = createAnalogBourdonGauge("PI-201A", plantState.piInlet, false);
+      pgInlet.position.set(-0.55, 1.5, 0.38);
+      g.add(pgInlet);
+
+      const pgOutlet = createAnalogBourdonGauge("PI-201B", plantState.piOutlet, true);
+      pgOutlet.position.set(0.55, 1.5, 0.38);
+      g.add(pgOutlet);
+
+      // Manual Bypass Valve HV-201 Handle
+      const valveBody = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), mats.ss316);
+      valveBody.position.set(0, 0.95, 0.45);
+      g.add(valveBody);
+
+      const handlePivot = new THREE.Group();
+      handlePivot.position.set(0, 1.07, 0.45);
+
+      const leverNut = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.05, 16), mats.ss316);
+      handlePivot.add(leverNut);
+
+      const leverArm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, 0.28), mats.valveYellow);
+      leverArm.position.set(0, 0.03, 0.14);
+      handlePivot.add(leverArm);
+
+      const leverGrip = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.1, 16), mats.valveRed);
+      leverGrip.rotation.x = Math.PI / 2;
+      leverGrip.position.set(0, 0.03, 0.25);
+      handlePivot.add(leverGrip);
+
+      g.add(handlePivot);
+      bypassValveHandle = handlePivot;
+
+      // Low Pressure Switch PSL-201
+      const pslBox = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.14), mats.castIron);
+      pslBox.position.set(0.9, 0.8, 0.45);
+      g.add(pslBox);
+
+      registerEquipment('cartridge-filters', g);
+    }
+
+    // --- 5. SECTION C: HIGH-PRESSURE PUMP & RO SKID ---
+    function buildSectionCROSkid() {
+      // (1) High-Pressure Pump P-301
+      const pmpGroup = new THREE.Group();
+      pmpGroup.position.set(1.2, 0, 1.0);
+
+      const pmpBase = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.2, 0.9), mats.safetyYellow);
+      pmpBase.position.y = 0.1;
+      pmpGroup.add(pmpBase);
+
+      const chambers = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 20), mats.ss316);
+      chambers.position.y = 0.8;
+      chambers.castShadow = true;
+      pmpGroup.add(chambers);
+
+      const motorHead = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.8, 20), mats.pumpBlue);
+      motorHead.position.y = 1.7;
+      motorHead.castShadow = true;
+      pmpGroup.add(motorHead);
+
+      const psh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.18, 0.12), mats.castIron);
+      psh.position.set(0, 1.2, 0.25);
+      pmpGroup.add(psh);
+
+      registerEquipment('hp-pump', pmpGroup);
+
+      // (2) RO Membrane Rack RO-301
+      const rack = new THREE.Group();
+      rack.position.set(3.8, 0, -2.5);
+
+      const rackFrame = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 1.3), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.4, metalness: 0.6 }));
+      rackFrame.position.y = 1.2;
+      rack.add(rackFrame);
+
+      const tubeCoords = [
+        [0, 0.8, -0.35],
+        [0, 0.8, 0.35],
+        [0, 1.6, -0.35],
+        [0, 1.6, 0.35]
+      ];
+
+      tubeCoords.forEach(([tx, ty, tz]) => {
+        const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 3.4, 24), mats.frpWhite);
+        tube.rotation.z = Math.PI / 2;
+        tube.position.set(tx, ty, tz);
+        tube.castShadow = true;
+        rack.add(tube);
+
+        [-1.7, 1.7].forEach(ex => {
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 24), mats.ss316);
+          cap.rotation.z = Math.PI / 2;
+          cap.position.set(ex, ty, tz);
+          rack.add(cap);
+        });
+      });
+
+      const fitBody = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.24, 16), mats.ss316);
+      fitBody.position.set(2.0, 1.2, 0.35);
+      rack.add(fitBody);
+
+      const fitDisplay = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.18, 0.15), mats.pumpBlue);
+      fitDisplay.position.set(2.0, 1.4, 0.35);
+      rack.add(fitDisplay);
+
+      registerEquipment('ro-skid', rack);
+    }
+
+    // --- 6. SECTION D: SANITARY HOLDING & PACKAGING CLEANROOM ---
+    function buildSectionDPostTreatment() {
+      // (1) Pure Water Storage Tank TK-401 (at X = 10.5, Z = -6.5)
+      const tkGroup = new THREE.Group();
+      tkGroup.position.set(10.5, 0, -6.5);
+
+      const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 3.4, 32), mats.ss316Mirror);
+      tank.position.y = 1.7;
+      tank.castShadow = true;
+      tkGroup.add(tank);
+
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(1.4, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), mats.ss316Mirror);
+      dome.position.y = 3.4;
+      tkGroup.add(dome);
+
+      const vf = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16), mats.ss316);
+      vf.position.set(0.5, 4.3, 0);
+      tkGroup.add(vf);
+
+      registerEquipment('pure-tank', tkGroup);
+
+      // (2) UV & Ozone Skid (at X = 12.0, Z = -4.0)
+      const uvSkid = new THREE.Group();
+      uvSkid.position.set(12.0, 0, -4.0);
+
+      const uvChamber = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 20), mats.ss316);
+      uvChamber.rotation.x = Math.PI / 2;
+      uvChamber.position.set(0, 1.1, 0);
+      uvSkid.add(uvChamber);
+
+      const ozCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.5), mats.pumpBlue);
+      ozCabinet.position.set(1.4, 0.7, 0);
+      uvSkid.add(ozCabinet);
+
+      registerEquipment('uv-ozone', uvSkid);
+
+      // (3) Automated RFC Machine & Glass Cleanroom (at X = 12.5, Z = 2.0)
+      const cleanroom = new THREE.Group();
+      cleanroom.position.set(12.5, 0, 2.0);
+
+      // Glass Enclosure (depthWrite false ensures objects inside are rendered)
+      const roomWalls = new THREE.Mesh(new THREE.BoxGeometry(4.5, 3.2, 5.0), mats.cleanGlass);
+      roomWalls.position.y = 1.6;
+      cleanroom.add(roomWalls);
+
+      const rFrame = new THREE.Mesh(new THREE.BoxGeometry(4.55, 3.25, 5.05), new THREE.MeshStandardMaterial({ color: 0x94a3b8, wireframe: true, metalness: 0.8 }));
+      rFrame.position.y = 1.6;
+      cleanroom.add(rFrame);
+
+      const rfcBase = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.8, 3.4), mats.ss316);
+      rfcBase.position.y = 0.4;
+      cleanroom.add(rfcBase);
+
+      const carousel1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.4, 24), mats.ss316Mirror);
+      carousel1.position.set(-0.5, 1.0, 0);
+      cleanroom.add(carousel1);
+
+      const carousel2 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.4, 24), mats.ss316Mirror);
+      carousel2.position.set(0.5, 1.0, 0);
+      cleanroom.add(carousel2);
+
+      // Conveyor track
+      const conveyor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.1, 4.2), mats.castIron);
+      conveyor.position.set(1.0, 0.82, 0.5);
+      cleanroom.add(conveyor);
+
+      // REALISTIC CLEAR PET WATER BOTTLES (BODIES, WATER CORE, AND CAPS ALL VISIBLE)
+      for (let z = -1.2; z <= 1.8; z += 0.38) {
+        const bottleGroup = new THREE.Group();
+        bottleGroup.position.set(1.0, 0.87, z);
+
+        // Clear PET bottle cylinder body
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.20, 16), mats.petPlastic);
+        body.position.y = 0.10;
+        bottleGroup.add(body);
+
+        // Water column inside bottle
+        const water = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 0.16, 16), mats.waterCore);
+        water.position.y = 0.08;
+        bottleGroup.add(water);
+
+        // Tapered neck shoulder
+        const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.055, 0.06, 16), mats.petPlastic);
+        neck.position.y = 0.23;
+        bottleGroup.add(neck);
+
+        // Royal blue threaded cap
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.035, 16), mats.bottleCapBlue);
+        cap.position.y = 0.27;
+        bottleGroup.add(cap);
+
+        cleanroom.add(bottleGroup);
+      }
+
+      registerEquipment('rfc-machine', cleanroom);
+    }
+
+    // --- 7. ACCURATELY CONNECTED INDUSTRIAL PIPING NETWORK (ZERO GAPS) ---
+    function buildProcessPiping() {
+      const p = new THREE.Group();
+
+      function addPipe(points, mat, radius = 0.05) {
+        const curve = new THREE.CurvePath();
+        for (let i = 0; i < points.length - 1; i++) {
+          const v1 = new THREE.Vector3(...points[i]);
+          const v2 = new THREE.Vector3(...points[i+1]);
+          curve.add(new THREE.LineCurve3(v1, v2));
+        }
+        const geo = new THREE.TubeGeometry(curve, 32, radius, 12, false);
+        const mesh = new THREE.Mesh(geo, mat);
+        p.add(mesh);
+      }
+
+      // 1. OUTDOOR BOREWELL -> PENETRATES WEST WALL -> UP TANK EXTERIOR -> INTO TK-101 TOP INLET
+      addPipe([
+        [-13.4, 1.25, -7.5],  // Borewell discharge elbow
+        [-10.0, 2.2, -7.5],   // Passes through West Wall Sleeve
+        [-8.6, 2.2, -7.5],    // Reaches exterior of Raw Water Tank
+        [-8.6, 4.0, -7.5],    // Rises up exterior of tank
+        [-7.0, 4.0, -7.5],    // Turns over roof
+        [-7.0, 3.8, -7.5]     // Plunges into top inlet nozzle of TK-101
+      ], mats.pipeRaw, 0.06);
+
+      // 2. TK-101 BOTTOM DISCHARGE NOZZLE -> BOOSTER PUMP P-101 SUCTION
+      addPipe([
+        [-7.0, 0.35, -5.9],   // Discharge nozzle at South base of TK-101
+        [-7.0, 0.35, -3.5],   // Runs straight South
+        [-6.72, 0.35, -3.5]   // Plugs directly into P-101 suction volute
+      ], mats.pipeRaw, 0.055);
+
+      // 3. P-101 VOLUTE DISCHARGE -> OVERHEAD HEADER -> SAND FILTER MGF-101 MULTIPORT VALVE
+      addPipe([
+        [-6.72, 0.55, -3.5],  // P-101 pump vertical discharge nozzle
+        [-6.72, 2.2, -3.5],   // Rises to pipe bridge level
+        [-6.72, 2.2, -8.0],   // Runs North along bay divider
+        [-2.55, 2.2, -8.0]    // Runs East and plugs directly into MGF-101 MPV Manifold!
+      ], mats.pipeRaw, 0.055);
+
+      // 4. MGF-101 OUTLET -> ACTIVATED CARBON FILTER ACF-102 INLET
+      addPipe([
+        [-2.55, 1.8, -8.0],   // MGF-101 manifold outlet
+        [-1.6, 1.8, -8.0],
+        [-1.6, 2.2, -8.0],
+        [0.4, 2.2, -8.0]      // Plugs directly into ACF-102 MPV Manifold!
+      ], mats.pipePreRO, 0.055);
+
+      // 5. ACF-102 OUTLET -> CHEMICAL DOSING INJECTION TEE -> SECTION B CHOKEPOINT INLET
+      addPipe([
+        [0.4, 1.8, -8.0],     // ACF-102 manifold outlet
+        [0.4, 1.8, -5.0],     // Passes Chemical Skid injection tee
+        [-0.5, 1.8, -5.0],
+        [-0.5, 0.45, -2.5],
+        [-2.5, 0.45, -2.5],
+        [-2.5, 0.45, -0.95]   // Plugs directly into CF-201A/B inlet header!
+      ], mats.pipePreRO, 0.055);
+
+      // 6. SECTION B OUTLET -> HIGH-PRESSURE PUMP P-301 SUCTION
+      addPipe([
+        [-2.5, 0.45, -0.05],  // CF-201A/B outlet header
+        [0.5, 0.45, -0.05],
+        [0.5, 0.45, 1.0],
+        [1.0, 0.45, 1.0]      // Plugs directly into P-301 suction port!
+      ], mats.pipePreRO, 0.05);
+
+      // 7. P-301 DISCHARGE -> RO MEMBRANE RACK RO-301
+      addPipe([
+        [1.2, 1.2, 1.0],      // High-pressure discharge nozzle
+        [2.2, 1.2, 0.0],
+        [2.2, 1.2, -2.5]      // High-pressure feed manifold of RO tubes
+      ], mats.pipeHighPress, 0.04);
+
+      // 8. RO REJECT LINE -> FLOOR DRAIN TRENCH
+      addPipe([
+        [5.2, 0.8, -2.5],
+        [3.5, 0.8, -2.5],
+        [3.5, 0.1, -2.5]      // Dumps straight into stainless trench
+      ], mats.pipeReject, 0.04);
+
+      // 9. RO PERMEATE -> REMINERALIZATION -> PURE WATER STORAGE TANK TK-401
+      addPipe([
+        [5.2, 1.2, -2.5],
+        [7.0, 1.2, -2.5],
+        [7.0, 1.2, -6.5],
+        [9.1, 1.2, -6.5]      // Enters TK-401 sanitary tank
+      ], mats.pipePermeate, 0.04);
+
+      // 10. TK-401 DISCHARGE -> UV & OZONE -> CLEANROOM BOTTLING LINE
+      addPipe([
+        [10.5, 0.35, -5.1],   // TK-401 outlet
+        [12.0, 0.35, -5.1],
+        [12.0, 1.1, -4.7]     // Into UV Disinfection chamber
+      ], mats.pipeBottling, 0.04);
+
+      addPipe([
+        [12.0, 1.1, -3.3],    // Leaves UV/Ozone
+        [12.0, 1.1, 0.5],     // Enters RFC cleanroom cubicle
+        [12.0, 1.0, 2.0]      // Connects directly to Rinser/Filler carousel
+      ], mats.pipeBottling, 0.04);
+
+      scene.add(p);
+    }
+
+    // --- 8. RAYCASTING & INTERACTION LOGIC ---
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let hoveredObject = null;
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(interactiveObjects);
+
+      if (hits.length > 0) {
+        document.body.style.cursor = 'pointer';
+        const hitObj = hits[0].object;
+        if (hoveredObject !== hitObj) {
+          if (hoveredObject && hoveredObject.material && hoveredObject.material.emissive) {
+            hoveredObject.material.emissive.setHex(hoveredObject.userData.origEmissive || 0x000000);
+          }
+          hoveredObject = hitObj;
+          if (hoveredObject.material && hoveredObject.material.emissive) {
+            hoveredObject.userData.origEmissive = hoveredObject.material.emissive.getHex();
+            hoveredObject.material.emissive.setHex(0x0284c7);
+            hoveredObject.material.emissiveIntensity = 0.25;
+          }
+        }
+      } else {
+        document.body.style.cursor = 'default';
+        if (hoveredObject && hoveredObject.material && hoveredObject.material.emissive) {
+          hoveredObject.material.emissive.setHex(hoveredObject.userData.origEmissive || 0x000000);
+        }
+        hoveredObject = null;
+      }
+    });
+
+    window.addEventListener('click', (e) => {
+      // Ignore clicks on HTML UI banners/buttons
+      if (e.target.closest('header, aside, #chokepoint-card, .plant-banner')) return;
+
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObjects(interactiveObjects);
+
+      if (hits.length > 0) {
+        const id = hits[0].object.userData.id;
+        if (id && equipmentCatalog[id]) {
+          openInspector(id);
+        }
+      }
+    });
+
+    // --- 9. CORNER EQUIPMENT INSPECTOR MODAL ---
+    function openInspector(id) {
+      plantState.selectedId = id;
+      const eq = equipmentCatalog[id];
+      if (!eq) return;
+
+      document.getElementById('insp-name').innerText = eq.name;
+      document.getElementById('insp-tag').innerText = `TAG: ${eq.tag}`;
+      document.getElementById('insp-zone').innerText = eq.zone;
+      document.getElementById('insp-status').innerText = eq.status;
+      document.getElementById('insp-desc').innerText = eq.desc;
+
+      const specsContainer = document.getElementById('insp-specs');
+      specsContainer.innerHTML = '';
+      eq.specs.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'flex justify-between items-center py-0.5 border-b border-slate-100 font-mono-tag';
+        div.innerHTML = `<span class="text-slate-500">${s.k}:</span><span class="font-bold text-slate-800">${s.v}</span>`;
+        specsContainer.appendChild(div);
+      });
+
+      const modal = document.getElementById('corner-inspector');
+      modal.style.opacity = '1';
+      modal.style.pointerEvents = 'auto';
+      modal.style.transform = 'translateY(0)';
+
+      // If Section B was selected, also open chokepoint card
+      if (id === 'cartridge-filters') {
+        const chk = document.getElementById('chokepoint-card');
+        chk.style.opacity = '1';
+        chk.style.pointerEvents = 'auto';
+        chk.style.transform = 'translateX(0)';
+      }
+    }
+
+    function closeInspector() {
+      const modal = document.getElementById('corner-inspector');
+      modal.style.opacity = '0';
+      modal.style.pointerEvents = 'none';
+      modal.style.transform = 'translateY(1.5rem)';
+      plantState.selectedId = null;
+    }
+
+    function closeChokepointCard() {
+      const chk = document.getElementById('chokepoint-card');
+      chk.style.opacity = '0';
+      chk.style.pointerEvents = 'none';
+      chk.style.transform = 'translateX(1rem)';
+    }
+
+    function focusCurrentEquipment() {
+      if (!plantState.selectedId) return;
+      const eq = equipmentCatalog[plantState.selectedId];
+      if (!eq) return;
+      smoothPanCamera(eq.pos[0] + 3.0, eq.pos[1] + 2.2, eq.pos[2] + 4.0, eq.pos[0], eq.pos[1], eq.pos[2]);
+    }
+
+    // --- 10. CAMERA PRESETS ---
+    function smoothPanCamera(cx, cy, cz, tx, ty, tz) {
+      cameraLerpTarget = new THREE.Vector3(cx, cy, cz);
+      controlsLerpTarget = new THREE.Vector3(tx, ty, tz);
+    }
+
+    function setCameraView(viewKey) {
+      document.querySelectorAll('.section-pill').forEach(p => p.classList.remove('active'));
+      const activeBtn = document.getElementById(`nav-${viewKey}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const card = document.getElementById('chokepoint-card');
+
+      switch(viewKey) {
+        case 'overview':
+          smoothPanCamera(2, 28, 32, 0, 1.5, 0);
+          closeChokepointCard();
+          break;
+        case 'outdoor':
+          smoothPanCamera(-14, 5.5, -1.5, -12, 1.8, -7.5);
+          openInspector('wellhead');
+          break;
+        case 'sectionA':
+          smoothPanCamera(-7.0, 9.0, 1.0, -5.0, 1.8, -6.5);
+          openInspector('mgf-filter');
+          break;
+        case 'sectionB': // HERO DEMO VIEW
+          smoothPanCamera(-2.5, 2.3, 2.2, -2.5, 1.15, -0.5);
+          openInspector('cartridge-filters');
+          break;
+        case 'sectionC':
+          smoothPanCamera(3.0, 5.5, 4.5, 3.0, 1.5, -2.5);
+          openInspector('ro-skid');
+          break;
+        case 'sectionD':
+          smoothPanCamera(12.5, 6.0, 8.5, 12.5, 1.5, 1.0);
+          openInspector('rfc-machine');
+          break;
+        case 'topdown':
+          smoothPanCamera(1.5, 42, 0.001, 1.5, 0, 0);
+          closeChokepointCard();
+          closeInspector();
+          break;
+      }
+    }
+
+    // --- 11. DEMO CONTROLLER ---
+    function triggerDemoState(state) {
+      plantState.demoMode = state;
+
+      const btnNorm = document.getElementById('demo-normal');
+      const btnChoke = document.getElementById('demo-choke');
+      const btnSwitch = document.getElementById('demo-switch');
+
+      btnNorm.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all';
+      btnChoke.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all';
+      btnSwitch.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all';
+
+      const cardIn = document.getElementById('card-pi-in');
+      const cardOut = document.getElementById('card-pi-out');
+      const cardDelta = document.getElementById('card-delta-p');
+      const cardValve = document.getElementById('card-valve-status');
+      const cardPsl = document.getElementById('card-psl-status');
+
+      if (state === 'normal') {
+        btnNorm.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow-sm transition-all';
+        plantState.piInlet = 3.5;
+        plantState.piOutlet = 3.3;
+        plantState.valveAngle = 0;
+        plantState.pslTripped = false;
+
+        cardIn.innerText = '3.5 bar';
+        cardIn.className = 'font-bold text-slate-800';
+        cardOut.innerText = '3.3 bar';
+        cardOut.className = 'font-bold text-slate-800';
+        cardDelta.innerText = '0.2 bar (HEALTHY)';
+        cardDelta.className = 'font-bold text-emerald-600';
+        cardValve.innerText = '0° Closed (Duty Active)';
+        cardPsl.innerText = 'NORMAL (> 1.0 bar)';
+        cardPsl.className = 'font-bold text-emerald-600';
+      }
+      else if (state === 'choke') {
+        btnChoke.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 text-white shadow-sm transition-all';
+        plantState.piInlet = 3.6;
+        plantState.piOutlet = 1.2;
+        plantState.valveAngle = 0;
+        plantState.pslTripped = true;
+
+        setCameraView('sectionB');
+
+        cardIn.innerText = '3.6 bar';
+        cardIn.className = 'font-bold text-slate-800';
+        cardOut.innerText = '1.2 bar (COLLAPSED)';
+        cardOut.className = 'font-bold text-red-600 animate-pulse';
+        cardDelta.innerText = '2.4 bar (CRITICAL CHOKE)';
+        cardDelta.className = 'font-bold text-red-600 animate-pulse';
+        cardValve.innerText = '0° Closed (Bypass needed!)';
+        cardPsl.innerText = 'ALARM: CHATTERING (< 1.0 bar)';
+        cardPsl.className = 'font-bold text-amber-600';
+      }
+      else if (state === 'switch') {
+        btnSwitch.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-sky-600 text-white shadow-sm transition-all';
+        plantState.piInlet = 3.5;
+        plantState.piOutlet = 3.2;
+        plantState.valveAngle = Math.PI / 2;
+        plantState.pslTripped = false;
+
+        cardIn.innerText = '3.5 bar';
+        cardIn.className = 'font-bold text-slate-800';
+        cardOut.innerText = '3.2 bar (RECOVERED)';
+        cardOut.className = 'font-bold text-emerald-600';
+        cardDelta.innerText = '0.3 bar (STANDBY CF-201B)';
+        cardDelta.className = 'font-bold text-emerald-600';
+        cardValve.innerText = '90° In-Service (Standby Switched)';
+        cardPsl.innerText = 'NORMAL (> 1.0 bar)';
+        cardPsl.className = 'font-bold text-emerald-600';
+      }
+    }
+
+    // --- 12. MAIN ANIMATION LOOP ---
+    function init() {
+      buildFactoryArchitecture();
+      buildOutdoorBorewell();
+      buildSectionAPreTreatment();
+      buildSectionBChokepoint();
+      buildSectionCROSkid();
+      buildSectionDPostTreatment();
+      buildProcessPiping();
+
+      setCameraView('overview');
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (cameraLerpTarget && controlsLerpTarget) {
+        camera.position.lerp(cameraLerpTarget, 0.06);
+        controls.target.lerp(controlsLerpTarget, 0.06);
+        if (camera.position.distanceTo(cameraLerpTarget) < 0.04) {
+          cameraLerpTarget = null;
+          controlsLerpTarget = null;
+        }
+      }
+
+      controls.update();
+
+      if (gaugeNeedleInlet) setNeedlePressure(gaugeNeedleInlet, plantState.piInlet);
+      if (gaugeNeedleOutlet) setNeedlePressure(gaugeNeedleOutlet, plantState.piOutlet);
+
+      if (bypassValveHandle) {
+        bypassValveHandle.rotation.y = THREE.MathUtils.lerp(bypassValveHandle.rotation.y, plantState.valveAngle, 0.08);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.onload = init;
+  </script>
+</body>
+</html>

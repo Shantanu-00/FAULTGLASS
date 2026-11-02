@@ -1,0 +1,35 @@
+:root {
+  --ink: #1f2328;
+  --muted: #5f6b76;
+  --line: #d5dade;
+  --bg: #f6f7f8;
+  --accent: #1a6dd8;
+  --alarm: #c62828;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); }
+.bar { height: 52px; display: flex; align-items: center; gap: 16px; padding: 0 18px; background: #fff; border-bottom: 1px solid var(--line); }
+.brand { font-weight: 700; letter-spacing: 0.01em; font-size: 16px; }
+.plant { color: var(--muted); font-size: 13px; }
+.chip { font: 600 11px/1 ui-monospace, Menlo, Consolas, monospace; padding: 5px 8px; border-radius: 3px; border: 1px solid var(--line); }
+.chip.sim { color: #8a5300; border-color: #e3c08a; background: #fff8ec; }
+.views { margin-left: auto; display: flex; gap: 6px; }
+.views button, .panel button {
+  font: 500 12px/1 inherit; padding: 7px 10px; border: 1px solid var(--line); background: #fff; color: var(--ink);
+  border-radius: 3px; cursor: pointer;
+}
+.views button:hover, .panel button:hover { border-color: var(--accent); color: var(--accent); }
+.stage { position: relative; height: calc(100% - 52px); display: grid; grid-template-columns: 1fr 300px; }
+#scene { position: relative; overflow: hidden; }
+.panel { background: #fff; border-left: 1px solid var(--line); padding: 16px; overflow: auto; font-size: 13px; }
+.panel h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 10px; }
+.panel ol { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 6px; }
+.panel ol button { width: 100%; text-align: left; }
+.panel ol button.on { border-color: var(--accent); color: var(--accent); background: #f2f7fe; }
+.toggle { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.readout { font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace; border-top: 1px solid var(--line); padding-top: 10px; white-space: pre; }
+.note { color: var(--muted); font-size: 12px; }
+body.capture .panel, body.capture .bar { display: none; }
+body.capture .stage { height: 100%; grid-template-columns: 1fr; }

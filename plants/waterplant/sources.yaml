@@ -1,0 +1,25 @@
+# SIMULATED central telemetry. The real HMI/PLC could not be identified from the footage. These
+# are the points a PLC/HMI of this class holds (pump contactor feedback, interlock switches,
+# permeate TDS, cycle state and fault code). The edge reads them over Modbus TCP exactly as it
+# would from a real controller; only the server behind the socket is a simulator.
+edge_nodes:
+  - id: EDGE-01
+    name: Plant edge gateway (runs the edge streamer next to the HMI/PLC)
+
+sources:
+  - id: SRC-PLC1
+    name: HMI/PLC (simulated Modbus TCP server)
+    protocol: modbus_tcp
+    edge_node: EDGE-01
+    poll_interval_s: 1
+    endpoint: {host: 192.168.1.10, port: 502, unit_id: 1}
+    credential_ref: null
+    note: Brand and port unverified. Replace host and register map after checking the console rear panel.
+
+  - id: SRC-FIELD
+    name: Field Companion (photo, voice or typed entry by a technician)
+    protocol: manual
+    edge_node: null
+    poll_interval_s: null
+    endpoint: {}
+    credential_ref: null

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LastMeter · Plant twin preview</title>
+    <link rel="stylesheet" href="/src/preview.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">LastMeter</div>
+      <div class="plant" id="plant-name">Loading plant…</div>
+      <div class="chip sim">TELEMETRY SIMULATED</div>
+      <nav class="views" id="views"></nav>
+    </header>
+    <main class="stage">
+      <div id="scene"></div>
+      <aside class="panel">
+        <h2>Demo states</h2>
+        <ol id="states"></ol>
+        <label class="toggle"><input type="checkbox" id="obs" /> Show API / no-API points</label>
+        <div class="readout" id="readout"></div>
+        <p class="note">Preview harness for the 3D twin. Values here are the scenario's simulated numbers.</p>
+      </aside>
+    </main>
+    <script type="module" src="/src/preview.js"></script>
+  </body>
+</html>

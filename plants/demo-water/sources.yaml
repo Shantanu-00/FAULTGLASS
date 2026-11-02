@@ -1,0 +1,39 @@
+# Where readings come from. Endpoints hold no secrets: credential_ref names a secret that
+# lives on the edge node (environment or secret store), never in the pack or the database.
+edge_nodes:
+  - id: EDGE-01
+    name: Plant edge gateway (laptop or Raspberry Pi running the edge streamer)
+
+sources:
+  - id: SRC-PLC1
+    name: Main skid PLC
+    protocol: modbus_tcp
+    edge_node: EDGE-01
+    poll_interval_s: 1
+    endpoint: {host: 192.168.10.10, port: 502, unit_id: 1}
+    credential_ref: null
+    note: In the demo this is a PLC emulator fed by the simulator. Swap host for a real PLC unchanged.
+
+  - id: SRC-ANA1
+    name: Analyser panel (ORP, TDS, pH)
+    protocol: opcua
+    edge_node: EDGE-01
+    poll_interval_s: 2
+    endpoint: {url: "opc.tcp://192.168.10.20:4840", security: null}
+    credential_ref: null
+
+  - id: SRC-OZ1
+    name: Ozone controller
+    protocol: mqtt
+    edge_node: EDGE-01
+    poll_interval_s: 5
+    endpoint: {host: 192.168.10.30, port: 1883}
+    credential_ref: null
+
+  - id: SRC-FIELD
+    name: Field Companion (photo or typed entry by a technician)
+    protocol: manual
+    edge_node: null
+    poll_interval_s: null
+    endpoint: {}
+    credential_ref: null

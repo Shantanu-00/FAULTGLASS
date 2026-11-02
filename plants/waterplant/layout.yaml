@@ -1,0 +1,65 @@
+# Floor plan in metres, origin at the outer corner of the L. APPROXIMATE: estimated from the
+# footage and site description, not surveyed. Edit values here, not in the scene code.
+units: m
+approximate: true
+floor: [[0, 0], [23, 0], [23, 6], [6, 6], [6, 16], [0, 16]]
+zones:
+  L1: Leg 1, primary corridor (x 0 to 23, z 0 to 6)
+  L2: Leg 2, pre-treatment and pressure wing (x 0 to 6, z 6 to 16)
+  CORNER: The turn of the L, MCC corner and HP pump
+notes:
+  - "Cartridge bank rows: front row (z 3.6) carries the higher-pressure gauges, back row (z 2.5) the lower."
+  - "Boundary supply and filling line are drawn outside the building outline on purpose."
+placements:
+  MCC-001: {x: 0.5, z: 0.5}
+  HMI-001: {x: 6.6, z: 4.8, rot_deg: 90}
+  P-301: {x: 3.0, z: 6.9}
+  CB-1F: {x: 8.6, z: 3.6, row: front}
+  CB-1B: {x: 8.6, z: 2.5, row: back}
+  CB-2F: {x: 9.8, z: 3.6, row: front}
+  CB-2B: {x: 9.8, z: 2.5, row: back}
+  CB-3F: {x: 11.0, z: 3.6, row: front}
+  CB-3B: {x: 11.0, z: 2.5, row: back}
+  CB-4F: {x: 12.2, z: 3.6, row: front}
+  CB-4B: {x: 12.2, z: 2.5, row: back}
+  HDR-CB-IN: {x: 10.4, z: 4.5}
+  HDR-CB-OUT: {x: 10.4, z: 1.4}
+  RO-301: {x: 15.5, z: 1.0}
+  NV-301: {x: 17.6, z: 0.8}
+  DRN-301: {x: 18.2, z: 0.3}
+  OC-401: {x: 13.8, z: 5.4}
+  OZ-401: {x: 15.2, z: 5.4}
+  VI-401: {x: 17.0, z: 2.6}
+  TK-401: {x: 19.0, z: 3.2}
+  P-401: {x: 18.4, z: 5.3}
+  PF-401: {x: 19.8, z: 5.3}
+  TK-101: {x: 21.7, z: 1.45}
+  P-101: {x: 21.4, z: 4.7}
+  BW-001: {x: 25.0, z: 1.45, row: outside}
+  FILL-501: {x: 25.0, z: 5.3, row: outside}
+  MGF-101: {x: 3.0, z: 8.6}
+  TF-101: {x: 5.2, z: 8.1}
+  TB-101: {x: 0.9, z: 8.1}
+  V-111: {x: 4.4, z: 8.1}
+  V-112: {x: 0.9, z: 8.799999999999999}
+  V-113: {x: 5.2, z: 8.799999999999999}
+  V-114: {x: 3.0, z: 7.55}
+  V-115: {x: 1.6, z: 9.299999999999999}
+  ACF-102: {x: 3.0, z: 11.2}
+  TF-102: {x: 5.2, z: 10.7}
+  TB-102: {x: 0.9, z: 10.7}
+  V-221: {x: 4.4, z: 10.7}
+  V-222: {x: 0.9, z: 11.399999999999999}
+  V-223: {x: 5.2, z: 11.399999999999999}
+  V-224: {x: 3.0, z: 10.149999999999999}
+  V-225: {x: 1.6, z: 11.899999999999999}
+  SOF-103: {x: 3.0, z: 13.8}
+  TF-103: {x: 5.2, z: 13.3}
+  TB-103: {x: 0.9, z: 13.3}
+  V-331: {x: 4.4, z: 13.3}
+  V-332: {x: 0.9, z: 14.0}
+  V-333: {x: 5.2, z: 14.0}
+  V-334: {x: 3.0, z: 12.75}
+  V-335: {x: 1.6, z: 14.5}
+  DRN-101: {x: 0.4, z: 15.4}
+  PF-101: {x: 4.8, z: 15.2}

@@ -1,0 +1,221 @@
+# type: measurement | switch | status
+# observe: telemetry   -> streamed by the edge from `source` at `address`
+#          field_photo -> NO API. Visible only on site; value arrives through a field task.
+# attach: exactly one of asset | port (ASSET.port) | edge | span ([ASSET.port, ASSET.port])
+# limits: nominal / alarm / trip values in the instrument's unit. Used by deterministic alarm
+#         and recovery checks; the model reads them but does not own them.
+instruments:
+  # ---------------- digital: main skid PLC (Modbus TCP) ----------------
+  - tag: LT-01
+    name: Raw water tank level
+    type: measurement
+    quantity: level
+    unit: "%"
+    range: [0, 100]
+    attach: {asset: TK-101}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: input, offset: 0, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 27648, eng_min: 0, eng_max: 100}
+    freshness_s: 5
+    limits: {low_trip: 10, low_alarm: 25, nominal: 70, high_alarm: 90, high_trip: 95}
+    note: Ultrasonic 4-20 mA. Low trip is the dry-run interlock for P-101.
+
+  - tag: FIT-301
+    name: RO permeate flow
+    type: measurement
+    quantity: flow
+    unit: L/h
+    range: [0, 15000]
+    attach: {edge: E-C04}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: input, offset: 1, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 27648, eng_min: 0, eng_max: 15000}
+    freshness_s: 5
+    limits: {low_alarm: 6300, nominal: 8400, high_alarm: 9500}
+    note: Primary symptom signal. ALARM-RO-04 raises when below 75 percent of nominal.
+
+  - tag: FIT-302
+    name: RO reject flow
+    type: measurement
+    quantity: flow
+    unit: L/h
+    range: [0, 8000]
+    attach: {edge: E-C02}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: input, offset: 2, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 27648, eng_min: 0, eng_max: 8000}
+    freshness_s: 5
+    limits: {nominal: 3600}
+
+  - tag: LT-02
+    name: Pure water tank level
+    type: measurement
+    quantity: level
+    unit: "%"
+    range: [0, 100]
+    attach: {asset: TK-401}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: input, offset: 3, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 27648, eng_min: 0, eng_max: 100}
+    freshness_s: 5
+    limits: {low_alarm: 20, nominal: 60, high_alarm: 85, high_trip: 90}
+    note: High trip stops the RO skid.
+
+  - tag: PSL-201
+    name: Cartridge bank outlet low-pressure switch
+    type: switch
+    quantity: pressure_switch
+    unit: state
+    range: [0, 1]
+    attach: {port: TEE-202.out}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: discrete, offset: 0, dtype: bool}
+    freshness_s: 5
+    state_labels: {"1": OK, "0": LOW_PRESSURE_TRIP}
+    setpoint: {value: 1.0, unit: bar, direction: falling}
+    note: Trips P-301 on low suction. Chattering near 1.0 bar warns of cavitation risk.
+
+  - tag: PSH-301
+    name: HP pump discharge high-pressure switch
+    type: switch
+    quantity: pressure_switch
+    unit: state
+    range: [0, 1]
+    attach: {port: P-301.out}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: discrete, offset: 1, dtype: bool}
+    freshness_s: 5
+    state_labels: {"1": OK, "0": HIGH_PRESSURE_TRIP}
+    setpoint: {value: 18.0, unit: bar, direction: rising}
+
+  - tag: YS-101
+    name: P-101 run status
+    type: status
+    quantity: run_state
+    unit: state
+    range: [0, 1]
+    attach: {asset: P-101}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: discrete, offset: 2, dtype: bool}
+    freshness_s: 5
+    state_labels: {"1": RUNNING, "0": STOPPED}
+
+  - tag: YS-301
+    name: P-301 run status
+    type: status
+    quantity: run_state
+    unit: state
+    range: [0, 1]
+    attach: {asset: P-301}
+    observe: telemetry
+    source: SRC-PLC1
+    address: {table: discrete, offset: 3, dtype: bool}
+    freshness_s: 5
+    state_labels: {"1": RUNNING, "0": STOPPED}
+
+  # ---------------- digital: analyser panel (OPC UA) ----------------
+  - tag: AIT-101
+    name: Pre-RO ORP
+    type: measurement
+    quantity: orp
+    unit: mV
+    range: [0, 1000]
+    attach: {edge: E-A09}
+    observe: telemetry
+    source: SRC-ANA1
+    address: {node_id: "ns=2;s=Analyzers.ORP"}
+    freshness_s: 10
+    limits: {nominal: 165, high_alarm: 220, high_trip: 250}
+    note: Plant trips above 250 mV to protect RO membranes from oxidant.
+
+  - tag: AIT-301
+    name: RO permeate TDS
+    type: measurement
+    quantity: tds
+    unit: ppm
+    range: [0, 100]
+    attach: {edge: E-C04}
+    observe: telemetry
+    source: SRC-ANA1
+    address: {node_id: "ns=2;s=Analyzers.TDS"}
+    freshness_s: 10
+    limits: {nominal: 12, high_alarm: 20}
+
+  - tag: AIT-302
+    name: Post-remineralisation pH
+    type: measurement
+    quantity: ph
+    unit: pH
+    range: [0, 14]
+    attach: {edge: E-C06}
+    observe: telemetry
+    source: SRC-ANA1
+    address: {node_id: "ns=2;s=Analyzers.PH"}
+    freshness_s: 10
+    limits: {low_alarm: 6.5, nominal: 7.2, high_alarm: 8.0}
+
+  # ---------------- digital: ozone controller (MQTT) ----------------
+  - tag: AIT-401
+    name: Dissolved ozone
+    type: measurement
+    quantity: dissolved_ozone
+    unit: ppm
+    range: [0, 1]
+    attach: {edge: E-D05}
+    observe: telemetry
+    source: SRC-OZ1
+    address: {topic: plant/otur/ozone/do3, json_path: "$.ppm"}
+    freshness_s: 15
+    limits: {low_alarm: 0.2, nominal: 0.3, high_alarm: 0.4}
+
+  # ---------------- NO API: local analog gauges, read by a person ----------------
+  - tag: PI-101
+    name: Booster pump discharge pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: bar
+    range: [0, 10]
+    attach: {port: P-101.out}
+    observe: field_photo
+    limits: {low_alarm: 2.5, nominal: 3.5, high_alarm: 4.5}
+    location_note: Pipe bridge above P-101, on the discharge riser.
+
+  - tag: PDG-101
+    name: Sand filter differential pressure gauge
+    type: measurement
+    quantity: differential_pressure
+    unit: bar
+    range: [0, 2]
+    attach: {span: [MGF-101.in, MGF-101.out]}
+    observe: field_photo
+    limits: {nominal: 0.2, high_alarm: 0.8}
+    location_note: Front of MGF-101 beside the multiport valve.
+
+  - tag: PI-201A
+    name: Cartridge bank inlet pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: bar
+    range: [0, 10]
+    attach: {port: TEE-201.in}
+    observe: field_photo
+    limits: {low_alarm: 2.5, nominal: 3.5, high_alarm: 4.5}
+    location_note: Treatment room, cartridge rack, left gauge on the inlet header.
+
+  - tag: PI-201B
+    name: Cartridge bank outlet pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: bar
+    range: [0, 10]
+    attach: {port: TEE-202.out}
+    observe: field_photo
+    limits: {low_alarm: 2.5, nominal: 3.3, high_alarm: 4.5}
+    location_note: Treatment room, cartridge rack, right gauge on the outlet header.

@@ -1,0 +1,33 @@
+# Directed pipes. from/to are ASSET.port; from must be an out port and to an in port.
+# medium: raw | pretreated | chemical | highpressure | permeate | reject | pure
+edges:
+  - {id: E-A01, from: PMP-001.out,       to: TK-101.in_top,     medium: raw}
+  - {id: E-A02, from: DP-101.out,        to: TK-101.dose_in,    medium: chemical}
+  - {id: E-A03, from: TK-101.out_bottom, to: P-101.in,          medium: raw}
+  - {id: E-A04, from: P-101.out,         to: MGF-101.in,        medium: raw}
+  - {id: E-A05, from: MGF-101.out,       to: ACF-102.in,        medium: pretreated}
+  - {id: E-A06, from: ACF-102.out,       to: TEE-103.main_in,   medium: pretreated}
+  - {id: E-A07, from: DP-103A.out,       to: TEE-103.dose_a,    medium: chemical}
+  - {id: E-A08, from: DP-103B.out,       to: TEE-103.dose_b,    medium: chemical}
+  - {id: E-A09, from: TEE-103.main_out,  to: TEE-201.in,        medium: pretreated}
+
+  - {id: E-B01, from: TEE-201.out_a,     to: V-201A.in,         medium: pretreated}
+  - {id: E-B02, from: V-201A.out,        to: CF-201A.in,        medium: pretreated}
+  - {id: E-B03, from: TEE-201.out_b,     to: HV-201.in,         medium: pretreated}
+  - {id: E-B04, from: HV-201.out,        to: CF-201B.in,        medium: pretreated}
+  - {id: E-B05, from: CF-201A.out,       to: TEE-202.in_a,      medium: pretreated}
+  - {id: E-B06, from: CF-201B.out,       to: TEE-202.in_b,      medium: pretreated}
+  - {id: E-B07, from: TEE-202.out,       to: P-301.in,          medium: pretreated}
+
+  - {id: E-C01, from: P-301.out,         to: RO-301.feed_in,    medium: highpressure}
+  - {id: E-C02, from: RO-301.reject_out, to: NV-301.in,         medium: reject}
+  - {id: E-C03, from: NV-301.out,        to: DRN-301.in,        medium: reject}
+  - {id: E-C04, from: RO-301.permeate_out, to: TEE-301.main_in, medium: permeate}
+  - {id: E-C05, from: DP-301.out,        to: TEE-301.dose,      medium: chemical}
+  - {id: E-C06, from: TEE-301.main_out,  to: TK-401.in,         medium: permeate}
+
+  - {id: E-D01, from: TK-401.out_bottom, to: P-401.in,          medium: pure}
+  - {id: E-D02, from: P-401.out,         to: PF-401.in,         medium: pure}
+  - {id: E-D03, from: PF-401.out,        to: UV-401.in,         medium: pure}
+  - {id: E-D04, from: UV-401.out,        to: O3-401.in,         medium: pure}
+  - {id: E-D05, from: O3-401.out,        to: RFC-501.in,        medium: pure}

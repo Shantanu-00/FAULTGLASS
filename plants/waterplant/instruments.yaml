@@ -1,0 +1,185 @@
+# observe: telemetry   -> streamed by the edge from SRC-PLC1 (simulated).
+#          field_photo -> NO API. Dial gauges and rotameters are read by a person on site.
+# Pressure is stored in psi. Dual-scale dials list both printed scales in display_scales.
+instruments:
+  # ---------------- streamed: HMI/PLC (simulated Modbus TCP) ----------------
+  - {tag: YS-101, name: Feed pump P-101 run feedback, type: status, quantity: run_state, unit: state, range: [0, 1], attach: {asset: P-101}, observe: telemetry, basis: standard_practice, source: SRC-PLC1, address: {table: discrete, offset: 0, dtype: bool}, freshness_s: 5, state_labels: {"1": RUNNING, "0": STOPPED}, note: Contactor auxiliary contact wired to the PLC.}
+  - {tag: YS-301, name: HP pump P-301 run feedback, type: status, quantity: run_state, unit: state, range: [0, 1], attach: {asset: P-301}, observe: telemetry, basis: standard_practice, source: SRC-PLC1, address: {table: discrete, offset: 1, dtype: bool}, freshness_s: 5, state_labels: {"1": RUNNING, "0": STOPPED}}
+  - {tag: YS-401, name: Transfer pump P-401 run feedback, type: status, quantity: run_state, unit: state, range: [0, 1], attach: {asset: P-401}, observe: telemetry, basis: standard_practice, source: SRC-PLC1, address: {table: discrete, offset: 2, dtype: bool}, freshness_s: 5, state_labels: {"1": RUNNING, "0": STOPPED}}
+  - {tag: LSL-101, name: Raw tank low-level switch, type: switch, quantity: level_switch, unit: state, range: [0, 1], attach: {asset: TK-101}, observe: telemetry, basis: standard_practice, source: SRC-PLC1, address: {table: discrete, offset: 3, dtype: bool}, freshness_s: 5, state_labels: {"1": LEVEL_OK, "0": LOW_LEVEL}, note: Protects the feed pump from running dry.}
+  - {tag: LSH-401, name: Pure tank high-level switch, type: switch, quantity: level_switch, unit: state, range: [0, 1], attach: {asset: TK-401}, observe: telemetry, basis: standard_practice, source: SRC-PLC1, address: {table: discrete, offset: 4, dtype: bool}, freshness_s: 5, state_labels: {"1": BELOW_HIGH, "0": HIGH_LEVEL}}
+  - tag: PSL-301
+    name: HP pump suction low-pressure switch (LPS)
+    type: switch
+    quantity: pressure_switch
+    unit: state
+    range: [0, 1]
+    attach: {port: P-301.in}
+    observe: telemetry
+    basis: description
+    source: SRC-PLC1
+    address: {table: discrete, offset: 5, dtype: bool}
+    freshness_s: 5
+    state_labels: {"1": OK, "0": LOW_PRESSURE_TRIP}
+    setpoint: {value: 14.5, unit: psi, direction: falling}
+    note: Trips the HP pump on low suction. Chatter near 14.5 psi warns of cavitation risk.
+  - tag: PSH-301
+    name: HP pump discharge high-pressure switch (HPS)
+    type: switch
+    quantity: pressure_switch
+    unit: state
+    range: [0, 1]
+    attach: {port: P-301.out}
+    observe: telemetry
+    basis: description
+    source: SRC-PLC1
+    address: {table: discrete, offset: 6, dtype: bool}
+    freshness_s: 5
+    state_labels: {"1": OK, "0": HIGH_PRESSURE_TRIP}
+    setpoint: {value: 261, unit: psi, direction: rising}
+  - tag: AIT-301
+    name: RO permeate TDS
+    type: measurement
+    quantity: tds
+    unit: ppm
+    range: [0, 500]
+    attach: {edge: E-C04}
+    observe: telemetry
+    basis: description
+    source: SRC-PLC1
+    address: {table: input, offset: 0, dtype: uint16}
+    scaling: {raw_min: 0, raw_max: 5000, eng_min: 0, eng_max: 500}
+    freshness_s: 10
+    limits: {nominal: 15, high_alarm: 25}
+    note: Shown on the HMI. Raw counts are 0.1 ppm.
+  - tag: ST-RO
+    name: RO cycle state
+    type: status
+    quantity: cycle_state
+    unit: enum
+    range: [0, 3]
+    attach: {asset: RO-301}
+    observe: telemetry
+    basis: description
+    source: SRC-PLC1
+    address: {table: holding, offset: 0, dtype: uint16}
+    freshness_s: 5
+    state_labels: {"0": STOPPED, "1": RUNNING, "2": FAULT, "3": FLUSH}
+  - tag: FC-RO
+    name: RO fault code
+    type: status
+    quantity: fault_code
+    unit: enum
+    range: [0, 99]
+    attach: {asset: RO-301}
+    observe: telemetry
+    basis: description
+    source: SRC-PLC1
+    address: {table: holding, offset: 1, dtype: uint16}
+    freshness_s: 5
+    state_labels: {"0": NONE, "11": LOW_SUCTION_PRESSURE, "12": HIGH_DISCHARGE_PRESSURE, "13": RAW_TANK_LOW, "14": PURE_TANK_HIGH}
+    note: Fault codes are simulated; the real HMI error log decides the real values.
+
+  # ---------------- NO API: cartridge bank dial gauges (the 8 gauges in the footage) ----------------
+  - tag: PI-201
+    name: Cartridge line 1 front housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-1F}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {nominal: 24, high_alarm: 34}
+    location_note: "Cartridge bank, front row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-205
+    name: Cartridge line 1 back housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-1B}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {low_alarm: 15, nominal: 16, high_alarm: 26}
+    location_note: "Cartridge bank, back row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-202
+    name: Cartridge line 2 front housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-2F}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {nominal: 24, high_alarm: 34}
+    location_note: "Cartridge bank, front row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-206
+    name: Cartridge line 2 back housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-2B}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {low_alarm: 15, nominal: 16, high_alarm: 26}
+    location_note: "Cartridge bank, back row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-203
+    name: Cartridge line 3 front housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-3F}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {nominal: 24, high_alarm: 34}
+    location_note: "Cartridge bank, front row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-207
+    name: Cartridge line 3 back housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-3B}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {low_alarm: 15, nominal: 16, high_alarm: 26}
+    location_note: "Cartridge bank, back row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-204
+    name: Cartridge line 4 front housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-4F}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {nominal: 24, high_alarm: 34}
+    location_note: "Cartridge bank, front row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  - tag: PI-208
+    name: Cartridge line 4 back housing pressure gauge
+    type: measurement
+    quantity: pressure
+    unit: psi
+    range: [0, 100]
+    attach: {asset: CB-4B}
+    observe: field_photo
+    basis: footage
+    display_scales: [{unit: kg/cm2, min: 0, max: 7, color: black}, {unit: psi, min: 0, max: 100, color: red}]
+    limits: {low_alarm: 15, nominal: 16, high_alarm: 26}
+    location_note: "Cartridge bank, back row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+
+  # ---------------- NO API: RO teal console, analog ----------------
+  - {tag: PI-301, name: RO stage inlet pressure gauge (panel), type: measurement, quantity: pressure, unit: psi, range: [0, 300], attach: {port: "RO-301.feed_in"}, observe: field_photo, basis: description, location_note: "Teal instrument console above the RO array, inlet pressure gauge.", limits: {nominal: 180}}
+  - {tag: PI-302, name: RO reject brine pressure gauge (panel), type: measurement, quantity: pressure, unit: psi, range: [0, 300], attach: {port: "RO-301.reject_out"}, observe: field_photo, basis: description, location_note: "Teal instrument console above the RO array, reject pressure gauge.", limits: {nominal: 165}}
+  - {tag: FI-301, name: Permeate rotameter, type: measurement, quantity: flow, unit: L/h, range: [0, 3000], attach: {edge: E-C04}, observe: field_photo, basis: description, location_note: "Teal instrument console, vertical acrylic rotameter marked permeate. Read the top edge of the float.", limits: {nominal: 2000, low_alarm: 1500}}
+  - {tag: FI-302, name: Concentrate rotameter, type: measurement, quantity: flow, unit: L/h, range: [0, 1500], attach: {edge: E-C02}, observe: field_photo, basis: description, location_note: "Teal instrument console, vertical acrylic rotameter marked concentrate (reject).", limits: {nominal: 700}}

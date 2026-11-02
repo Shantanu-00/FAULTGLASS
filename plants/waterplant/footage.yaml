@@ -1,0 +1,23 @@
+# Index of the raw footage in assets/. Describes what each file shows (watched by hand, 2026-11-02)
+# and which pack items it can serve as evidence for. Audio is present in every video; the speech
+# has NOT been transcribed yet (needs Muse Voice Transcribe), so nothing below depends on it.
+# Names are the WhatsApp originals; rename once the demo cut is chosen.
+files:
+  - {file: "WhatsApp Image 2026-11-01 at 19.53.29.jpeg", kind: photo, shows: "Operator photographing the front row of housings; several gauges and a DIN-rail relay box on the wall", items: [CB-1F, CB-2F, CB-1B, CB-2B], use: scene reference}
+  - {file: "WhatsApp Image 2026-11-01 at 19.53.29 (1).jpeg", kind: photo, shows: "Single dial close-up, dual scale (red psi 0-100, black kg/cm2 0-7), handwritten label '0.2 micron' dated 02/09/2026", items: [PI-201], use: gauge reading test image}
+  - {file: "WhatsApp Image 2026-11-01 at 19.53.30.jpeg", kind: photo, shows: "Front dial large in frame with the rest of the bank behind it", items: [PI-201, PI-202, PI-205], use: segmentation test image}
+  - {file: "WhatsApp Image 2026-11-01 at 19.53.32.jpeg", kind: photo, shows: "Two dials side by side, DIN-rail devices on the wall", items: [PI-202, PI-203], use: two-gauge reading test}
+  - {file: "WhatsApp Image 2026-11-01 at 19.53.33.jpeg", kind: photo, shows: "Single dial close-up, needle near 1.5 kg/cm2", items: [PI-201], use: gauge reading test image}
+  - {file: "WhatsApp Image 2026-11-01 at 19.53.33 (1).jpeg", kind: photo, shows: "Single dial close-up", items: [PI-204], use: gauge reading test image}
+  - {file: "Screenshot From 2026-11-02 11-50-26.png", kind: photo, shows: "Frame from a pan across the bank: eight housings, front row and back row, gauge on every dome", items: [PI-201, PI-202, PI-203, PI-204, PI-205, PI-206, PI-207, PI-208], use: whole-bank segmentation and scene reference}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.07.mp4", kind: video, seconds: 2.7, shows: "Hand turning a yellow lever ball valve on a media vessel pipe", items: [V-111], use: valve angle sequence}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.11.mp4", kind: video, seconds: 14.4, shows: "Lever on the pipe marked 14 swung through its positions, drain valve with yellow lever below", items: [V-111, V-115], use: valve angle sequence}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.13.mp4", kind: video, seconds: 4.4, shows: "Lever on a pipe marked 1A/14 turned", items: [V-111], use: valve angle sequence}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.18.mp4", kind: video, seconds: 20.5, shows: "Floor only, no equipment", items: [], use: none}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.20.mp4", kind: video, seconds: 6.2, shows: "Wide view of Leg 1: HMI touchscreen on a pedestal, teal instrument boxes above the RO rack, large stainless tank on legs", items: [HMI-001, RO-301, TK-401], use: scene reference}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.22.mp4", kind: video, seconds: 4.8, shows: "Vertical multistage pump with black motor and spec label", items: [P-301], use: scene reference}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.25.mp4", kind: video, seconds: 11.3, shows: "Operator with phone in front of the cartridge bank, tall housings on a steel frame", items: [CB-1F, CB-2F, CB-3F, CB-4F], use: field task scene, Marathi speech candidate}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.28.mp4", kind: video, seconds: 11.4, shows: "Operator photographing the gauges with a phone", items: [PI-201, PI-202, PI-203, PI-204], use: field task scene, Marathi speech candidate}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.31.mp4", kind: video, seconds: 5.5, shows: "Slow pan across the gauge bank ending on one dial", items: [PI-201, PI-205], use: whole-bank reading}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.34.mp4", kind: video, seconds: 4.9, shows: "Two gauges close together", items: [PI-202, PI-206], use: gauge reading test}
+  - {file: "WhatsApp Video 2026-11-01 at 19.53.35.mp4", kind: video, seconds: 5.2, shows: "Walk toward the corner: white ozone and oxygen cabinets, RO rack with teal boxes, stainless pure tank", items: [OC-401, OZ-401, RO-301, TK-401], use: scene reference}

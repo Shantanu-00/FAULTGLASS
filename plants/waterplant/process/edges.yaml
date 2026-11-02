@@ -1,0 +1,65 @@
+# Directed pipes. from/to are ASSET.port. basis: footage | description | standard_practice | assumed
+edges:
+  - {id: E-I01, from: BW-001.out, to: TK-101.in,  medium: raw, basis: description}
+  - {id: E-I02, from: TK-101.out, to: P-101.in,   medium: raw, basis: description}
+
+  - {id: E-M101, from: P-101.out, to: TF-101.in, medium: raw, basis: standard_practice}
+  - {id: E-M102, from: TF-101.out_service,  to: V-111.in, medium: raw, basis: standard_practice}
+  - {id: E-M103, from: V-111.out, to: MGF-101.top_in, medium: raw, basis: standard_practice}
+  - {id: E-M104, from: TF-101.out_backwash, to: V-113.in, medium: backwash, basis: standard_practice}
+  - {id: E-M105, from: V-113.out, to: MGF-101.bottom_in, medium: backwash, basis: standard_practice}
+  - {id: E-M106, from: MGF-101.bottom_out, to: TB-101.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M107, from: TB-101.out_service, to: V-112.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M108, from: TB-101.out_rinse, to: V-115.in, medium: drain, basis: standard_practice}
+  - {id: E-M109, from: V-115.out, to: DRN-101.rinse1, medium: drain, basis: standard_practice}
+  - {id: E-M110, from: MGF-101.top_out, to: V-114.in, medium: drain, basis: standard_practice}
+  - {id: E-M111, from: V-114.out, to: DRN-101.bw1, medium: drain, basis: standard_practice}
+  - {id: E-M201, from: V-112.out, to: TF-102.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M202, from: TF-102.out_service,  to: V-221.in, medium: raw, basis: standard_practice}
+  - {id: E-M203, from: V-221.out, to: ACF-102.top_in, medium: raw, basis: standard_practice}
+  - {id: E-M204, from: TF-102.out_backwash, to: V-223.in, medium: backwash, basis: standard_practice}
+  - {id: E-M205, from: V-223.out, to: ACF-102.bottom_in, medium: backwash, basis: standard_practice}
+  - {id: E-M206, from: ACF-102.bottom_out, to: TB-102.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M207, from: TB-102.out_service, to: V-222.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M208, from: TB-102.out_rinse, to: V-225.in, medium: drain, basis: standard_practice}
+  - {id: E-M209, from: V-225.out, to: DRN-101.rinse2, medium: drain, basis: standard_practice}
+  - {id: E-M210, from: ACF-102.top_out, to: V-224.in, medium: drain, basis: standard_practice}
+  - {id: E-M211, from: V-224.out, to: DRN-101.bw2, medium: drain, basis: standard_practice}
+  - {id: E-M301, from: V-222.out, to: TF-103.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M302, from: TF-103.out_service,  to: V-331.in, medium: raw, basis: standard_practice}
+  - {id: E-M303, from: V-331.out, to: SOF-103.top_in, medium: raw, basis: standard_practice}
+  - {id: E-M304, from: TF-103.out_backwash, to: V-333.in, medium: backwash, basis: standard_practice}
+  - {id: E-M305, from: V-333.out, to: SOF-103.bottom_in, medium: backwash, basis: standard_practice}
+  - {id: E-M306, from: SOF-103.bottom_out, to: TB-103.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M307, from: TB-103.out_service, to: V-332.in, medium: pretreated, basis: standard_practice}
+  - {id: E-M308, from: TB-103.out_rinse, to: V-335.in, medium: drain, basis: standard_practice}
+  - {id: E-M309, from: V-335.out, to: DRN-101.rinse3, medium: drain, basis: standard_practice}
+  - {id: E-M310, from: SOF-103.top_out, to: V-334.in, medium: drain, basis: standard_practice}
+  - {id: E-M311, from: V-334.out, to: DRN-101.bw3, medium: drain, basis: standard_practice}
+  - {id: E-F01, from: V-332.out, to: PF-101.in, medium: pretreated, basis: description}
+  - {id: E-F02, from: PF-101.out, to: HDR-CB-IN.in, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-IN1, from: HDR-CB-IN.out1, to: CB-1F.in, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-MID1, from: CB-1F.out, to: CB-1B.in, medium: pretreated, basis: assumed}
+  - {id: E-CB-OUT1, from: CB-1B.out, to: HDR-CB-OUT.in1, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-IN2, from: HDR-CB-IN.out2, to: CB-2F.in, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-MID2, from: CB-2F.out, to: CB-2B.in, medium: pretreated, basis: assumed}
+  - {id: E-CB-OUT2, from: CB-2B.out, to: HDR-CB-OUT.in2, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-IN3, from: HDR-CB-IN.out3, to: CB-3F.in, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-MID3, from: CB-3F.out, to: CB-3B.in, medium: pretreated, basis: assumed}
+  - {id: E-CB-OUT3, from: CB-3B.out, to: HDR-CB-OUT.in3, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-IN4, from: HDR-CB-IN.out4, to: CB-4F.in, medium: pretreated, basis: standard_practice}
+  - {id: E-CB-MID4, from: CB-4F.out, to: CB-4B.in, medium: pretreated, basis: assumed}
+  - {id: E-CB-OUT4, from: CB-4B.out, to: HDR-CB-OUT.in4, medium: pretreated, basis: standard_practice}
+  - {id: E-F03, from: HDR-CB-OUT.out, to: P-301.in, medium: pretreated, basis: description}
+
+  - {id: E-C01, from: P-301.out,         to: RO-301.feed_in,   medium: highpressure, basis: standard_practice}
+  - {id: E-C02, from: RO-301.reject_out, to: NV-301.in,        medium: reject,       basis: description}
+  - {id: E-C03, from: NV-301.out,        to: DRN-301.in,       medium: reject,       basis: description}
+  - {id: E-C04, from: RO-301.permeate_out, to: VI-401.in,      medium: permeate,     basis: description}
+  - {id: E-D01, from: OC-401.out,        to: OZ-401.in,        medium: oxygen,       basis: description}
+  - {id: E-D02, from: OZ-401.out,        to: VI-401.gas_in,    medium: ozone_gas,    basis: description}
+  - {id: E-D03, from: VI-401.out,        to: TK-401.in,        medium: pure,         basis: description}
+  - {id: E-D04, from: TK-401.out,        to: P-401.in,         medium: pure,         basis: description}
+  - {id: E-D05, from: P-401.out,         to: PF-401.in,        medium: pure,         basis: description}
+  - {id: E-D06, from: PF-401.out,        to: FILL-501.in,      medium: pure,         basis: description}
+

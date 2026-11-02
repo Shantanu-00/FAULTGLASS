@@ -1,0 +1,28 @@
+# Pack for the plant that was filmed (L-shaped mineral water plant). Built from the footage in
+# assets/ and the site description. Every asset, pipe and instrument carries a `basis` so the
+# investigator and the people reading it know what was seen and what was assumed.
+id: waterplant
+name: Mineral water plant, L-shaped (filmed site)
+version: 0.1.0
+data_origin: surveyed        # topology from footage and description; telemetry is simulated
+facility_id: SITE-01
+sections:
+  L1: Leg 1, primary corridor (tanks, RO, cartridge bank, ozone, HMI, MCC)
+  L2: Leg 2, pre-treatment and pressure wing (media train, pre-filter, HP pump)
+conventions:
+  pressure_unit: psi
+  pressure_note: "Dial gauges print kg/cm2 (black, 0-7) and psi (red, 0-100). 1 kg/cm2 = 14.22 psi. Readings are stored in psi."
+  flow_unit: L/h
+  valve_lever_angle_deg: "0 = lever aligned with pipe (open), 90 = perpendicular (closed)"
+  telemetry_mode: "SIMULATED. The real HMI/PLC brand and export were not legible in the footage."
+open_questions:
+  - "Cartridge bank micron rating: handwritten labels read '0.2 micron' (dated 02/09/2026); standard RO practice puts a 5 and 1 micron bank before the HP pump. Do not state a rating on screen."
+  - "Cartridge bank wiring: modelled as 4 lines of two housings in series (front then back) with one gauge on each dome. Confirm by tracing pipes."
+  - "Pre-filter (small cylinder) position: modelled between the media train and the cartridge bank."
+  - "SOP numbers on the yellow-lever valves (e.g. #14, #17) are not yet mapped to V-xxx tags."
+  - "RO vessel count and rotameter ranges."
+not_modelled:
+  - media vessel top and bottom gauges, if any
+  - ozone dosing sensor
+  - compressed air and electrical distribution detail beyond MCC and HMI as support equipment
+  - the bottling line internals

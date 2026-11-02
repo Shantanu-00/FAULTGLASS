@@ -1,0 +1,184 @@
+# Meta Model API documentation
+
+> Guides, API reference, and examples for building with Meta models. Site navigation links open website pages; documentation links in the remaining sections open Markdown.
+
+## Site navigation
+
+- [Meta Model API](https://dev.meta.ai/): Access Meta models and the developer portal.
+- [Documentation](https://dev.meta.ai/docs): Guides for building with Meta models.
+- [API reference](https://dev.meta.ai/docs/api-reference): Endpoints, parameters, and request and response schemas.
+- [Cookbook](https://dev.meta.ai/docs/cookbook): Runnable examples and recipes for building with Meta Model API.
+- [Research](https://research.meta.ai/): AI research and publications from Meta.
+- [Help Center](https://dev.meta.ai/help): Help with accounts, API keys, billing, and rate limits.
+
+## Guides
+
+- [Agent frameworks](https://dev.meta.ai/docs/agent-frameworks.md): Run your own agent loop on Muse Wonder or Muse Spark with the Claude Agent SDK or the OpenAI Codex app-server.
+- [Authentication](https://dev.meta.ai/docs/authentication.md): Create and manage API keys for authenticating requests to Meta Model API.
+- [Use Model API with coding agents](https://dev.meta.ai/docs/coding-agents.md): Connect coding agents like OpenCode, Codex, and Claude Code to Model API and drive Muse Wonder and Muse Spark for agentic coding workflows.
+- [Build a computer-use agent](https://dev.meta.ai/docs/computer-use.md): Drive Muse Wonder as a computer-use agent with the native computer tool, turning screenshots into structured mouse and keyboard actions that your own driver executes.
+- [Error handling](https://dev.meta.ai/docs/error-handling.md): Handle API errors, troubleshoot common issues, and build resilient Meta Model API integrations with proper retry logic.
+- [File handling](https://dev.meta.ai/docs/file-handling.md): Send files to the model inline in a Responses or chat completion request, or upload them once with the Files API and reference them by ID.
+- [Image generation with Muse Image](https://dev.meta.ai/docs/image-generation.md): Generate and edit images with Muse Image through a conversation: interleave text and reference images and refine across turns on the Responses API, or make one-off calls with the OpenAI-compatible images endpoints.
+- [Image understanding](https://dev.meta.ai/docs/image-understanding.md): Analyze images with text prompts using URLs, base64 encoding, or uploaded files.
+- [Media segmentation](https://dev.meta.ai/docs/media-segmentation.md): Detect, segment, and follow objects in images and video from a short text prompt, or from boxes and points, with Segment Anything Model (SAM).
+- [Models](https://dev.meta.ai/docs/models.md): Meta's model lines, including Muse Wonder, Muse Spark, Muse Image, Muse Voice Transcribe, Segment Anything Model, and the open-weight Muse Spark Open and Muse Glimmer, with where each one is available on Model API and Muse Code and how to choose.
+- [Muse Spark Open](https://dev.meta.ai/docs/muse-spark-open.md): Run Muse Spark Open on your own GPUs with the open-weight BF16 and NVFP4 checkpoints, or call it through a hosted inference provider.
+- [Run inference](https://dev.meta.ai/docs/muse-spark-open/deploy.md): Run Muse Spark Open on your own infrastructure with SGLang, vLLM, or another runtime, or call it through a hosted inference provider.
+- [Get the model](https://dev.meta.ai/docs/muse-spark-open/get-the-model.md): Compare the BF16 and NVFP4 Muse Spark Open checkpoints, download the weights from Meta or Hugging Face, and confirm the download is usable.
+- [Hardware platforms](https://dev.meta.ai/docs/muse-spark-open/hardware-platforms.md): Run Muse Spark Open on NVIDIA Blackwell, AMD Instinct, Intel Xeon 6, and Apple Mac Studio, with the checkpoints, parallelism, and sample commands for each platform.
+- [Post-training](https://dev.meta.ai/docs/muse-spark-open/post-training.md): Fine-tune Muse Spark Open with an open-source training framework on your own GPUs or with a hosted fine-tuning service.
+- [Prompting guide](https://dev.meta.ai/docs/muse-spark-open/prompting.md): Prompt Muse Spark Open with the right chat format, system prompt, reasoning strength, tool calls, and multimodal input.
+- [Recommended settings](https://dev.meta.ai/docs/muse-spark-open/settings.md): Sampling parameters, reasoning strength, context length, parallelism, and stop tokens for serving Muse Spark Open.
+- [Get started with Meta Model API and Muse Code - Muse Wonder, Muse Spark, Muse Image, Muse Voice Transcribe, Segment Anything Model, Muse Spark Open, and Muse Glimmer](https://dev.meta.ai/docs/overview.md): Build with Meta Model API and Muse Code: call Muse Wonder for complex coding and long-horizon agentic work or Muse Spark for agentic and coding work at scale, generate and edit images with Muse Image, transcribe speech with Muse Voice Transcribe, segment images and video with Segment Anything Model, or download the Muse Spark Open and Muse Glimmer open weights.
+- [Pricing and rate limits](https://dev.meta.ai/docs/pricing-rate-limits.md): Pay-as-you-go pricing on Meta Model API and Muse Code, Standard and Contributor mode, per-model prices for Muse Wonder, Muse Spark, Muse Image, Muse Voice Transcribe, and Segment Anything Model, and rate limits.
+- [Prompt caching](https://dev.meta.ai/docs/prompt-caching.md): Prompt caching is automatic — repeated prompt prefixes are served from cache to cut latency and input-token cost, with no key or setup required.
+- [Quickstart — Meta Model API](https://dev.meta.ai/docs/quickstart.md): Start fast with Muse Code, or get an API key and wire up your coding agent or SDK to make your first Muse Spark call on Meta Model API.
+- [Reasoning](https://dev.meta.ai/docs/reasoning.md): Control how much the model thinks before responding using the reasoning\_effort parameter.
+- [Segment Anything Model client libraries](https://dev.meta.ai/docs/sam/client-libraries.md): Build Segment Anything Model (SAM) box and point prompts, parse segmentation output, read confidence values, render mask and box overlays, and play segmented video with the Meta-SAM packages.
+- [Segmentation with Segment Anything Model](https://dev.meta.ai/docs/sam/overview.md): Segment images and video with Segment Anything Model (SAM) on Meta Model API.
+- [Read Segment Anything Model segmentation output](https://dev.meta.ai/docs/sam/reading-segmentation.md): Parse Segment Anything Model (SAM) wire lines into per-frame boxes and masks, track objects by id, read confidence values, decode masks to binary rasters, and follow the streaming envelope.
+- [Segmenting with prompts](https://dev.meta.ai/docs/sam/segmenting.md): Prompt Segment Anything Model (SAM) with a short noun phrase, or with boxes and points on specific objects. Covers both prompt formats, prompts on several video frames, tracking direction, confidence values, and the streaming Responses API call for images and video.
+- [SDKs and libraries](https://dev.meta.ai/docs/sdks.md): Call Meta Model API with the OpenAI SDK, the Anthropic SDK, or an OpenAI-compatible client such as LangChain or LiteLLM. No custom client required.
+- [Search grounding](https://dev.meta.ai/docs/search-grounding.md): Ground model responses in real-time web search results with inline citations.
+- [Speech to text](https://dev.meta.ai/docs/speech-to-text.md): Transcribe live audio or supported files with Muse Voice Transcribe on Meta Model API.
+- [Structured output](https://dev.meta.ai/docs/structured-output.md): Constrain model output to match a JSON schema using the response\_format parameter.
+- [Token counting](https://dev.meta.ai/docs/token-counting.md): Count the fully rendered input tokens for a request before inference, to check context-window fit.
+- [Tool calling](https://dev.meta.ai/docs/tool-calling.md): Define functions the model can invoke, execute them locally, and return results for the model to incorporate.
+- [Tool search](https://dev.meta.ai/docs/tool-search.md): Let the model discover and load tools on demand to cut token usage and preserve cache across large tool sets.
+- [Video and audio understanding](https://dev.meta.ai/docs/video-understanding.md): Analyze video and audio with text prompts—summarize clips, answer questions about footage, and transcribe speech—on the Responses API and Chat Completions.
+
+## Protocols
+
+- [Choosing an API — Meta Model API](https://dev.meta.ai/docs/protocols.md): Compare the Responses, Chat Completions, and Messages formats on Meta Model API — same models, same auth, same cost — and pick the one your code already speaks.
+- [Chat completion](https://dev.meta.ai/docs/protocols/chat-completions.md): Send messages and receive model-generated responses using the chat completions endpoint.
+- [Messages API](https://dev.meta.ai/docs/protocols/messages.md): Call Muse Spark with the Messages API, the Anthropic Messages-compatible endpoint on Meta Model API.
+- [Responses API](https://dev.meta.ai/docs/protocols/responses.md): Run agentic and multi-turn workloads on the Responses API with cross-turn reasoning replay, tool loops, search grounding, and file inputs.
+
+## API reference
+
+- [API reference — Meta Model API](https://dev.meta.ai/docs/api-reference.md): The Meta Model API HTTP reference — base URL, authentication, and the Responses, Chat Completions, Messages, Files, Models, and Status resources.
+- [Chat completions API reference](https://dev.meta.ai/docs/api-reference/chat-completions.md): API reference for the POST /v1/chat/completions endpoint.
+- [Create a chat completion](https://dev.meta.ai/docs/api-reference/chat-completions/create-chat-completion.md): API reference for generating a model response with POST /v1/chat/completions.
+- [Chat completions schemas](https://dev.meta.ai/docs/api-reference/chat-completions/schemas.md): Full schema and model definitions referenced by the Chat completions API endpoint.
+- [Files API reference](https://dev.meta.ai/docs/api-reference/files.md): API reference for file upload, list, retrieve, content, and delete endpoints.
+- [Delete a file](https://dev.meta.ai/docs/api-reference/files/delete-file.md): API reference for deleting an uploaded file with DELETE /v1/files/{file\_id}.
+- [List files](https://dev.meta.ai/docs/api-reference/files/list-files.md): API reference for listing uploaded files with GET /v1/files.
+- [Retrieve a file](https://dev.meta.ai/docs/api-reference/files/retrieve-file.md): API reference for retrieving a file's metadata with GET /v1/files/{file\_id}.
+- [Retrieve file content](https://dev.meta.ai/docs/api-reference/files/retrieve-file-content.md): API reference for downloading a file's contents with GET /v1/files/{file\_id}/content.
+- [Files schemas](https://dev.meta.ai/docs/api-reference/files/schemas.md): Full schema and model definitions referenced by the Files API endpoints.
+- [Upload a file](https://dev.meta.ai/docs/api-reference/files/upload-file.md): API reference for uploading a file with POST /v1/files.
+- [Images API reference](https://dev.meta.ai/docs/api-reference/images.md): API reference for the image generation and image editing endpoints.
+- [Generate an image](https://dev.meta.ai/docs/api-reference/images/create-image.md): API reference for generating an image with POST /v1/images/generations.
+- [Edit an image](https://dev.meta.ai/docs/api-reference/images/edit-image.md): API reference for editing or composing images with POST /v1/images/edits.
+- [Images schemas](https://dev.meta.ai/docs/api-reference/images/schemas.md): Full schema and model definitions referenced by the Images API endpoints.
+- [Messages API reference](https://dev.meta.ai/docs/api-reference/messages.md): API reference for the Anthropic-compatible /v1/messages endpoints.
+- [Count tokens](https://dev.meta.ai/docs/api-reference/messages/count-tokens.md): API reference for counting input tokens with POST /v1/messages/count\_tokens.
+- [Create a message](https://dev.meta.ai/docs/api-reference/messages/create-message.md): API reference for generating an Anthropic-compatible message with POST /v1/messages.
+- [Messages schemas](https://dev.meta.ai/docs/api-reference/messages/schemas.md): Full schema and model definitions referenced by the Anthropic-compatible Messages API endpoints.
+- [Models API reference](https://dev.meta.ai/docs/api-reference/models.md): API reference for the /v1/models endpoints.
+- [List models](https://dev.meta.ai/docs/api-reference/models/list-models.md): API reference for listing available models with GET /v1/models.
+- [Retrieve a model](https://dev.meta.ai/docs/api-reference/models/retrieve-model.md): API reference for retrieving a single model's metadata with GET /v1/models/{model}.
+- [Models schemas](https://dev.meta.ai/docs/api-reference/models/schemas.md): Full schema and model definitions referenced by the Models API endpoints.
+- [Responses API reference](https://dev.meta.ai/docs/api-reference/responses.md): API reference for the /v1/responses endpoints.
+- [Cancel a response](https://dev.meta.ai/docs/api-reference/responses/cancel-response.md): API reference for cancelling an in-progress model response with POST /v1/responses/{response\_id}/cancel.
+- [Count input tokens](https://dev.meta.ai/docs/api-reference/responses/count-input-tokens.md): API reference for counting input tokens with POST /v1/responses/input\_tokens.
+- [Create a response](https://dev.meta.ai/docs/api-reference/responses/create-response.md): API reference for creating a model response with POST /v1/responses.
+- [Delete a response](https://dev.meta.ai/docs/api-reference/responses/delete-response.md): API reference for deleting a model response with DELETE /v1/responses/{response\_id}.
+- [Retrieve a response](https://dev.meta.ai/docs/api-reference/responses/retrieve-response.md): API reference for retrieving a model response with GET /v1/responses/{response\_id}.
+- [Responses schemas](https://dev.meta.ai/docs/api-reference/responses/schemas.md): Full schema and model definitions referenced by the Responses API endpoints.
+- [Status API reference](https://dev.meta.ai/docs/api-reference/status.md): API reference for the unauthenticated /v1/status service-health endpoint.
+- [Voice API reference](https://dev.meta.ai/docs/api-reference/voice.md): API reference for the audio transcription endpoints.
+- [Transcribe in realtime](https://dev.meta.ai/docs/api-reference/voice/realtime.md): API reference for streaming transcription over a WebSocket at wss://api.meta.ai/v1/asr/realtime.
+- [Voice schemas](https://dev.meta.ai/docs/api-reference/voice/schemas.md): Full schema and model definitions referenced by the Audio API endpoints.
+- [Transcribe a recording](https://dev.meta.ai/docs/api-reference/voice/transcribe.md): API reference for transcribing an audio file with POST /v1/asr/transcribe.
+
+## Cookbook
+
+- [Cookbook](https://dev.meta.ai/docs/cookbook.md): Working recipes for building on Meta Model API and for running Muse open-weight models on your own hardware.
+- [Agent patterns — Meta Model API cookbook](https://dev.meta.ai/docs/cookbook/agent-patterns.md): Cookbook recipes for turning Muse Spark into an agent — the core loop, interleaved reasoning and tool use, context management, and validated edits.
+- [Alert fatigue copilot](https://dev.meta.ai/docs/cookbook/alert-fatigue-copilot.md): Extract grounded patterns from a noisy alert feed with Muse Spark, then probe, chat, and self-assess with strict-JSON output.
+- [Keep an image series consistent](https://dev.meta.ai/docs/cookbook/anchored-image-series.md): Use reference images and Responses API conversation state to improve character, setting, and style consistency across an image series.
+- [API fundamentals — Meta Model API cookbook](https://dev.meta.ai/docs/cookbook/api-fundamentals.md): Cookbook recipes for the Model API building blocks — chat completions, streaming, tool calling, structured output, caching, reasoning, vision, and search grounding.
+- [Audit and resume agent sessions](https://dev.meta.ai/docs/cookbook/audit-agent-sessions.md): Replay any Muse Code session exactly as it ran from an append-only event log, show who authorized each action, and resume a killed run with no duplicate side effects.
+- [Basic agent loop](https://dev.meta.ai/docs/cookbook/basic-agent-loop.md): Wire up the core perceive-decide-act agent loop on Muse Spark.
+- [Browser-verified web design](https://dev.meta.ai/docs/cookbook/browser-verified-web-design.md): Build a website with OpenCode and Muse Spark using a Playwright browser MCP, so the agent opens the page it wrote, sees the rendered result, and fixes its own visual bugs.
+- [Bundled skills](https://dev.meta.ai/docs/cookbook/bundled-skills.md): Drive the built-in /plan, /grilling, /grill-with-docs, and /taste skills end to end — plan a change, pressure-test it, record decisions, and build UI that doesn't look AI-made.
+- [Computer use](https://dev.meta.ai/docs/cookbook/computer-use.md): Build a computer-use agent on Muse Spark that reads a screenshot, decides where to click and type, and drives a desktop environment until the task is done.
+- [Computer use on macOS](https://dev.meta.ai/docs/cookbook/computer-use-macos.md): Build a native macOS computer-use agent on Muse Spark that screenshots your Mac, decides where to click and type, and drives real apps through synthetic mouse and keyboard events.
+- [Contained execution](https://dev.meta.ai/docs/cookbook/contained-execution.md): Run every Muse Code command in an OS sandbox that refuses to proceed unless containment is proven live.
+- [Deterministic replay in CI](https://dev.meta.ai/docs/cookbook/deterministic-replay.md): Turn recorded Muse Code events into a golden fixture and replay its model-context projection as a merge-blocking CI check.
+- [Error handling and retry](https://dev.meta.ai/docs/cookbook/error-handling-retry.md): Back off with jitter on Muse Spark calls and skip retries on client errors.
+- [Generating slides](https://dev.meta.ai/docs/cookbook/generating-slides.md): Generate a slide deck from a prompt or source content with Muse Spark.
+- [GitHub agent](https://dev.meta.ai/docs/cookbook/github-agent.md): Build a Muse Spark agent that acts on GitHub issues and pull requests.
+- [Build a local agent that asks before calling Muse Spark](https://dev.meta.ai/docs/cookbook/glimmer-api-agent.md): Run an agent on your own hardware with Muse Glimmer and give it a tool that calls Muse Spark on Meta Model API, gated behind an explicit approval for every request it sends.
+- [Goal tracking](https://dev.meta.ai/docs/cookbook/goal-tracking.md): Declare a goal once and a judge refuses to close the turn until every acceptance check passes.
+- [Build multi-speaker headlocked captions](https://dev.meta.ai/docs/cookbook/headlocked-speech-bubble-captions.md): Run Muse Voice Transcribe and Segment Anything Model 3.1 over a conversation video in parallel, match each diarized voice to a tracked person, and render collision-aware speech bubbles into an MP4.
+- [Edit image details across turns](https://dev.meta.ai/docs/cookbook/image-editing-with-reasoning.md): Edit a specific part of a photo with Muse Image, then refine the same image across Responses API turns.
+- [Generate, edit, and compose images](https://dev.meta.ai/docs/cookbook/image-generation-basics.md): Generate an image with Muse Image, refine it across Responses API turns, and combine it with reference images.
+- [Immutable guardrails](https://dev.meta.ai/docs/cookbook/immutable-guardrails.md): The agent can't rewrite its own rules — guardrail edits stop for human review with no standing grant, and a shell write to the same path fails read-only at the sandbox.
+- [Interleaved reasoning and tool use](https://dev.meta.ai/docs/cookbook/interleaved-reasoning-tool-use.md): Interleave reasoning with tool calls in a single Muse Spark turn.
+- [Iterative game dev](https://dev.meta.ai/docs/cookbook/iterative-game-dev.md): Build a browser game end-to-end with a coding agent on Muse Spark that fetches its own assets and verifies its work in a real browser.
+- [Long context](https://dev.meta.ai/docs/cookbook/long-context.md): Pack repo-scale context into the 1M-token Muse Spark window.
+- [Loop and cron](https://dev.meta.ai/docs/cookbook/loop-and-cron.md): Schedule recurring or one-time agent work in natural language, then view, change, or cancel it from the same chat surface.
+- [Multi-agent orchestration](https://dev.meta.ai/docs/cookbook/multi-agent-orchestration.md): Coordinate specialist sub-agents under a supervisor with Muse Spark.
+- [Multi-turn context management](https://dev.meta.ai/docs/cookbook/multi-turn-context-management.md): Manage growing context across a long Muse Spark agent run.
+- [Building with Muse Code — Meta Model API cookbook](https://dev.meta.ai/docs/cookbook/muse-code.md): Cookbook recipes for building durable agents with Muse Code — audit and resume, deterministic replay, staged approvals, sandboxing, immutable guardrails, subagent fanout, goals, bundled skills, scheduling, and side chats.
+- [Muse Image cookbook | Meta Model API](https://dev.meta.ai/docs/cookbook/muse-image.md): Recipes for generating, editing, and composing images with Muse Image, including web grounding, consistent series, and multi-turn edits.
+- [Muse Spark Open on Mac](https://dev.meta.ai/docs/cookbook/muse-spark-open-mac.md): Serve Muse Spark Open on two or four Thunderbolt-linked Mac Studio computers with MLX and the NVFP4 checkpoint.
+- [Train Muse Spark Open with reinforcement learning in TorchTitan](https://dev.meta.ai/docs/cookbook/muse-spark-open-torchtitan-rl.md): Run GRPO with the DAPO loss on Muse Spark Open with TorchTitan's RL stack, starting from its DAPO-Math recipe and plugging in your own task.
+- [Fine-tune Muse Spark Open with TorchTitan](https://dev.meta.ai/docs/cookbook/muse-spark-open-torchtitan-sft.md): Run full-parameter supervised fine-tuning of Muse Spark Open on your own text, image, and audio conversations with TorchTitan.
+- [Muse Voice Transcribe cookbook | Meta Model API](https://dev.meta.ai/docs/cookbook/muse-voice-transcribe.md): Recipes for transcribing speech with Muse Voice Transcribe, including streaming transcription, live microphone dictation, speaker diarization, one-shot file transcription, and a voice-controlled computer-use agent.
+- [One-shot game dev](https://dev.meta.ai/docs/cookbook/one-shot-game-dev.md): Build a complete 3D browser game in a single pass with Muse Spark — an AGENTS.md plus one structured prompt, no iteration loop.
+- [Chart analysis](https://dev.meta.ai/docs/cookbook/perception-chart-analysis.md): Read charts and extract structured data from images with Muse Spark.
+- [Error screenshot fix](https://dev.meta.ai/docs/cookbook/perception-error-screenshot-fix.md): Diagnose a bug from an error screenshot with Muse Spark and fix it.
+- [Perception grounding](https://dev.meta.ai/docs/cookbook/perception-grounding.md): Identify objects in a photo with Muse Spark, pin interactive dots at their pixel locations, and generate a self-contained HTML overlay.
+- [Post-training cookbook | Open-weight models](https://dev.meta.ai/docs/cookbook/post-training.md): Recipes for fine-tuning Muse open-weight models on your own data.
+- [Prompt caching](https://dev.meta.ai/docs/cookbook/prompt-caching.md): Reuse a stable prompt prefix on Muse Spark and track cached tokens.
+- [Quickstart: chat completions](https://dev.meta.ai/docs/cookbook/quickstart-chat-completions.md): Make your first Meta Model API call by pointing the OpenAI SDK at the Muse Spark base URL.
+- [Smart glasses with OpenClaw](https://dev.meta.ai/docs/cookbook/rayban-openclaw.md): Look at something and ask out loud — hands-free vision Q\&A on Ray-Ban Meta glasses with Muse Spark.
+- [Reasoning and thinking tokens](https://dev.meta.ai/docs/cookbook/reasoning-thinking-tokens.md): Control reasoning effort on Muse Spark and replay reasoning across turns.
+- [Run locally cookbook | Open-weight models](https://dev.meta.ai/docs/cookbook/run-locally.md): Recipes for serving Muse open-weight models on your own hardware.
+- [Segment Anything Model cookbook | Meta Model API](https://dev.meta.ai/docs/cookbook/sam.md): Recipes for building with Segment Anything Model on Meta Model API, including the image and video request paths, exporting transparent animated stickers, and matching diarized speech to tracked people.
+- [Segment Anything Model API basics](https://dev.meta.ai/docs/cookbook/sam-api-basics.md): Segment an image sent as a data URL or an uploaded MP4 with Segment Anything Model 3.1, streaming the response and parsing it with the official meta-sam parsers in Python or TypeScript.
+- [Sandboxed execution](https://dev.meta.ai/docs/cookbook/sandboxed-execution.md): Execute Muse Spark-generated code in a sandbox.
+- [Search-and-replace edits](https://dev.meta.ai/docs/cookbook/search-and-replace-edits.md): Apply precise search-and-replace edits to source files with Muse Spark.
+- [Ground image generation with web search](https://dev.meta.ai/docs/cookbook/search-grounded-image-generation.md): Use Muse Image web search to guide a product visualization, compose it into a photo, and refine the result across Responses API turns.
+- [Search grounding](https://dev.meta.ai/docs/cookbook/search-grounding.md): Ground Muse Spark answers in live web search results with inline citations.
+- [Side chats](https://dev.meta.ai/docs/cookbook/side-chats.md): Branch off the main thread for a side conversation that never enters the main history.
+- [Staged approvals](https://dev.meta.ai/docs/cookbook/staged-approvals.md): Split a compound shell command into stages so safe stages auto-resolve while risky ones hold for review.
+- [Streaming responses](https://dev.meta.ai/docs/cookbook/streaming-responses.md): Render Muse Spark tokens as they generate and read the final usage chunk.
+- [Structured output](https://dev.meta.ai/docs/cookbook/structured-output.md): Get schema-guaranteed JSON from Muse Spark that parses on the first try.
+- [Subagent fanout](https://dev.meta.ai/docs/cookbook/subagent-fanout.md): Fan one job out to parallel Muse Code subagents, each in its own isolated git worktree.
+- [Tool and function calling](https://dev.meta.ai/docs/cookbook/tool-function-calling.md): Detect tool calls from Muse Spark and run the execute-and-feed-back loop.
+- [Use cases — Meta Model API cookbook](https://dev.meta.ai/docs/cookbook/use-cases.md): End-to-end Model API recipes — multimodal perception, orchestration, and complete apps you can adapt, built on Muse Spark.
+- [Turn a pet video into an animated sticker pack](https://dev.meta.ai/docs/cookbook/video-to-sticker-pack.md): Track one animal through a video with Segment Anything Model 3.1, drop the background from its longest-lived track, and export transparent animated stickers ready for messaging.
+- [Vision input](https://dev.meta.ai/docs/cookbook/vision-input.md): Send images to Muse Spark by URL or base64 and get structured analysis back.
+- [Speech to text](https://dev.meta.ai/docs/cookbook/voice-api-fundamentals.md): Transcribe live audio or an existing recording with Muse Voice Transcribe — streaming over a WebSocket, dictating from a microphone, labeling speakers with diarization, or posting a whole file in one HTTP request.
+- [Control Apple Chess with Voice](https://dev.meta.ai/docs/cookbook/voice-chess-cua.md): Turn exact spoken chess moves into locally validated Apple Chess actions with Muse Voice Transcribe — speech-turn detection and vocabulary biasing feeding a deterministic parser and a fail-closed macOS computer-use layer.
+
+## Muse Code
+
+- [Muse Code](https://dev.meta.ai/docs/muse-code.md): Muse Code is Meta's coding agent for the terminal and CI, built for Muse Spark, with approvals, sandboxing, sessions, and multi-agent orchestration.
+- [Authentication and billing](https://dev.meta.ai/docs/muse-code/auth.md): Sign in to Muse Code through your browser, use an API key for non-interactive runs, and manage billing.
+- [Changelog](https://dev.meta.ai/docs/muse-code/changelog.md): What's new, improved, and fixed in each Muse Code release.
+- [Configuration and context](https://dev.meta.ai/docs/muse-code/configuration.md): Configure Muse Code with the settings file, project instruction files, model and reasoning-effort selection, launch flags, and durable project memory.
+- [Extending and automating](https://dev.meta.ai/docs/muse-code/extending.md): Scale Muse Code beyond a single interactive session — parallel subagents, reusable skills, lifecycle hooks, MCP servers, and headless runs for CI.
+- [Working with the agent](https://dev.meta.ai/docs/muse-code/interactive.md): Drive an interactive Muse Code session with slash commands: steer a running turn, manage sessions, control context, set goals and loops, track tasks, and use voice.
+- [Permissions and safety](https://dev.meta.ai/docs/muse-code/permissions.md): Control what Muse Code can do with approval modes, stage-by-stage shell-command review, scoped trust, and an OS-enforced sandbox.
+- [Rewind a conversation](https://dev.meta.ai/docs/muse-code/rewind.md): Reopen an earlier Muse Code message in a new conversation branch without changing the original session or workspace files.
+- [Coordinate sessions with messages](https://dev.meta.ai/docs/muse-code/session-messaging.md): Name Muse Code sessions and send local messages between them for handoffs, review requests, and status updates.
+- [Subscriptions](https://dev.meta.ai/docs/muse-code/subscriptions.md): Subscribe to Muse Code at a flat monthly rate instead of paying per token, compare the Everyday, High, Power, and Maximum Usage plans, and change or cancel your subscription.
+- [Run multi-agent workflows](https://dev.meta.ai/docs/muse-code/workflows.md): Use Muse Code workflows to coordinate parallel agents, monitor their progress, and save repeatable multi-agent tasks.
+
+## Open-weight models
+
+- [Open-weight models](https://dev.meta.ai/docs/open-weight-models.md): Meta's open-weight models that you download and run on your own hardware, and how they differ from the models hosted on Meta Model API.
+- [Muse Glimmer](https://dev.meta.ai/docs/muse-glimmer.md): Open-source multimodal model distilled from Muse Spark, built for local and edge deployment.
+- [Run inference](https://dev.meta.ai/docs/muse-glimmer/deploy.md): Run Muse Glimmer on your own hardware with vLLM, SGLang, llama.cpp, or another runtime, or call it through a hosted inference provider.
+- [Get the model](https://dev.meta.ai/docs/muse-glimmer/get-the-model.md): Download Muse Glimmer weights and artifacts from Hugging Face and pick the build your runtime needs.
+- [Hardware platforms](https://dev.meta.ai/docs/muse-glimmer/hardware-platforms.md): Partner-verified Muse Glimmer deployments on Intel Arc Pro, Intel Xeon 6, and NVIDIA B300, with deploy commands, supported precisions, and measured performance.
+- [Post-training](https://dev.meta.ai/docs/muse-glimmer/post-training.md): Fine-tune Muse Glimmer on your own GPUs with supervised fine-tuning or reinforcement learning, using Axolotl, TitanRL, or TRL.
+- [Prompting guide](https://dev.meta.ai/docs/muse-glimmer/prompting.md): Chat template, system prompts, reasoning, and tool calling for getting the most out of Muse Glimmer.
+- [Quantization](https://dev.meta.ai/docs/muse-glimmer/quantization.md): Run Muse Glimmer's pre-quantized GGUF checkpoints on a single GPU with llama.cpp.
+- [Speculative decoding](https://dev.meta.ai/docs/muse-glimmer/spec-decode.md): Accelerate Muse Glimmer inference with DFlash speculative decoding on llama.cpp, SGLang, and ExecuTorch.

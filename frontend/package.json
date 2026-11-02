@@ -1,0 +1,18 @@
+{
+  "name": "faultglass-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "plant": "cd ../backend && uv run python -m app.plant scene ../plants/waterplant > ../frontend/public/plants/waterplant.json"
+  },
+  "dependencies": {
+    "three": "^0.171.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

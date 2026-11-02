@@ -1,0 +1,26 @@
+# Named alternative paths. The agent may only propose a route listed here.
+# requires: manual valve states that must hold for the route to carry flow.
+routes:
+  - id: RT-B-DUTY
+    name: Duty path through CF-201A
+    kind: duty
+    from: TEE-201
+    to: TEE-202
+    edges: [E-B01, E-B02, E-B05]
+    requires: {V-201A: open, HV-201: closed}
+
+  - id: RT-B-PARALLEL
+    name: Parallel path through CF-201A and CF-201B
+    kind: bypass
+    from: TEE-201
+    to: TEE-202
+    edges: [E-B01, E-B02, E-B05, E-B03, E-B04, E-B06]
+    requires: {V-201A: open, HV-201: open}
+
+  - id: RT-B-STANDBY
+    name: Standby path through CF-201B only
+    kind: standby
+    from: TEE-201
+    to: TEE-202
+    edges: [E-B03, E-B04, E-B06]
+    requires: {V-201A: closed, HV-201: open}

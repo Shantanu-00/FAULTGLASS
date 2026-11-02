@@ -1,0 +1,24 @@
+# Plant pack manifest. Everything under plants/demo-water/ is SYNTHETIC demonstration data
+# modelled on frontend/src/scene/packaged_drinking_water_plant_digital_twin.html.
+id: demo-water
+name: AQUAPURE Bottling Plant, Otur (synthetic demonstration layout)
+version: 0.1.0
+data_origin: synthetic        # synthetic | surveyed
+facility_id: IN-MH-OTR-01
+sections:
+  A: Raw water and pre-treatment
+  B: Pre-RO chokepoint
+  C: Membrane desalination (RO skid)
+  D: Post-treatment, sterilisation and packaging
+conventions:
+  flow_unit: L/h
+  pressure_unit: bar
+  valve_lever_angle_deg: "0 = lever aligned with pipe (open), 90 = perpendicular (closed)"
+  telemetry_reading_contract: "tag, value, unit, observed_at, received_at, quality, provenance"
+# Real equipment deliberately left out of v1 so the model never reasons about it.
+not_modelled:
+  - VF-401 hydrophobic vent filter on TK-401
+  - RO recycle valve and CIP wash ports
+  - MGF/ACF backwash drain lines
+  - chemical storage tanks and day tanks
+  - compressed air, electrical distribution and the HMI itself

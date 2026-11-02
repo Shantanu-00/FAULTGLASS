@@ -1,0 +1,2960 @@
+{
+ "plant": {
+  "id": "waterplant",
+  "name": "Mineral water plant, L-shaped (filmed site)",
+  "version": "0.1.0",
+  "sections": {
+   "L1": "Leg 1, primary corridor (tanks, RO, cartridge bank, ozone, HMI, MCC)",
+   "L2": "Leg 2, pre-treatment and pressure wing (media train, pre-filter, HP pump)"
+  },
+  "telemetry_mode": "SIMULATED. The real HMI/PLC brand and export were not legible in the footage."
+ },
+ "layout": {
+  "units": "m",
+  "approximate": true,
+  "floor": [
+   [
+    0.0,
+    0.0
+   ],
+   [
+    23.0,
+    0.0
+   ],
+   [
+    23.0,
+    6.0
+   ],
+   [
+    6.0,
+    6.0
+   ],
+   [
+    6.0,
+    16.0
+   ],
+   [
+    0.0,
+    16.0
+   ]
+  ],
+  "zones": {
+   "L1": "Leg 1, primary corridor (x 0 to 23, z 0 to 6)",
+   "L2": "Leg 2, pre-treatment and pressure wing (x 0 to 6, z 6 to 16)",
+   "CORNER": "The turn of the L, MCC corner and HP pump"
+  },
+  "placements": {
+   "MCC-001": {
+    "x": 0.5,
+    "z": 0.5,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "HMI-001": {
+    "x": 6.6,
+    "z": 4.8,
+    "rot_deg": 90.0,
+    "row": null
+   },
+   "P-301": {
+    "x": 3.0,
+    "z": 6.9,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "CB-1F": {
+    "x": 8.6,
+    "z": 3.6,
+    "rot_deg": 0.0,
+    "row": "front"
+   },
+   "CB-1B": {
+    "x": 8.6,
+    "z": 2.5,
+    "rot_deg": 0.0,
+    "row": "back"
+   },
+   "CB-2F": {
+    "x": 9.8,
+    "z": 3.6,
+    "rot_deg": 0.0,
+    "row": "front"
+   },
+   "CB-2B": {
+    "x": 9.8,
+    "z": 2.5,
+    "rot_deg": 0.0,
+    "row": "back"
+   },
+   "CB-3F": {
+    "x": 11.0,
+    "z": 3.6,
+    "rot_deg": 0.0,
+    "row": "front"
+   },
+   "CB-3B": {
+    "x": 11.0,
+    "z": 2.5,
+    "rot_deg": 0.0,
+    "row": "back"
+   },
+   "CB-4F": {
+    "x": 12.2,
+    "z": 3.6,
+    "rot_deg": 0.0,
+    "row": "front"
+   },
+   "CB-4B": {
+    "x": 12.2,
+    "z": 2.5,
+    "rot_deg": 0.0,
+    "row": "back"
+   },
+   "HDR-CB-IN": {
+    "x": 10.4,
+    "z": 4.5,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "HDR-CB-OUT": {
+    "x": 10.4,
+    "z": 1.4,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "RO-301": {
+    "x": 15.5,
+    "z": 1.0,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "NV-301": {
+    "x": 17.6,
+    "z": 0.8,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "DRN-301": {
+    "x": 18.2,
+    "z": 0.3,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "OC-401": {
+    "x": 13.8,
+    "z": 5.4,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "OZ-401": {
+    "x": 15.2,
+    "z": 5.4,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "VI-401": {
+    "x": 17.0,
+    "z": 2.6,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TK-401": {
+    "x": 19.0,
+    "z": 3.2,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "P-401": {
+    "x": 18.4,
+    "z": 5.3,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "PF-401": {
+    "x": 19.8,
+    "z": 5.3,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TK-101": {
+    "x": 21.7,
+    "z": 1.45,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "P-101": {
+    "x": 21.4,
+    "z": 4.7,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "BW-001": {
+    "x": 25.0,
+    "z": 1.45,
+    "rot_deg": 0.0,
+    "row": "outside"
+   },
+   "FILL-501": {
+    "x": 25.0,
+    "z": 5.3,
+    "rot_deg": 0.0,
+    "row": "outside"
+   },
+   "MGF-101": {
+    "x": 3.0,
+    "z": 8.6,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TF-101": {
+    "x": 5.2,
+    "z": 8.1,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TB-101": {
+    "x": 0.9,
+    "z": 8.1,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-111": {
+    "x": 4.4,
+    "z": 8.1,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-112": {
+    "x": 0.9,
+    "z": 8.799999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-113": {
+    "x": 5.2,
+    "z": 8.799999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-114": {
+    "x": 3.0,
+    "z": 7.55,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-115": {
+    "x": 1.6,
+    "z": 9.299999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "ACF-102": {
+    "x": 3.0,
+    "z": 11.2,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TF-102": {
+    "x": 5.2,
+    "z": 10.7,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TB-102": {
+    "x": 0.9,
+    "z": 10.7,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-221": {
+    "x": 4.4,
+    "z": 10.7,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-222": {
+    "x": 0.9,
+    "z": 11.399999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-223": {
+    "x": 5.2,
+    "z": 11.399999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-224": {
+    "x": 3.0,
+    "z": 10.149999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-225": {
+    "x": 1.6,
+    "z": 11.899999999999999,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "SOF-103": {
+    "x": 3.0,
+    "z": 13.8,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TF-103": {
+    "x": 5.2,
+    "z": 13.3,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "TB-103": {
+    "x": 0.9,
+    "z": 13.3,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-331": {
+    "x": 4.4,
+    "z": 13.3,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-332": {
+    "x": 0.9,
+    "z": 14.0,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-333": {
+    "x": 5.2,
+    "z": 14.0,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-334": {
+    "x": 3.0,
+    "z": 12.75,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "V-335": {
+    "x": 1.6,
+    "z": 14.5,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "DRN-101": {
+    "x": 0.4,
+    "z": 15.4,
+    "rot_deg": 0.0,
+    "row": null
+   },
+   "PF-101": {
+    "x": 4.8,
+    "z": 15.2,
+    "rot_deg": 0.0,
+    "row": null
+   }
+  },
+  "notes": [
+   "Cartridge bank rows: front row (z 3.6) carries the higher-pressure gauges, back row (z 2.5) the lower.",
+   "Boundary supply and filling line are drawn outside the building outline on purpose."
+  ]
+ },
+ "assets": [
+  {
+   "id": "BW-001",
+   "name": "Borewell supply line (boundary)",
+   "kind": "supply",
+   "section": "L1",
+   "role": "source",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "TK-101",
+   "name": "Raw water storage tank (big tank 1)",
+   "kind": "tank",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {
+    "type": "atmospheric vertical"
+   }
+  },
+  {
+   "id": "P-101",
+   "name": "Raw water feed pump",
+   "kind": "pump",
+   "section": "L1",
+   "role": "process",
+   "control": "automatic",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {
+    "type": "horizontal centrifugal"
+   }
+  },
+  {
+   "id": "MGF-101",
+   "name": "Sand / dual-media filter vessel",
+   "kind": "media_vessel",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "top_in": "in",
+    "top_out": "out",
+    "bottom_in": "in",
+    "bottom_out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {}
+  },
+  {
+   "id": "TF-101",
+   "name": "MGF-101 feed split",
+   "kind": "tee",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out_service": "out",
+    "out_backwash": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "TB-101",
+   "name": "MGF-101 outlet split",
+   "kind": "tee",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out_service": "out",
+    "out_rinse": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "V-111",
+   "name": "MGF-101 service inlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "open"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "feeds the top of the vessel (service and rinse)"
+   }
+  },
+  {
+   "id": "V-112",
+   "name": "MGF-101 service outlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "open"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "takes treated water from the bottom to the next stage"
+   }
+  },
+  {
+   "id": "V-113",
+   "name": "MGF-101 backwash inlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "feeds the bottom of the vessel (reverse flow)"
+   }
+  },
+  {
+   "id": "V-114",
+   "name": "MGF-101 backwash outlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "carries backwash water from the top to the drain trench"
+   }
+  },
+  {
+   "id": "V-115",
+   "name": "MGF-101 rinse to drain valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "sends rinse water from the bottom to the drain trench"
+   }
+  },
+  {
+   "id": "ACF-102",
+   "name": "Activated carbon filter vessel",
+   "kind": "media_vessel",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "top_in": "in",
+    "top_out": "out",
+    "bottom_in": "in",
+    "bottom_out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {}
+  },
+  {
+   "id": "TF-102",
+   "name": "ACF-102 feed split",
+   "kind": "tee",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out_service": "out",
+    "out_backwash": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "TB-102",
+   "name": "ACF-102 outlet split",
+   "kind": "tee",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out_service": "out",
+    "out_rinse": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "V-221",
+   "name": "ACF-102 service inlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "open"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "feeds the top of the vessel (service and rinse)"
+   }
+  },
+  {
+   "id": "V-222",
+   "name": "ACF-102 service outlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "open"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "takes treated water from the bottom to the next stage"
+   }
+  },
+  {
+   "id": "V-223",
+   "name": "ACF-102 backwash inlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "feeds the bottom of the vessel (reverse flow)"
+   }
+  },
+  {
+   "id": "V-224",
+   "name": "ACF-102 backwash outlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "carries backwash water from the top to the drain trench"
+   }
+  },
+  {
+   "id": "V-225",
+   "name": "ACF-102 rinse to drain valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "sends rinse water from the bottom to the drain trench"
+   }
+  },
+  {
+   "id": "SOF-103",
+   "name": "Water softener vessel",
+   "kind": "media_vessel",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "top_in": "in",
+    "top_out": "out",
+    "bottom_in": "in",
+    "bottom_out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {}
+  },
+  {
+   "id": "TF-103",
+   "name": "SOF-103 feed split",
+   "kind": "tee",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out_service": "out",
+    "out_backwash": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "TB-103",
+   "name": "SOF-103 outlet split",
+   "kind": "tee",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out_service": "out",
+    "out_rinse": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "V-331",
+   "name": "SOF-103 service inlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "open"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "feeds the top of the vessel (service and rinse)"
+   }
+  },
+  {
+   "id": "V-332",
+   "name": "SOF-103 service outlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "open"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "takes treated water from the bottom to the next stage"
+   }
+  },
+  {
+   "id": "V-333",
+   "name": "SOF-103 backwash inlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "feeds the bottom of the vessel (reverse flow)"
+   }
+  },
+  {
+   "id": "V-334",
+   "name": "SOF-103 backwash outlet valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "carries backwash water from the top to the drain trench"
+   }
+  },
+  {
+   "id": "V-335",
+   "name": "SOF-103 rinse to drain valve",
+   "kind": "valve",
+   "section": "L2",
+   "role": "process",
+   "control": "manual",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "closed"
+   },
+   "blind": false,
+   "spec": {
+    "type": "quarter_turn_ball",
+    "handle": "yellow lever",
+    "lever_angle_deg": {
+     "closed": 90,
+     "open": 0
+    },
+    "function": "sends rinse water from the bottom to the drain trench"
+   }
+  },
+  {
+   "id": "DRN-101",
+   "name": "Media backwash and rinse drain trench",
+   "kind": "drain",
+   "section": "L2",
+   "role": "sink",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "bw1": "in",
+    "bw2": "in",
+    "bw3": "in",
+    "rinse1": "in",
+    "rinse2": "in",
+    "rinse3": "in"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "PF-101",
+   "name": "Coarse guard pre-filter (small cylinder)",
+   "kind": "prefilter",
+   "section": "L2",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {}
+  },
+  {
+   "id": "HDR-CB-IN",
+   "name": "Cartridge bank inlet header",
+   "kind": "header",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out1": "out",
+    "out2": "out",
+    "out3": "out",
+    "out4": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "HDR-CB-OUT",
+   "name": "Cartridge bank outlet header",
+   "kind": "header",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "standard_practice",
+   "parent": null,
+   "ports": {
+    "in1": "in",
+    "in2": "in",
+    "in3": "in",
+    "in4": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "CB-1F",
+   "name": "Cartridge housing line 1 front",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 1,
+    "stage": 1
+   }
+  },
+  {
+   "id": "CB-1B",
+   "name": "Cartridge housing line 1 back",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 1,
+    "stage": 2
+   }
+  },
+  {
+   "id": "CB-2F",
+   "name": "Cartridge housing line 2 front",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 2,
+    "stage": 1
+   }
+  },
+  {
+   "id": "CB-2B",
+   "name": "Cartridge housing line 2 back",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 2,
+    "stage": 2
+   }
+  },
+  {
+   "id": "CB-3F",
+   "name": "Cartridge housing line 3 front",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 3,
+    "stage": 1
+   }
+  },
+  {
+   "id": "CB-3B",
+   "name": "Cartridge housing line 3 back",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 3,
+    "stage": 2
+   }
+  },
+  {
+   "id": "CB-4F",
+   "name": "Cartridge housing line 4 front",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 4,
+    "stage": 1
+   }
+  },
+  {
+   "id": "CB-4B",
+   "name": "Cartridge housing line 4 back",
+   "kind": "cartridge_housing",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {
+    "line": 4,
+    "stage": 2
+   }
+  },
+  {
+   "id": "P-301",
+   "name": "Vertical multistage high-pressure pump",
+   "kind": "pump",
+   "section": "L2",
+   "role": "process",
+   "control": "automatic",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {
+    "type": "vertical multistage SS316"
+   }
+  },
+  {
+   "id": "RO-301",
+   "name": "Reverse osmosis membrane array",
+   "kind": "ro_vessel_bank",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "feed_in": "in",
+    "permeate_out": "out",
+    "reject_out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "NV-301",
+   "name": "RO reject needle valve",
+   "kind": "valve",
+   "section": "L1",
+   "role": "process",
+   "control": "manual",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": {
+    "position": "throttled"
+   },
+   "blind": false,
+   "spec": {
+    "type": "needle"
+   }
+  },
+  {
+   "id": "DRN-301",
+   "name": "RO reject drain",
+   "kind": "drain",
+   "section": "L1",
+   "role": "sink",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "OC-401",
+   "name": "Oxygen concentrator (white floor unit 1)",
+   "kind": "oxygen_concentrator",
+   "section": "L1",
+   "role": "source",
+   "control": "automatic",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "OZ-401",
+   "name": "Corona-discharge ozone generator (white floor unit 2)",
+   "kind": "ozone_generator",
+   "section": "L1",
+   "role": "process",
+   "control": "automatic",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {}
+  },
+  {
+   "id": "VI-401",
+   "name": "Ozone venturi injector",
+   "kind": "injector",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "gas_in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "TK-401",
+   "name": "Pure water stainless storage tank (big tank 2)",
+   "kind": "tank",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {
+    "material": "stainless steel",
+    "mounting": "elevated legs"
+   }
+  },
+  {
+   "id": "P-401",
+   "name": "Sanitary transfer booster pump",
+   "kind": "pump",
+   "section": "L1",
+   "role": "process",
+   "control": "automatic",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "PF-401",
+   "name": "Inline 0.2 micron trap filter",
+   "kind": "polish_filter",
+   "section": "L1",
+   "role": "process",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in",
+    "out": "out"
+   },
+   "normal_state": null,
+   "blind": true,
+   "spec": {}
+  },
+  {
+   "id": "FILL-501",
+   "name": "Bottling line (not in footage)",
+   "kind": "filler",
+   "section": "L1",
+   "role": "sink",
+   "control": "automatic",
+   "basis": "description",
+   "parent": null,
+   "ports": {
+    "in": "in"
+   },
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "HMI-001",
+   "name": "HMI/PLC operator console",
+   "kind": "hmi_plc",
+   "section": "L1",
+   "role": "support",
+   "control": "none",
+   "basis": "footage",
+   "parent": null,
+   "ports": {},
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  },
+  {
+   "id": "MCC-001",
+   "name": "Motor control centre (corner power panel)",
+   "kind": "mcc",
+   "section": "L1",
+   "role": "support",
+   "control": "none",
+   "basis": "description",
+   "parent": null,
+   "ports": {},
+   "normal_state": null,
+   "blind": false,
+   "spec": {}
+  }
+ ],
+ "edges": [
+  {
+   "id": "E-I01",
+   "medium": "raw",
+   "basis": "description",
+   "from": {
+    "asset": "BW-001",
+    "port": "out"
+   },
+   "to": {
+    "asset": "TK-101",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-I02",
+   "medium": "raw",
+   "basis": "description",
+   "from": {
+    "asset": "TK-101",
+    "port": "out"
+   },
+   "to": {
+    "asset": "P-101",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M101",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "P-101",
+    "port": "out"
+   },
+   "to": {
+    "asset": "TF-101",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M102",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TF-101",
+    "port": "out_service"
+   },
+   "to": {
+    "asset": "V-111",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M103",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-111",
+    "port": "out"
+   },
+   "to": {
+    "asset": "MGF-101",
+    "port": "top_in"
+   }
+  },
+  {
+   "id": "E-M104",
+   "medium": "backwash",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TF-101",
+    "port": "out_backwash"
+   },
+   "to": {
+    "asset": "V-113",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M105",
+   "medium": "backwash",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-113",
+    "port": "out"
+   },
+   "to": {
+    "asset": "MGF-101",
+    "port": "bottom_in"
+   }
+  },
+  {
+   "id": "E-M106",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "MGF-101",
+    "port": "bottom_out"
+   },
+   "to": {
+    "asset": "TB-101",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M107",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TB-101",
+    "port": "out_service"
+   },
+   "to": {
+    "asset": "V-112",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M108",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TB-101",
+    "port": "out_rinse"
+   },
+   "to": {
+    "asset": "V-115",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M109",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-115",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-101",
+    "port": "rinse1"
+   }
+  },
+  {
+   "id": "E-M110",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "MGF-101",
+    "port": "top_out"
+   },
+   "to": {
+    "asset": "V-114",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M111",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-114",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-101",
+    "port": "bw1"
+   }
+  },
+  {
+   "id": "E-M201",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-112",
+    "port": "out"
+   },
+   "to": {
+    "asset": "TF-102",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M202",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TF-102",
+    "port": "out_service"
+   },
+   "to": {
+    "asset": "V-221",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M203",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-221",
+    "port": "out"
+   },
+   "to": {
+    "asset": "ACF-102",
+    "port": "top_in"
+   }
+  },
+  {
+   "id": "E-M204",
+   "medium": "backwash",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TF-102",
+    "port": "out_backwash"
+   },
+   "to": {
+    "asset": "V-223",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M205",
+   "medium": "backwash",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-223",
+    "port": "out"
+   },
+   "to": {
+    "asset": "ACF-102",
+    "port": "bottom_in"
+   }
+  },
+  {
+   "id": "E-M206",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "ACF-102",
+    "port": "bottom_out"
+   },
+   "to": {
+    "asset": "TB-102",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M207",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TB-102",
+    "port": "out_service"
+   },
+   "to": {
+    "asset": "V-222",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M208",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TB-102",
+    "port": "out_rinse"
+   },
+   "to": {
+    "asset": "V-225",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M209",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-225",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-101",
+    "port": "rinse2"
+   }
+  },
+  {
+   "id": "E-M210",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "ACF-102",
+    "port": "top_out"
+   },
+   "to": {
+    "asset": "V-224",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M211",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-224",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-101",
+    "port": "bw2"
+   }
+  },
+  {
+   "id": "E-M301",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-222",
+    "port": "out"
+   },
+   "to": {
+    "asset": "TF-103",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M302",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TF-103",
+    "port": "out_service"
+   },
+   "to": {
+    "asset": "V-331",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M303",
+   "medium": "raw",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-331",
+    "port": "out"
+   },
+   "to": {
+    "asset": "SOF-103",
+    "port": "top_in"
+   }
+  },
+  {
+   "id": "E-M304",
+   "medium": "backwash",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TF-103",
+    "port": "out_backwash"
+   },
+   "to": {
+    "asset": "V-333",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M305",
+   "medium": "backwash",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-333",
+    "port": "out"
+   },
+   "to": {
+    "asset": "SOF-103",
+    "port": "bottom_in"
+   }
+  },
+  {
+   "id": "E-M306",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "SOF-103",
+    "port": "bottom_out"
+   },
+   "to": {
+    "asset": "TB-103",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M307",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TB-103",
+    "port": "out_service"
+   },
+   "to": {
+    "asset": "V-332",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M308",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "TB-103",
+    "port": "out_rinse"
+   },
+   "to": {
+    "asset": "V-335",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M309",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-335",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-101",
+    "port": "rinse3"
+   }
+  },
+  {
+   "id": "E-M310",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "SOF-103",
+    "port": "top_out"
+   },
+   "to": {
+    "asset": "V-334",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-M311",
+   "medium": "drain",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "V-334",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-101",
+    "port": "bw3"
+   }
+  },
+  {
+   "id": "E-F01",
+   "medium": "pretreated",
+   "basis": "description",
+   "from": {
+    "asset": "V-332",
+    "port": "out"
+   },
+   "to": {
+    "asset": "PF-101",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-F02",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "PF-101",
+    "port": "out"
+   },
+   "to": {
+    "asset": "HDR-CB-IN",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-IN1",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "HDR-CB-IN",
+    "port": "out1"
+   },
+   "to": {
+    "asset": "CB-1F",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-MID1",
+   "medium": "pretreated",
+   "basis": "assumed",
+   "from": {
+    "asset": "CB-1F",
+    "port": "out"
+   },
+   "to": {
+    "asset": "CB-1B",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-OUT1",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "CB-1B",
+    "port": "out"
+   },
+   "to": {
+    "asset": "HDR-CB-OUT",
+    "port": "in1"
+   }
+  },
+  {
+   "id": "E-CB-IN2",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "HDR-CB-IN",
+    "port": "out2"
+   },
+   "to": {
+    "asset": "CB-2F",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-MID2",
+   "medium": "pretreated",
+   "basis": "assumed",
+   "from": {
+    "asset": "CB-2F",
+    "port": "out"
+   },
+   "to": {
+    "asset": "CB-2B",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-OUT2",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "CB-2B",
+    "port": "out"
+   },
+   "to": {
+    "asset": "HDR-CB-OUT",
+    "port": "in2"
+   }
+  },
+  {
+   "id": "E-CB-IN3",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "HDR-CB-IN",
+    "port": "out3"
+   },
+   "to": {
+    "asset": "CB-3F",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-MID3",
+   "medium": "pretreated",
+   "basis": "assumed",
+   "from": {
+    "asset": "CB-3F",
+    "port": "out"
+   },
+   "to": {
+    "asset": "CB-3B",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-OUT3",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "CB-3B",
+    "port": "out"
+   },
+   "to": {
+    "asset": "HDR-CB-OUT",
+    "port": "in3"
+   }
+  },
+  {
+   "id": "E-CB-IN4",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "HDR-CB-IN",
+    "port": "out4"
+   },
+   "to": {
+    "asset": "CB-4F",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-MID4",
+   "medium": "pretreated",
+   "basis": "assumed",
+   "from": {
+    "asset": "CB-4F",
+    "port": "out"
+   },
+   "to": {
+    "asset": "CB-4B",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-CB-OUT4",
+   "medium": "pretreated",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "CB-4B",
+    "port": "out"
+   },
+   "to": {
+    "asset": "HDR-CB-OUT",
+    "port": "in4"
+   }
+  },
+  {
+   "id": "E-F03",
+   "medium": "pretreated",
+   "basis": "description",
+   "from": {
+    "asset": "HDR-CB-OUT",
+    "port": "out"
+   },
+   "to": {
+    "asset": "P-301",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-C01",
+   "medium": "highpressure",
+   "basis": "standard_practice",
+   "from": {
+    "asset": "P-301",
+    "port": "out"
+   },
+   "to": {
+    "asset": "RO-301",
+    "port": "feed_in"
+   }
+  },
+  {
+   "id": "E-C02",
+   "medium": "reject",
+   "basis": "description",
+   "from": {
+    "asset": "RO-301",
+    "port": "reject_out"
+   },
+   "to": {
+    "asset": "NV-301",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-C03",
+   "medium": "reject",
+   "basis": "description",
+   "from": {
+    "asset": "NV-301",
+    "port": "out"
+   },
+   "to": {
+    "asset": "DRN-301",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-C04",
+   "medium": "permeate",
+   "basis": "description",
+   "from": {
+    "asset": "RO-301",
+    "port": "permeate_out"
+   },
+   "to": {
+    "asset": "VI-401",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-D01",
+   "medium": "oxygen",
+   "basis": "description",
+   "from": {
+    "asset": "OC-401",
+    "port": "out"
+   },
+   "to": {
+    "asset": "OZ-401",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-D02",
+   "medium": "ozone_gas",
+   "basis": "description",
+   "from": {
+    "asset": "OZ-401",
+    "port": "out"
+   },
+   "to": {
+    "asset": "VI-401",
+    "port": "gas_in"
+   }
+  },
+  {
+   "id": "E-D03",
+   "medium": "pure",
+   "basis": "description",
+   "from": {
+    "asset": "VI-401",
+    "port": "out"
+   },
+   "to": {
+    "asset": "TK-401",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-D04",
+   "medium": "pure",
+   "basis": "description",
+   "from": {
+    "asset": "TK-401",
+    "port": "out"
+   },
+   "to": {
+    "asset": "P-401",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-D05",
+   "medium": "pure",
+   "basis": "description",
+   "from": {
+    "asset": "P-401",
+    "port": "out"
+   },
+   "to": {
+    "asset": "PF-401",
+    "port": "in"
+   }
+  },
+  {
+   "id": "E-D06",
+   "medium": "pure",
+   "basis": "description",
+   "from": {
+    "asset": "PF-401",
+    "port": "out"
+   },
+   "to": {
+    "asset": "FILL-501",
+    "port": "in"
+   }
+  }
+ ],
+ "instruments": [
+  {
+   "tag": "YS-101",
+   "name": "Feed pump P-101 run feedback",
+   "type": "status",
+   "quantity": "run_state",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "standard_practice",
+   "attach": {
+    "asset": "P-101"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "RUNNING",
+    "0": "STOPPED"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "YS-301",
+   "name": "HP pump P-301 run feedback",
+   "type": "status",
+   "quantity": "run_state",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "standard_practice",
+   "attach": {
+    "asset": "P-301"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "RUNNING",
+    "0": "STOPPED"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "YS-401",
+   "name": "Transfer pump P-401 run feedback",
+   "type": "status",
+   "quantity": "run_state",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "standard_practice",
+   "attach": {
+    "asset": "P-401"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "RUNNING",
+    "0": "STOPPED"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "LSL-101",
+   "name": "Raw tank low-level switch",
+   "type": "switch",
+   "quantity": "level_switch",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "standard_practice",
+   "attach": {
+    "asset": "TK-101"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "LEVEL_OK",
+    "0": "LOW_LEVEL"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "LSH-401",
+   "name": "Pure tank high-level switch",
+   "type": "switch",
+   "quantity": "level_switch",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "standard_practice",
+   "attach": {
+    "asset": "TK-401"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "BELOW_HIGH",
+    "0": "HIGH_LEVEL"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "PSL-301",
+   "name": "HP pump suction low-pressure switch (LPS)",
+   "type": "switch",
+   "quantity": "pressure_switch",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "description",
+   "attach": {
+    "port": "P-301.in"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "OK",
+    "0": "LOW_PRESSURE_TRIP"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "PSH-301",
+   "name": "HP pump discharge high-pressure switch (HPS)",
+   "type": "switch",
+   "quantity": "pressure_switch",
+   "unit": "state",
+   "range": [
+    0.0,
+    1.0
+   ],
+   "observe": "telemetry",
+   "basis": "description",
+   "attach": {
+    "port": "P-301.out"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "1": "OK",
+    "0": "HIGH_PRESSURE_TRIP"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "AIT-301",
+   "name": "RO permeate TDS",
+   "type": "measurement",
+   "quantity": "tds",
+   "unit": "ppm",
+   "range": [
+    0.0,
+    500.0
+   ],
+   "observe": "telemetry",
+   "basis": "description",
+   "attach": {
+    "edge": "E-C04"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": null
+  },
+  {
+   "tag": "ST-RO",
+   "name": "RO cycle state",
+   "type": "status",
+   "quantity": "cycle_state",
+   "unit": "enum",
+   "range": [
+    0.0,
+    3.0
+   ],
+   "observe": "telemetry",
+   "basis": "description",
+   "attach": {
+    "asset": "RO-301"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "0": "STOPPED",
+    "1": "RUNNING",
+    "2": "FAULT",
+    "3": "FLUSH"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "FC-RO",
+   "name": "RO fault code",
+   "type": "status",
+   "quantity": "fault_code",
+   "unit": "enum",
+   "range": [
+    0.0,
+    99.0
+   ],
+   "observe": "telemetry",
+   "basis": "description",
+   "attach": {
+    "asset": "RO-301"
+   },
+   "display_scales": [],
+   "state_labels": {
+    "0": "NONE",
+    "11": "LOW_SUCTION_PRESSURE",
+    "12": "HIGH_DISCHARGE_PRESSURE",
+    "13": "RAW_TANK_LOW",
+    "14": "PURE_TANK_HIGH"
+   },
+   "location_note": null
+  },
+  {
+   "tag": "PI-201",
+   "name": "Cartridge line 1 front housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-1F"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, front row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-205",
+   "name": "Cartridge line 1 back housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-1B"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, back row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-202",
+   "name": "Cartridge line 2 front housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-2F"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, front row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-206",
+   "name": "Cartridge line 2 back housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-2B"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, back row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-203",
+   "name": "Cartridge line 3 front housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-3F"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, front row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-207",
+   "name": "Cartridge line 3 back housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-3B"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, back row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-204",
+   "name": "Cartridge line 4 front housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-4F"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, front row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-208",
+   "name": "Cartridge line 4 back housing pressure gauge",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    100.0
+   ],
+   "observe": "field_photo",
+   "basis": "footage",
+   "attach": {
+    "asset": "CB-4B"
+   },
+   "display_scales": [
+    {
+     "unit": "kg/cm2",
+     "min": 0.0,
+     "max": 7.0,
+     "color": "black"
+    },
+    {
+     "unit": "psi",
+     "min": 0.0,
+     "max": 100.0,
+     "color": "red"
+    }
+   ],
+   "state_labels": null,
+   "location_note": "Cartridge bank, back row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+  },
+  {
+   "tag": "PI-301",
+   "name": "RO stage inlet pressure gauge (panel)",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    300.0
+   ],
+   "observe": "field_photo",
+   "basis": "description",
+   "attach": {
+    "port": "RO-301.feed_in"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": "Teal instrument console above the RO array, inlet pressure gauge."
+  },
+  {
+   "tag": "PI-302",
+   "name": "RO reject brine pressure gauge (panel)",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    300.0
+   ],
+   "observe": "field_photo",
+   "basis": "description",
+   "attach": {
+    "port": "RO-301.reject_out"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": "Teal instrument console above the RO array, reject pressure gauge."
+  },
+  {
+   "tag": "FI-301",
+   "name": "Permeate rotameter",
+   "type": "measurement",
+   "quantity": "flow",
+   "unit": "L/h",
+   "range": [
+    0.0,
+    3000.0
+   ],
+   "observe": "field_photo",
+   "basis": "description",
+   "attach": {
+    "edge": "E-C04"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": "Teal instrument console, vertical acrylic rotameter marked permeate. Read the top edge of the float."
+  },
+  {
+   "tag": "FI-302",
+   "name": "Concentrate rotameter",
+   "type": "measurement",
+   "quantity": "flow",
+   "unit": "L/h",
+   "range": [
+    0.0,
+    1500.0
+   ],
+   "observe": "field_photo",
+   "basis": "description",
+   "attach": {
+    "edge": "E-C02"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": "Teal instrument console, vertical acrylic rotameter marked concentrate (reject)."
+  }
+ ],
+ "routes": [
+  {
+   "id": "RT-M1-SERVICE",
+   "name": "MGF-101 in service",
+   "kind": "service",
+   "edges": [
+    "E-M102",
+    "E-M103",
+    "E-M106",
+    "E-M107",
+    "E-M201"
+   ],
+   "requires": {
+    "V-111": "open",
+    "V-112": "open",
+    "V-113": "closed",
+    "V-114": "closed",
+    "V-115": "closed"
+   }
+  },
+  {
+   "id": "RT-M1-BACKWASH",
+   "name": "MGF-101 backwash to drain",
+   "kind": "backwash",
+   "edges": [
+    "E-M104",
+    "E-M105",
+    "E-M110",
+    "E-M111"
+   ],
+   "requires": {
+    "V-111": "closed",
+    "V-112": "closed",
+    "V-113": "open",
+    "V-114": "open",
+    "V-115": "closed"
+   }
+  },
+  {
+   "id": "RT-M1-RINSE",
+   "name": "MGF-101 rinse to drain",
+   "kind": "rinse",
+   "edges": [
+    "E-M102",
+    "E-M103",
+    "E-M106",
+    "E-M108",
+    "E-M109"
+   ],
+   "requires": {
+    "V-111": "open",
+    "V-112": "closed",
+    "V-113": "closed",
+    "V-114": "closed",
+    "V-115": "open"
+   }
+  },
+  {
+   "id": "RT-M2-SERVICE",
+   "name": "ACF-102 in service",
+   "kind": "service",
+   "edges": [
+    "E-M202",
+    "E-M203",
+    "E-M206",
+    "E-M207",
+    "E-M301"
+   ],
+   "requires": {
+    "V-221": "open",
+    "V-222": "open",
+    "V-223": "closed",
+    "V-224": "closed",
+    "V-225": "closed"
+   }
+  },
+  {
+   "id": "RT-M2-BACKWASH",
+   "name": "ACF-102 backwash to drain",
+   "kind": "backwash",
+   "edges": [
+    "E-M204",
+    "E-M205",
+    "E-M210",
+    "E-M211"
+   ],
+   "requires": {
+    "V-221": "closed",
+    "V-222": "closed",
+    "V-223": "open",
+    "V-224": "open",
+    "V-225": "closed"
+   }
+  },
+  {
+   "id": "RT-M2-RINSE",
+   "name": "ACF-102 rinse to drain",
+   "kind": "rinse",
+   "edges": [
+    "E-M202",
+    "E-M203",
+    "E-M206",
+    "E-M208",
+    "E-M209"
+   ],
+   "requires": {
+    "V-221": "open",
+    "V-222": "closed",
+    "V-223": "closed",
+    "V-224": "closed",
+    "V-225": "open"
+   }
+  },
+  {
+   "id": "RT-M3-SERVICE",
+   "name": "SOF-103 in service",
+   "kind": "service",
+   "edges": [
+    "E-M302",
+    "E-M303",
+    "E-M306",
+    "E-M307",
+    "E-F01"
+   ],
+   "requires": {
+    "V-331": "open",
+    "V-332": "open",
+    "V-333": "closed",
+    "V-334": "closed",
+    "V-335": "closed"
+   }
+  },
+  {
+   "id": "RT-M3-BACKWASH",
+   "name": "SOF-103 backwash to drain",
+   "kind": "backwash",
+   "edges": [
+    "E-M304",
+    "E-M305",
+    "E-M310",
+    "E-M311"
+   ],
+   "requires": {
+    "V-331": "closed",
+    "V-332": "closed",
+    "V-333": "open",
+    "V-334": "open",
+    "V-335": "closed"
+   }
+  },
+  {
+   "id": "RT-M3-RINSE",
+   "name": "SOF-103 rinse to drain",
+   "kind": "rinse",
+   "edges": [
+    "E-M302",
+    "E-M303",
+    "E-M306",
+    "E-M308",
+    "E-M309"
+   ],
+   "requires": {
+    "V-331": "open",
+    "V-332": "closed",
+    "V-333": "closed",
+    "V-334": "closed",
+    "V-335": "open"
+   }
+  }
+ ]
+}

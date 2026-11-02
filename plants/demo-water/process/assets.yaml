@@ -1,0 +1,308 @@
+# ports: {port_id: in|out}. A port connects to at most one edge. Fittings (tees) have
+# one port per connection so "this has 2 outlets and an inlet" is explicit in the graph.
+assets:
+  # ---------------- SECTION A: raw water and pre-treatment ----------------
+  - id: PMP-001
+    name: Deep borewell submersible pump
+    kind: borewell_pump
+    section: A
+    plan_item: "1"
+    role: source
+    control: automatic
+    ports: {out: out}
+    scene_node: wellhead
+    spec: {depth_m_bgl: 120, rated_flow_m3h: 12.0, rated_head_bar: 4.0, motor_kw: 7.5}
+
+  - id: TK-101
+    name: Raw water storage and settling tank
+    kind: tank
+    section: A
+    plan_item: "2"
+    role: process
+    control: none
+    ports: {in_top: in, dose_in: in, out_bottom: out}
+    scene_node: raw-tank
+    spec: {capacity_l: 25000, material: LLDPE}
+
+  - id: DP-101
+    name: Sodium hypochlorite dosing pump
+    kind: dosing_pump
+    section: A
+    plan_item: "2"
+    role: source
+    control: automatic
+    ports: {out: out}
+    spec: {chemical: sodium hypochlorite, purpose: oxidise iron and kill bacteria}
+
+  - id: P-101
+    name: Raw water booster feed pump
+    kind: pump
+    section: A
+    plan_item: "3"
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    scene_node: feed-pump
+    spec: {head_bar: 3.6, capacity_m3h: 12.0, type: horizontal end-suction centrifugal}
+
+  - id: MGF-101
+    name: Multi-grade sand filter
+    kind: media_filter
+    section: A
+    plan_item: "4"
+    role: process
+    control: motorized
+    ports: {in: in, out: out}
+    scene_node: mgf-filter
+    spec: {cutoff_micron: 20, shell_mm: "750 x 1800", multiport_valve: true}
+
+  - id: ACF-102
+    name: Activated carbon filter
+    kind: media_filter
+    section: A
+    plan_item: "5"
+    role: process
+    control: motorized
+    ports: {in: in, out: out}
+    scene_node: acf-filter
+    spec: {purpose: remove free chlorine and organics, target_free_cl2_ppm: 0.05}
+
+  - id: SKD-103
+    name: Pre-RO chemical conditioning skid
+    kind: chemical_skid
+    section: A
+    plan_item: "6"
+    role: group
+    control: none
+    scene_node: chem-skid
+    spec: {members: [DP-103A, DP-103B], sensor: AIT-101}
+
+  - id: DP-103A
+    name: Antiscalant dosing pump
+    kind: dosing_pump
+    section: A
+    plan_item: "6"
+    role: source
+    control: automatic
+    parent: SKD-103
+    ports: {out: out}
+    spec: {chemical: phosphonate antiscalant, dose_ppm: "3-5"}
+
+  - id: DP-103B
+    name: SMBS dosing pump
+    kind: dosing_pump
+    section: A
+    plan_item: "6"
+    role: source
+    control: automatic
+    parent: SKD-103
+    ports: {out: out}
+    spec: {chemical: sodium metabisulfite, purpose: neutralise residual chlorine}
+
+  - id: TEE-103
+    name: Chemical injection tee
+    kind: tee
+    section: A
+    plan_item: "6"
+    role: process
+    control: none
+    parent: SKD-103
+    ports: {main_in: in, dose_a: in, dose_b: in, main_out: out}
+
+  # ---------------- SECTION B: pre-RO chokepoint ----------------
+  - id: TEE-201
+    name: Cartridge bank inlet tee
+    kind: tee
+    section: B
+    plan_item: "7"
+    role: process
+    control: none
+    ports: {in: in, out_a: out, out_b: out}
+
+  - id: V-201A
+    name: Duty branch isolation valve
+    kind: valve
+    section: B
+    plan_item: "7"
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    scene_node: cartridge-filters
+    normal_state: {position: open, position_pct: 100}
+    spec: {type: quarter_turn_ball, lever_angle_deg: {closed: 90, open: 0}}
+
+  - id: HV-201
+    name: Standby branch manual bypass valve
+    kind: valve
+    section: B
+    plan_item: "7"
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    scene_node: cartridge-filters
+    normal_state: {position: closed, position_pct: 0}
+    spec:
+      type: quarter_turn_ball
+      lever_angle_deg: {closed: 90, open: 0}
+      note: Opens the standby cartridge housing CF-201B in parallel with CF-201A.
+      air_bleed_first_opening_pct: 25
+
+  - id: CF-201A
+    name: 5 micron cartridge filter housing A (duty)
+    kind: cartridge_filter
+    section: B
+    plan_item: "7"
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    scene_node: cartridge-filters
+    spec: {cutoff_micron: 5, duty: duty, healthy_dp_bar_max: 0.8}
+
+  - id: CF-201B
+    name: 5 micron cartridge filter housing B (standby)
+    kind: cartridge_filter
+    section: B
+    plan_item: "7"
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    scene_node: cartridge-filters
+    spec: {cutoff_micron: 5, duty: standby, healthy_dp_bar_max: 0.8}
+
+  - id: TEE-202
+    name: Cartridge bank outlet tee
+    kind: tee
+    section: B
+    plan_item: "7"
+    role: process
+    control: none
+    ports: {in_a: in, in_b: in, out: out}
+
+  # ---------------- SECTION C: RO skid ----------------
+  - id: P-301
+    name: Vertical high-pressure multistage pump
+    kind: pump
+    section: C
+    plan_item: "8"
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    scene_node: hp-pump
+    spec: {operating_bar: "10-15", motor_kw: 11.0, damage_risk: cavitation and dry running}
+
+  - id: RO-301
+    name: Reverse osmosis membrane rack
+    kind: ro_vessel_bank
+    section: C
+    plan_item: "9"
+    role: process
+    control: none
+    ports: {feed_in: in, permeate_out: out, reject_out: out}
+    scene_node: ro-skid
+    spec: {vessels: 4, element: 8040 polyamide TFC, design_recovery_pct: 70}
+
+  - id: NV-301
+    name: RO reject needle valve
+    kind: valve
+    section: C
+    plan_item: "9"
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    scene_node: ro-skid
+    normal_state: {position: throttled, position_pct: 40}
+    spec: {type: needle, purpose: sets RO recovery}
+
+  - id: DRN-301
+    name: Reject drain trench
+    kind: drain
+    section: C
+    plan_item: "9"
+    role: sink
+    control: none
+    ports: {in: in}
+
+  - id: DP-301
+    name: Post-RO remineralisation dosing pump
+    kind: dosing_pump
+    section: C
+    plan_item: "9B"
+    role: source
+    control: automatic
+    ports: {out: out}
+    spec: {chemical: calcium and magnesium minerals, purpose: raise pH from about 5.6 to 7.2}
+
+  - id: TEE-301
+    name: Remineralisation injection tee
+    kind: tee
+    section: C
+    plan_item: "9B"
+    role: process
+    control: none
+    ports: {main_in: in, dose: in, main_out: out}
+
+  # ---------------- SECTION D: post-treatment and packaging ----------------
+  - id: TK-401
+    name: Pure water sanitary holding tank
+    kind: tank
+    section: D
+    plan_item: "10"
+    role: process
+    control: none
+    ports: {in: in, out_bottom: out}
+    scene_node: pure-tank
+    spec: {capacity_l: 15000, material: SS316L}
+
+  - id: P-401
+    name: Pure water transfer booster pump
+    kind: pump
+    section: D
+    plan_item: "10B"
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    spec: {head_bar: "3.5-4.5", material: SS316L}
+
+  - id: PF-401
+    name: 0.2 micron polish filter
+    kind: polish_filter
+    section: D
+    plan_item: "11"
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    scene_node: uv-ozone
+    spec: {cutoff_micron: 0.2}
+
+  - id: UV-401
+    name: UV sterilizer 254 nm
+    kind: uv_reactor
+    section: D
+    plan_item: "12"
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    scene_node: uv-ozone
+    spec: {dose_mj_cm2: 40}
+
+  - id: O3-401
+    name: Ozone generator with venturi injector and static mixer
+    kind: ozone_generator
+    section: D
+    plan_item: "13"
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    scene_node: uv-ozone
+    spec: {target_residual_ppm: "0.2-0.4"}
+
+  - id: RFC-501
+    name: Rinser-filler-capper monoblock
+    kind: filler
+    section: D
+    plan_item: "14"
+    role: sink
+    control: automatic
+    ports: {in: in}
+    scene_node: rfc-machine
+    spec: {speed_bpm: 120}

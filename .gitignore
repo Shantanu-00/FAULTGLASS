@@ -1,0 +1,81 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.pkcs12
+*id_rsa*
+*id_ed25519*
+secrets/
+credentials.json
+service-account*.json
+
+# JavaScript / TypeScript
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Coverage, caches, and temporary output
+coverage/
+.coverage
+htmlcov/
+.cache/
+*.log
+tmp/
+temp/
+
+# Raw plant footage, media captures, and heavy assets (video / photos)
+plants/**/assets/*
+!plants/**/assets/.gitkeep
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+
+# Large binaries, models, and archives
+*.zip
+*.tar.gz
+*.7z
+*.bin
+*.onnx
+*.pt
+*.pth
+
+# Local data and generated artifacts
+/data/*
+!/data/README.md
+/uploads/
+/outputs/
+/models/
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+

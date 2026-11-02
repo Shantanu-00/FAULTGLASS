@@ -1,0 +1,64 @@
+routes:
+  - id: RT-M1-SERVICE
+    name: MGF-101 in service
+    kind: service
+    from: TF-101
+    to: TF-102
+    edges: [E-M102, E-M103, E-M106, E-M107, E-M201]
+    requires: {V-111: open, V-112: open, V-113: closed, V-114: closed, V-115: closed}
+  - id: RT-M1-BACKWASH
+    name: MGF-101 backwash to drain
+    kind: backwash
+    from: TF-101
+    to: DRN-101
+    edges: [E-M104, E-M105, E-M110, E-M111]
+    requires: {V-111: closed, V-112: closed, V-113: open, V-114: open, V-115: closed}
+  - id: RT-M1-RINSE
+    name: MGF-101 rinse to drain
+    kind: rinse
+    from: TF-101
+    to: DRN-101
+    edges: [E-M102, E-M103, E-M106, E-M108, E-M109]
+    requires: {V-111: open, V-112: closed, V-113: closed, V-114: closed, V-115: open}
+  - id: RT-M2-SERVICE
+    name: ACF-102 in service
+    kind: service
+    from: TF-102
+    to: TF-103
+    edges: [E-M202, E-M203, E-M206, E-M207, E-M301]
+    requires: {V-221: open, V-222: open, V-223: closed, V-224: closed, V-225: closed}
+  - id: RT-M2-BACKWASH
+    name: ACF-102 backwash to drain
+    kind: backwash
+    from: TF-102
+    to: DRN-101
+    edges: [E-M204, E-M205, E-M210, E-M211]
+    requires: {V-221: closed, V-222: closed, V-223: open, V-224: open, V-225: closed}
+  - id: RT-M2-RINSE
+    name: ACF-102 rinse to drain
+    kind: rinse
+    from: TF-102
+    to: DRN-101
+    edges: [E-M202, E-M203, E-M206, E-M208, E-M209]
+    requires: {V-221: open, V-222: closed, V-223: closed, V-224: closed, V-225: open}
+  - id: RT-M3-SERVICE
+    name: SOF-103 in service
+    kind: service
+    from: TF-103
+    to: PF-101
+    edges: [E-M302, E-M303, E-M306, E-M307, E-F01]
+    requires: {V-331: open, V-332: open, V-333: closed, V-334: closed, V-335: closed}
+  - id: RT-M3-BACKWASH
+    name: SOF-103 backwash to drain
+    kind: backwash
+    from: TF-103
+    to: DRN-101
+    edges: [E-M304, E-M305, E-M310, E-M311]
+    requires: {V-331: closed, V-332: closed, V-333: open, V-334: open, V-335: closed}
+  - id: RT-M3-RINSE
+    name: SOF-103 rinse to drain
+    kind: rinse
+    from: TF-103
+    to: DRN-101
+    edges: [E-M302, E-M303, E-M306, E-M308, E-M309]
+    requires: {V-331: open, V-332: closed, V-333: closed, V-334: closed, V-335: open}

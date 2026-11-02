@@ -1,0 +1,469 @@
+# ports: {port_id: in|out}. basis says how well each item is evidenced:
+#   footage | description | standard_practice | assumed (placeholder, needs checking on site)
+assets:
+  # ---------------- supply and storage ----------------
+  - {id: BW-001, name: Borewell supply line (boundary), kind: supply, section: L1, plan_item: "0", basis: description, role: source, control: none, ports: {out: out}}
+  - id: TK-101
+    name: Raw water storage tank (big tank 1)
+    kind: tank
+    section: L1
+    plan_item: "1"
+    basis: description
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {type: atmospheric vertical, purpose: buffer borewell fluctuations and initial settling}
+  - id: P-101
+    name: Raw water feed pump
+    kind: pump
+    section: L1
+    plan_item: "2"
+    basis: description
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    spec: {type: horizontal centrifugal, motor: TEFC induction, delivery_bar: "3.0-4.0"}
+
+
+  # ---------------- MGF-101: Sand / dual-media filter vessel with 5-valve manual manifold ----------------
+  - id: MGF-101
+    name: Sand / dual-media filter vessel
+    kind: media_vessel
+    section: L2
+    plan_item: "3"
+    basis: description
+    role: process
+    control: none
+    ports: {top_in: in, top_out: out, bottom_in: in, bottom_out: out}
+    spec: {role: suspended solids to about 20-30 micron, bed: gravel + quartz sand + anthracite}
+  - {id: TF-101, name: "MGF-101 feed split", kind: tee, section: L2, plan_item: "3", basis: standard_practice, role: process, control: none, ports: {in: in, out_service: out, out_backwash: out}}
+  - {id: TB-101, name: "MGF-101 outlet split", kind: tee, section: L2, plan_item: "3", basis: standard_practice, role: process, control: none, ports: {in: in, out_service: out, out_rinse: out}}
+  - id: V-111
+    name: "MGF-101 service inlet valve"
+    kind: valve
+    section: L2
+    plan_item: "3"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: open}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "feeds the top of the vessel (service and rinse)", sop_number: null}
+  - id: V-112
+    name: "MGF-101 service outlet valve"
+    kind: valve
+    section: L2
+    plan_item: "3"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: open}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "takes treated water from the bottom to the next stage", sop_number: null}
+  - id: V-113
+    name: "MGF-101 backwash inlet valve"
+    kind: valve
+    section: L2
+    plan_item: "3"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "feeds the bottom of the vessel (reverse flow)", sop_number: null}
+  - id: V-114
+    name: "MGF-101 backwash outlet valve"
+    kind: valve
+    section: L2
+    plan_item: "3"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "carries backwash water from the top to the drain trench", sop_number: null}
+  - id: V-115
+    name: "MGF-101 rinse to drain valve"
+    kind: valve
+    section: L2
+    plan_item: "3"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "sends rinse water from the bottom to the drain trench", sop_number: null}
+
+  # ---------------- ACF-102: Activated carbon filter vessel with 5-valve manual manifold ----------------
+  - id: ACF-102
+    name: Activated carbon filter vessel
+    kind: media_vessel
+    section: L2
+    plan_item: "4"
+    basis: description
+    role: process
+    control: none
+    ports: {top_in: in, top_out: out, bottom_in: in, bottom_out: out}
+    spec: {role: free chlorine, organics, colour and odour, bed: granular activated carbon}
+  - {id: TF-102, name: "ACF-102 feed split", kind: tee, section: L2, plan_item: "4", basis: standard_practice, role: process, control: none, ports: {in: in, out_service: out, out_backwash: out}}
+  - {id: TB-102, name: "ACF-102 outlet split", kind: tee, section: L2, plan_item: "4", basis: standard_practice, role: process, control: none, ports: {in: in, out_service: out, out_rinse: out}}
+  - id: V-221
+    name: "ACF-102 service inlet valve"
+    kind: valve
+    section: L2
+    plan_item: "4"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: open}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "feeds the top of the vessel (service and rinse)", sop_number: null}
+  - id: V-222
+    name: "ACF-102 service outlet valve"
+    kind: valve
+    section: L2
+    plan_item: "4"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: open}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "takes treated water from the bottom to the next stage", sop_number: null}
+  - id: V-223
+    name: "ACF-102 backwash inlet valve"
+    kind: valve
+    section: L2
+    plan_item: "4"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "feeds the bottom of the vessel (reverse flow)", sop_number: null}
+  - id: V-224
+    name: "ACF-102 backwash outlet valve"
+    kind: valve
+    section: L2
+    plan_item: "4"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "carries backwash water from the top to the drain trench", sop_number: null}
+  - id: V-225
+    name: "ACF-102 rinse to drain valve"
+    kind: valve
+    section: L2
+    plan_item: "4"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "sends rinse water from the bottom to the drain trench", sop_number: null}
+
+  # ---------------- SOF-103: Water softener vessel with 5-valve manual manifold ----------------
+  - id: SOF-103
+    name: Water softener vessel
+    kind: media_vessel
+    section: L2
+    plan_item: "5"
+    basis: description
+    role: process
+    control: none
+    ports: {top_in: in, top_out: out, bottom_in: in, bottom_out: out}
+    spec: {role: ion-exchange Ca and Mg to Na to protect the RO membranes, bed: cation resin}
+  - {id: TF-103, name: "SOF-103 feed split", kind: tee, section: L2, plan_item: "5", basis: standard_practice, role: process, control: none, ports: {in: in, out_service: out, out_backwash: out}}
+  - {id: TB-103, name: "SOF-103 outlet split", kind: tee, section: L2, plan_item: "5", basis: standard_practice, role: process, control: none, ports: {in: in, out_service: out, out_rinse: out}}
+  - id: V-331
+    name: "SOF-103 service inlet valve"
+    kind: valve
+    section: L2
+    plan_item: "5"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: open}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "feeds the top of the vessel (service and rinse)", sop_number: null}
+  - id: V-332
+    name: "SOF-103 service outlet valve"
+    kind: valve
+    section: L2
+    plan_item: "5"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: open}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "takes treated water from the bottom to the next stage", sop_number: null}
+  - id: V-333
+    name: "SOF-103 backwash inlet valve"
+    kind: valve
+    section: L2
+    plan_item: "5"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "feeds the bottom of the vessel (reverse flow)", sop_number: null}
+  - id: V-334
+    name: "SOF-103 backwash outlet valve"
+    kind: valve
+    section: L2
+    plan_item: "5"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "carries backwash water from the top to the drain trench", sop_number: null}
+  - id: V-335
+    name: "SOF-103 rinse to drain valve"
+    kind: valve
+    section: L2
+    plan_item: "5"
+    basis: standard_practice
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: closed}
+    spec: {type: quarter_turn_ball, handle: yellow lever, lever_angle_deg: {closed: 90, open: 0}, function: "sends rinse water from the bottom to the drain trench", sop_number: null}
+
+  - id: DRN-101
+    name: Media backwash and rinse drain trench
+    kind: drain
+    section: L2
+    plan_item: "6"
+    basis: footage
+    role: sink
+    control: none
+    ports: {bw1: in, bw2: in, bw3: in, rinse1: in, rinse2: in, rinse3: in}
+    spec: {note: rigid white UPVC manifold to floor trench}
+  - id: PF-101
+    name: Coarse guard pre-filter (small cylinder)
+    kind: prefilter
+    section: L2
+    plan_item: "7"
+    basis: description
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {purpose: catch media fines before the cartridge bank, position_note: "unverified: upstream of the cartridge bank per standard RO practice"}
+
+
+  # ---------------- fine cartridge bank: 4 lines, front housing then back housing, one gauge per housing ----------------
+  - id: HDR-CB-IN
+    name: Cartridge bank inlet header
+    kind: header
+    section: L1
+    plan_item: "8"
+    basis: standard_practice
+    role: process
+    control: none
+    ports: {in: in, out1: out, out2: out, out3: out, out4: out}
+  - id: HDR-CB-OUT
+    name: Cartridge bank outlet header
+    kind: header
+    section: L1
+    plan_item: "8"
+    basis: standard_practice
+    role: process
+    control: none
+    ports: {in1: in, in2: in, in3: in, in4: in, out: out}
+  - id: CB-1F
+    name: Cartridge housing line 1 front
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 1, stage: 1, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-1B
+    name: Cartridge housing line 1 back
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 1, stage: 2, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-2F
+    name: Cartridge housing line 2 front
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 2, stage: 1, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-2B
+    name: Cartridge housing line 2 back
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 2, stage: 2, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-3F
+    name: Cartridge housing line 3 front
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 3, stage: 1, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-3B
+    name: Cartridge housing line 3 back
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 3, stage: 2, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-4F
+    name: Cartridge housing line 4 front
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 4, stage: 1, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+  - id: CB-4B
+    name: Cartridge housing line 4 back
+    kind: cartridge_housing
+    section: L1
+    plan_item: "8"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {line: 4, stage: 2, gauge_on_dome: true, label_seen: "0.2 micron, dated 02/09/2026", micron_rating_verified: false}
+
+  # ---------------- high-pressure pump and RO ----------------
+  - id: P-301
+    name: Vertical multistage high-pressure pump
+    kind: pump
+    section: L2
+    plan_item: "9"
+    basis: footage
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+    spec: {type: vertical multistage SS316, discharge_psi: "145-230", risk: cavitation and dry running on low suction}
+  - id: RO-301
+    name: Reverse osmosis membrane array
+    kind: ro_vessel_bank
+    section: L1
+    plan_item: "10"
+    basis: footage
+    role: process
+    control: none
+    ports: {feed_in: in, permeate_out: out, reject_out: out}
+    spec: {vessels: vertical SS pressure vessels, vessel_count_verified: false, rejection_pct: "95-98"}
+  - id: NV-301
+    name: RO reject needle valve
+    kind: valve
+    section: L1
+    plan_item: "10"
+    basis: description
+    role: process
+    control: manual
+    ports: {in: in, out: out}
+    normal_state: {position: throttled}
+    spec: {type: needle, purpose: sets recovery ratio and concentrate back-pressure}
+  - id: DRN-301
+    name: RO reject drain
+    kind: drain
+    section: L1
+    plan_item: "10"
+    basis: description
+    role: sink
+    control: none
+    ports: {in: in}
+
+  # ---------------- ozone and pure water ----------------
+  - id: OC-401
+    name: Oxygen concentrator (white floor unit 1)
+    kind: oxygen_concentrator
+    section: L1
+    plan_item: "11"
+    basis: footage
+    role: source
+    control: automatic
+    ports: {out: out}
+    spec: {principle: pressure swing adsorption, purity_pct: "90-93"}
+  - id: OZ-401
+    name: Corona-discharge ozone generator (white floor unit 2)
+    kind: ozone_generator
+    section: L1
+    plan_item: "11"
+    basis: footage
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+  - id: VI-401
+    name: Ozone venturi injector
+    kind: injector
+    section: L1
+    plan_item: "11"
+    basis: description
+    role: process
+    control: none
+    ports: {in: in, gas_in: in, out: out}
+    spec: {target_residual_ppm: "0.2-0.4"}
+  - id: TK-401
+    name: Pure water stainless storage tank (big tank 2)
+    kind: tank
+    section: L1
+    plan_item: "12"
+    basis: footage
+    role: process
+    control: none
+    ports: {in: in, out: out}
+    spec: {material: stainless steel, mounting: elevated legs}
+  - id: P-401
+    name: Sanitary transfer booster pump
+    kind: pump
+    section: L1
+    plan_item: "13"
+    basis: description
+    role: process
+    control: automatic
+    ports: {in: in, out: out}
+  - id: PF-401
+    name: Inline 0.2 micron trap filter
+    kind: polish_filter
+    section: L1
+    plan_item: "14"
+    basis: description
+    role: process
+    control: none
+    ports: {in: in, out: out}
+  - id: FILL-501
+    name: Bottling line (not in footage)
+    kind: filler
+    section: L1
+    plan_item: "15"
+    basis: description
+    role: sink
+    control: automatic
+    ports: {in: in}
+
+  # ---------------- control and power (off the water path) ----------------
+  - {id: HMI-001, name: HMI/PLC operator console, kind: hmi_plc, section: L1, basis: footage, role: support, control: none, spec: {shows: [permeate TDS, cycle status, error log], interlocks: [LPS, HPS], brand: unknown, comms: "unverified, assumed Modbus TCP"}}
+  - {id: MCC-001, name: Motor control centre (corner power panel), kind: mcc, section: L1, basis: description, role: support, control: none, spec: {contains: [thermal overload relays, contactors, phase-reversal protection, motor breakers]}}
