@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LastMeter · Operations console</title>
+    <link rel="stylesheet" href="/src/console/console.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand">LastMeter</div>
+      <div class="plant" id="plant-name">Connecting…</div>
+      <div class="chips" id="chips"></div>
+      <a class="link" href="/index.html">Plant twin</a>
+    </header>
+    <section class="controls" id="controls"></section>
+    <main class="layout">
+      <div class="signals" id="signals"></div>
+      <aside class="side">
+        <section>
+          <h2>Signal flags</h2>
+          <ul class="flags" id="flags"></ul>
+        </section>
+        <section>
+          <h2>Run</h2>
+          <dl class="run" id="run"></dl>
+        </section>
+      </aside>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script type="module" src="/src/console/main.js"></script>
+  </body>
+</html>
