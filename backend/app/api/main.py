@@ -15,6 +15,7 @@ from ..env import optional, require
 from ..plant import PlantPack, load_pack
 from ..repositories.edge_nodes import EdgeNodeRepository
 from ..repositories.flags import FlagRepository
+from ..repositories.investigation import InvestigationRepository
 from ..repositories.runs import RunRepository
 from ..repositories.telemetry import TelemetryRepository
 from . import console_routes, edge_routes
@@ -48,6 +49,8 @@ def create_app(
     state.telemetry = TelemetryRepository(pool)
     state.edge_nodes = EdgeNodeRepository(pool)
     state.flags = FlagRepository(pool)
+    state.investigation = InvestigationRepository(pool)
+    state.pack = pack
     release_cache: dict[str, UUID] = {}
 
     async def release_id(plant_id: str) -> UUID | None:

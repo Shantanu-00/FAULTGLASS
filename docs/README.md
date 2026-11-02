@@ -6,4 +6,7 @@
   and Three.js presentation, Python simulation, storage, and Meta/Baseten model flow.
 - [Spark watcher](SPARK_WATCHER.md): the implemented Baseten Muse Spark Open
   telemetry watcher — data path, baseline/flagging rules, and run commands.
+- [Wonder investigator](INVESTIGATOR.md): the implemented Muse Wonder
+  investigation loop — Active Memory/Focus showcase design, staged
+  initialisation, tools, guards, and continuity.
 - [Demo script](DEMO.md): the fixed 3-minute LastMeter video and build order.

@@ -9,7 +9,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 
 from ..repositories.runs import ActiveRunExists
-from .schemas import CreateRun, EventIn
+from ..repositories.telemetry import Reading
+from .schemas import CompleteTaskIn, CreateRun, EventIn
 from .sse import telemetry_events
 
 router = APIRouter(prefix="/v1")
@@ -141,3 +142,68 @@ async def stream(request: Request, cursor: int | None = None):
 async def flags(request: Request, limit: int = Query(50, ge=1, le=200)):
     state = request.app.state
     return jsonable_encoder({"flags": await state.flags.recent(state.plant_id, limit)})
+
+
+@router.get("/incidents")
+async def incidents(request: Request):
+    """Live incidents with their investigation status and current focus."""
+    state = request.app.state
+    return jsonable_encoder({"incidents": await state.investigation.live_incidents(state.plant_id)})
+
+
+@router.get("/incidents/{incident_id}")
+async def incident_detail(request: Request, incident_id: str):
+    state = request.app.state
+    inv = state.investigation
+    incident = await inv.incident(incident_id)
+    if incident is None:
+        raise HTTPException(404, "unknown incident")
+    checkpoint = await inv.checkpoint(incident_id)
+    return jsonable_encoder({
+        "incident": incident,
+        "flag": await inv.flag_for_incident(incident_id),
+        "hypotheses": await inv.hypotheses(incident_id),
+        "field_tasks": await inv.field_tasks(incident_id),
+        "trace": await inv.trace(incident_id),
+        "investigation": (
+            {"status": checkpoint["status"], "steps_used": checkpoint["steps_used"], "focus": checkpoint["focus"]}
+            if checkpoint else {"status": "not_started", "steps_used": 0, "focus": {}}
+        ),
+    })
+
+
+@router.post("/incidents/{incident_id}/tasks/{task_id}/complete")
+async def complete_task(request: Request, incident_id: str, task_id: UUID, body: CompleteTaskIn):
+    """Submit field evidence for a pending task and resume the investigation.
+
+    Manual stub: readings are typed values for the task's tags. The photo/SAM
+    pipeline will produce the same readings shape later; nothing else changes.
+    """
+    state = request.app.state
+    inv = state.investigation
+    tasks = [t for t in await inv.field_tasks(incident_id) if str(t["id"]) == str(task_id)]
+    if not tasks:
+        raise HTTPException(404, "unknown task for this incident")
+    task = tasks[0]
+    if task["status"] != "pending":
+        raise HTTPException(409, "task is not pending")
+    by_tag = {i.tag: i for i in state.pack.instruments}
+    unknown = [t for t in body.readings if t not in task["tags"] or t not in by_tag]
+    if unknown:
+        raise HTTPException(422, f"readings must be for this task's field tags: {sorted(unknown)}")
+    now = dt.datetime.now(dt.timezone.utc)
+    run = await state.runs.active(state.plant_id)
+    readings = [
+        Reading(tag=tag, observed_at=now, value=value, raw_value=None,
+                unit=by_tag[tag].unit, quality="good", source_id="field_task")
+        for tag, value in body.readings.items()
+    ]
+    await state.telemetry.insert_field_readings(
+        state.plant_id, readings, run_id=run.id if run else None)
+    await inv.complete_field_task(task_id, {"readings": body.readings, "note": body.note, "source": "manual_entry"})
+    checkpoint = await inv.checkpoint(incident_id)
+    if checkpoint and checkpoint["status"] == "waiting_field":
+        await inv.save_checkpoint(
+            incident_id, status="investigating", steps_used=checkpoint["steps_used"],
+            continuation=checkpoint["continuation"], focus=checkpoint["focus"], model=checkpoint["model"])
+    return {"completed": True, "readings_stored": len(readings)}

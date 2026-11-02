@@ -76,11 +76,39 @@ h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacin
 .run dt { color: var(--muted); }
 .run dd { margin: 0; }
 
+.reasoning { margin: 0 16px 16px; border-top: 2px solid var(--line); padding-top: 14px; }
+.reasoning-head { display: flex; align-items: baseline; gap: 14px; }
+.reasoning-head h2 { font-size: 15px; margin: 0; }
+.reasoning h3 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+.reasoning-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 20px; }
+.focus { display: grid; grid-template-columns: 74px 1fr; gap: 6px 10px; margin: 0; font-size: 13px; }
+.focus dt { color: var(--muted); }
+.focus dd { margin: 0; overflow-wrap: anywhere; }
+.htree-root { font-weight: 700; font-size: 13px; padding: 8px 10px; background: #f4f6f8; border: 1px solid var(--line); border-radius: 4px; }
+.htree { display: grid; gap: 8px; margin-top: 8px; padding-left: 16px; border-left: 2px solid var(--line); }
+.hnode { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+.hnode.rejected { opacity: .62; }
+.hnode.rejected p { text-decoration: line-through; }
+.hnode.supported, .hnode.confirmed { border-color: var(--ok, #2e7d46); }
+.hhead { display: flex; justify-content: space-between; font-size: 12px; }
+.hnode p { margin: 6px 0; font-size: 13px; line-height: 1.4; }
+.hev { margin: 4px 0 0; padding-left: 16px; font-size: 12px; line-height: 1.5; }
+.hev .against { color: #9a3412; }
+.hev .for { color: #166534; }
+.recalls, .trace { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.trace { max-height: 260px; overflow: auto; }
+.task { border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; }
+.task p { margin: 4px 0 8px; line-height: 1.4; }
+.task-form { display: grid; gap: 6px; margin-top: 8px; }
+.task-form input { padding: 6px 8px; border: 1px solid var(--line); border-radius: 3px; font: inherit; }
+.task-form button { padding: 7px 10px; cursor: pointer; }
+
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: #1f2328; color: #fff; padding: 10px 16px; border-radius: 3px; font-size: 13px; opacity: 0; pointer-events: none; transition: all 0.2s; }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
+  .reasoning-grid { grid-template-columns: 1fr; }
   .signals { grid-template-columns: 1fr; }
   .row { grid-template-columns: 10px 1fr 104px; }
   .trend { display: none; }

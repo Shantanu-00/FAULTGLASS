@@ -283,6 +283,118 @@ async function refreshFlags() {
   } catch {}
 }
 
+// ---- Reasoning view: focus ledger, hypothesis tree, memory recalls ----------
+// Everything rendered here comes from persisted investigator records (trace,
+// hypotheses, checkpoint focus). Nothing is inferred in the browser.
+let activeIncidentId = null;
+
+function renderInvestigation(detail) {
+  const inv = detail.investigation;
+  el('investigation-status').textContent =
+    `${detail.incident.incident_id} · ${inv.status.replace('_', ' ')} · ${inv.steps_used} Wonder steps`;
+  const focus = inv.focus || {};
+  const entry = (label, value) => [h('dt', {}, label), h('dd', {}, value || '—')];
+  el('focus').replaceChildren(
+    ...entry('Goal', focus.goal),
+    ...entry('Blocker', focus.blocker),
+    ...entry('Next step', focus.next_step),
+    ...entry('In focus', (focus.focus_assets || []).join(', ')),
+  );
+
+  const root = h('div', { class: 'htree-root' }, detail.incident.title);
+  const branches = detail.hypotheses.map((hyp) => {
+    const ev = [
+      ...(hyp.evidence_against || []).map((e) => h('li', { class: 'against' }, `− ${e}`)),
+      ...(hyp.evidence_for || []).map((e) => h('li', { class: 'for' }, `+ ${e}`)),
+    ];
+    return h(
+      'div',
+      { class: `hnode ${hyp.status}` },
+      h('div', { class: 'hhead' }, h('code', {}, hyp.label), h('span', { class: `hstatus ${hyp.status}` }, hyp.status)),
+      h('p', {}, hyp.statement),
+      ev.length ? h('ul', { class: 'hev' }, ev) : null,
+    );
+  });
+  el('hypotheses').replaceChildren(
+    root,
+    branches.length ? h('div', { class: 'htree' }, branches) : h('p', { class: 'muted' }, 'No hypotheses recorded yet.'),
+  );
+
+  const recalls = detail.trace.filter((t) => t.kind === 'recall');
+  el('recalls').replaceChildren(
+    ...(recalls.length
+      ? recalls.map((t) => h('li', {}, h('code', {}, t.tool_name || 'recall'), ` — ${t.content.slice(0, 140)}`))
+      : [h('li', { class: 'muted' }, 'Nothing recalled yet.')]),
+  );
+
+  el('trace').replaceChildren(
+    ...detail.trace.slice(-14).map((t) =>
+      h('li', { class: `tkind-${t.kind}` }, h('code', {}, t.kind), ` ${t.content.slice(0, 160)}`),
+    ),
+  );
+
+  const tasks = el('field-tasks');
+  tasks.replaceChildren(
+    ...(detail.field_tasks.length
+      ? detail.field_tasks.map((task) => {
+          const card = h(
+            'div',
+            { class: `task ${task.status}` },
+            h('p', {}, task.instruction),
+            h('div', { class: 'tags' }, [...(task.asset_ids || []), ...(task.tags || [])].map((t) => h('code', {}, t))),
+            h('span', { class: 'muted' }, task.status),
+          );
+          if (task.status === 'pending') {
+            const inputs = new Map();
+            const form = h('div', { class: 'task-form' });
+            for (const tag of task.tags || []) {
+              const input = h('input', { type: 'number', step: 'any', placeholder: `${tag} (psi)`, 'data-tag': tag });
+              inputs.set(tag, input);
+              form.append(input);
+            }
+            const note = h('input', { type: 'text', placeholder: 'Operator note' });
+            form.append(
+              note,
+              h(
+                'button',
+                {
+                  onclick: async () => {
+                    const readings = {};
+                    for (const [tag, input] of inputs) {
+                      if (input.value !== '') readings[tag] = Number(input.value);
+                    }
+                    try {
+                      await api.completeTask(detail.incident.incident_id, task.id, readings, note.value);
+                      toast('Field evidence submitted — investigation resumed');
+                      refreshIncidents();
+                    } catch (error) {
+                      toast(error.message);
+                    }
+                  },
+                },
+                'Submit readings',
+              ),
+            );
+            card.append(form);
+          }
+          return card;
+        })
+      : [h('p', { class: 'muted' }, 'No field tasks.')]),
+  );
+}
+
+async function refreshIncidents() {
+  try {
+    const { incidents } = await api.incidents();
+    if (!incidents.length) return;
+    const active = incidents[0];
+    if (active.incident_id !== activeIncidentId || active.investigation_status) {
+      activeIncidentId = active.incident_id;
+      renderInvestigation(await api.incident(active.incident_id));
+    }
+  } catch {}
+}
+
 async function start() {
   try {
     const plant = await api.plant();
@@ -306,9 +418,10 @@ async function start() {
   const stream = new EventSource(api.streamUrl());
   stream.addEventListener('telemetry', (event) => store.applyRows(JSON.parse(event.data)));
 
-  await Promise.all([refreshRun(), refreshFlags()]);
+  await Promise.all([refreshRun(), refreshFlags(), refreshIncidents()]);
   setInterval(refreshRun, 2000);
   setInterval(refreshFlags, 3000);
+  setInterval(refreshIncidents, 3000);
   setInterval(render, 1000);
   setInterval(() => {
     if (store.run) api.heartbeat(store.run.id).catch(() => {});

@@ -27,5 +27,9 @@ export const api = {
   heartbeat: (id) => request('POST', `/v1/sim/runs/${id}/heartbeat`),
   sendEvent: (id, kind, payload) => request('POST', `/v1/sim/runs/${id}/events`, { kind, payload }),
   flags: () => request('GET', '/v1/flags'),
+  incidents: () => request('GET', '/v1/incidents'),
+  incident: (id) => request('GET', `/v1/incidents/${encodeURIComponent(id)}`),
+  completeTask: (incidentId, taskId, readings, note) =>
+    request('POST', `/v1/incidents/${encodeURIComponent(incidentId)}/tasks/${taskId}/complete`, { readings, note }),
   streamUrl: () => `${BASE}/v1/telemetry/stream`,
 };

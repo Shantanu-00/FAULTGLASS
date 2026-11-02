@@ -36,6 +36,13 @@ class CreateRun(BaseModel):
     clock_speed: float = Field(default=1.0, ge=1.0, le=10.0)
 
 
+class CompleteTaskIn(BaseModel):
+    """Field-task completion (manual stub input; photo/SAM replaces the source later)."""
+
+    readings: dict[str, float] = Field(default_factory=dict)
+    note: str = Field(default="", max_length=1000)
+
+
 class EventIn(BaseModel):
     kind: Literal["scenario", "valve_action"]
     payload: dict[str, Any] = Field(default_factory=dict)

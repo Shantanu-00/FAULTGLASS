@@ -4,10 +4,11 @@ PlantDebugger — a hackathon project (demo brand **LastMeter**).
 
 Implemented so far: the versioned plant pack, process simulator with a Modbus
 PLC emulator, edge poller with offline outbox, FastAPI ingest/console API,
-live operations console, 3D plant twin, plant-memory/SOP/past-incident seed
-data, and the **Baseten Spark telemetry watcher** described below. Wonder
-investigation, the gauge/voice/valve pipelines, the Field Companion, and
-deployment are not built yet (see the build order in docs/DEMO.md).
+live operations console with a reasoning view, 3D plant twin,
+plant-memory/SOP/past-incident seed data, the **Baseten Spark telemetry
+watcher**, and the **Muse Wonder investigator** described below. The
+gauge/voice/valve pipelines, the Field Companion, and deployment are not
+built yet (see the build order in docs/DEMO.md).
 
 The demo is fixed by [docs/DEMO.md](docs/DEMO.md) (the 3-minute LastMeter video, who does what,
 and corrections to the draft script). The fastest-deployment plan is
@@ -37,7 +38,7 @@ planning documents say.
 | Role | Provider and model | Status | Code entry point | Input | Output |
 | --- | --- | --- | --- | --- | --- |
 | Telemetry watcher (flag drift, never diagnose) | Baseten, `meta-models/muse-spark-open-1026` (hackathon slug; catalog slug `meta-models/muse-spark-open`) | **Implemented** | [backend/app/watcher/](backend/app/watcher/__main__.py) (`app.watcher`), client in [spark.py](backend/app/watcher/spark.py) | Plain-text summary card computed by code from Postgres telemetry (baseline, spread, distance per signal) | `NORMAL` / `WATCH` / `FLAG` plain text, parsed and checked in Python; validated results land in the `signal_flags` table and open an `incidents` row |
-| Lead investigator (plan, hypotheses, re-plan) | Meta, `muse-wonder-1.0` via Responses API | Planned (docs/DEMO.md step 2-3) | — | — | — |
+| Lead investigator (plan, hypotheses, re-plan; Active Memory + Active Focus) | Meta, `muse-wonder-1.0` via Responses API | **Implemented** | [backend/app/investigator/](backend/app/investigator/__main__.py) (`app.investigator`), client in [wonder.py](backend/app/investigator/wonder.py), tools in [tools.py](backend/app/investigator/tools.py) | Incident brief (Spark flag + evidence), then model-driven tool retrieval: plant memory, SOPs, past incidents, telemetry; field-task results on resume | Tool calls executed and validated in Python; hypotheses, focus ledger, field tasks and the full trace persisted (`incident_hypotheses`, `field_tasks`, `investigation_checkpoints`, `incident_trace`). Design: [docs/INVESTIGATOR.md](docs/INVESTIGATOR.md) |
 | Gauge/valve segmentation | Meta, `sam-3.1` | Planned (step 4, 6) | — | — | — |
 | Marathi speech transcription | Meta, `muse-voice-transcribe-1.0` | Planned (step 5) | — | — | — |
 | Gauge crop reading / transcript structuring (original plan) | Baseten, Muse Spark Open | Planned, behind the watcher interface | — | — | — |

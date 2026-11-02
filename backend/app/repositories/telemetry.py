@@ -93,6 +93,32 @@ class TelemetryRepository:
             )
             return await cur.fetchall()
 
+    async def insert_field_readings(
+        self, plant_id: str, readings: list[Reading], *, run_id: UUID | None
+    ) -> int:
+        """Completed field-task readings join the same timeline (provenance='field')."""
+        if not readings:
+            return 0
+        rows = [
+            (plant_id, r.tag, r.observed_at, r.value, r.raw_value, r.unit, r.quality, r.source_id, run_id)
+            for r in readings
+        ]
+        async with self._pool.connection() as conn:
+            async with conn.transaction():
+                cur = conn.cursor()
+                await cur.executemany(
+                    """
+                    insert into telemetry
+                      (plant_id, tag, observed_at, value, raw_value, unit, quality, provenance,
+                       source_id, edge_node_id, release_id, run_id)
+                    values (%s, %s, %s, %s, %s, %s, %s, 'field', %s, null, null, %s)
+                    on conflict (plant_id, tag, observed_at) do nothing
+                    """,
+                    rows,
+                )
+                inserted = cur.rowcount
+        return max(inserted, 0)
+
     async def run_points(
         self, plant_id: str, run_id: UUID, start: dt.datetime, end: dt.datetime
     ) -> list[dict[str, Any]]:
