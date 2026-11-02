@@ -16,9 +16,13 @@ in `ARCHITECTURE.md` still apply. Model facts come from the docs mirrored in `do
 
 ### Cuts versus `ARCHITECTURE.md` (restore later only if time remains)
 
-1. **One container, not three.** Run the worker loop and the simulator as `asyncio`
-   tasks inside the FastAPI process. Keep their code in separate modules so they can
-   split out later. Lightsail `micro` (1 GB) is enough; set scale to 1.
+1. **One deployment, one image, four containers.** The API, the simulator, the edge
+   streamer and the model worker are separate processes started from the same image with
+   different commands (`python -m app.api`, `app.simulator`, `app.edge`, and the worker once
+   built). Containers in one Lightsail deployment share localhost, so the edge reads the
+   simulator at 127.0.0.1:5020 and posts to the API at 127.0.0.1:8000. Only the API has a
+   public endpoint; the simulator and the edge listen on nothing public. Start on `small`
+   (2 GB) for four Python processes, measure memory, and drop to `micro` if it fits. Scale 1.
 2. **No Procrastinate.** Use a plain `jobs` table (`status`, `locked_until`,
    `idempotency_key`) polled with `SELECT … FOR UPDATE SKIP LOCKED`. The pause/resume
    requirement is met by persisting the Wonder continuation items and the open task.
@@ -37,10 +41,11 @@ in `ARCHITECTURE.md` still apply. Model facts come from the docs mirrored in `do
 ```text
 Phone / laptop ──► Vercel (static Vite build, env: VITE_API_URL, VITE_SUPABASE_*)
         │                        │
-        └── REST + SSE (CORS) ───┴──► Lightsail container: FastAPI
-                                       ├─ asyncio worker  ──► Meta API: Wonder, Voice, SAM, Spark
-                                       └─ asyncio simulator
-                                       ──► Supabase: Postgres, Storage, Auth
+        └── REST + SSE (CORS) ───┴──► Lightsail deployment (one host, shared localhost)
+                                       ├─ api        (public) ──► Supabase: Postgres, Storage, Auth
+                                       ├─ simulator  (internal, Modbus 127.0.0.1:5020)
+                                       ├─ edge       polls the simulator, posts to api
+                                       └─ worker     ──► Meta API: Wonder, Voice, SAM; Baseten: Spark
 ```
 
 ## 2. Model roles (verified in `docs/meta/`)
@@ -115,6 +120,7 @@ aws lightsail create-container-service --service-name faultglass --power micro -
 aws lightsail push-container-image --service-name faultglass --label api --image faultglass-api
 aws lightsail create-container-service-deployment --service-name faultglass \
   --containers file://deploy/containers.json --public-endpoint file://deploy/endpoint.json
+# containers.json lists api, simulator, edge, worker: same image, different command; env per .env.example
 # Frontend: import the repo in Vercel, root directory `frontend`, set VITE_* env vars.
 ```
 
