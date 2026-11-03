@@ -1,0 +1,284 @@
+.field {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field .banner {
+  margin: -20px -16px 0;
+}
+
+.field-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-head .tag {
+  font-size: 13px;
+}
+
+.field .muted,
+.field .hint-text {
+  font-size: 15px;
+}
+
+.field .small {
+  font-size: 14px;
+}
+
+.field .panel + .panel,
+.field .card {
+  margin-top: 0;
+}
+
+.task-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.task-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.instruction {
+  font-size: 18px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.tag-large {
+  font-size: 15px;
+  padding: 2px 8px;
+}
+
+.task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--surface-3);
+}
+
+.field .btn-xl {
+  width: 100%;
+  min-height: 56px;
+  font-size: 17px;
+}
+
+.btn-xl {
+  min-height: 52px;
+  padding: 10px 18px;
+  font-size: 16px;
+}
+
+.btn-recording {
+  background: var(--alarm);
+  border-color: var(--alarm);
+  color: #fff;
+}
+
+.btn-recording:hover:not(:disabled) {
+  background: #a31f1f;
+}
+
+.file-btn {
+  position: relative;
+  cursor: pointer;
+}
+
+.file-btn input[type='file'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-btn.is-disabled input {
+  pointer-events: none;
+}
+
+.capture {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.capture-preview {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.capture-name {
+  overflow-wrap: anywhere;
+}
+
+.recorder {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recorder-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.recorder-row .btn-quiet {
+  min-height: 52px;
+}
+
+.audio-preview {
+  width: 100%;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.form-field input,
+.form-field textarea {
+  font-size: 16px;
+  min-height: 48px;
+  font-weight: 400;
+  width: 100%;
+}
+
+.stage-guide {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stage-guide li {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.stage-guide strong {
+  font-size: 15px;
+}
+
+.stage-guide small {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.attempt {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attempt.is-ok {
+  border-color: #b5dcc2;
+  background: var(--ok-soft);
+}
+
+.attempt.is-retry {
+  border-color: #f0c98a;
+  background: var(--warning-soft);
+}
+
+.result-error {
+  color: var(--alarm);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.task-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.voice-result blockquote {
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--surface);
+}
+
+.results-table th,
+.results-table td {
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--surface-3);
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.results-table thead th {
+  font-size: 13px;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.results-table .num {
+  text-align: right;
+}
+
+.completed {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.completed .card {
+  margin-top: 8px;
+}

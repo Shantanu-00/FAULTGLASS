@@ -1,13 +1,4 @@
-export type SignalQuantity =
-  | 'flow'
-  | 'pressure'
-  | 'pressure_switch'
-  | 'current'
-  | 'tds'
-  | 'run_state'
-  | 'level_switch'
-  | 'cycle_state'
-  | 'fault_code';
+export type SignalType = 'measurement' | 'switch' | 'status';
 
 export interface SignalLimits {
   nominal?: number;
@@ -20,53 +11,148 @@ export interface SignalLimits {
 export interface Signal {
   tag: string;
   name: string;
-  type: 'measurement' | 'state' | 'discrete';
-  quantity: SignalQuantity;
+  type: SignalType;
+  quantity: string;
   unit: string;
   range: [number, number];
   limits: SignalLimits;
-  freshness_s?: number;
-  state_labels?: Record<string, string>;
+  state_labels: Record<string, string> | null;
+  freshness_s: number | null;
+}
+
+export interface PlantInfo {
+  plant_id: string;
+  name: string;
+  simulation: boolean;
+  signals: Signal[];
+}
+
+export interface TelemetryRow {
+  tag: string;
+  value: number | null;
+  unit: string | null;
+  quality: 'good' | 'bad' | 'stale' | 'uncertain';
+  observed_at: string;
+  run_id: string | null;
+}
+
+export interface HistoryPoint {
+  observed_at: string;
+  value: number | null;
+  quality: string;
 }
 
 export interface Reading {
-  observed_at: string;
   value: number | null;
-  quality: 'good' | 'bad' | 'stale';
+  quality: string;
+  observed_at: string;
+  run_id: string | null;
+}
+
+export interface SeriesPoint {
+  t: number;
+  v: number;
+}
+
+export interface RunDiagnostics {
+  id: string;
+  status: 'starting' | 'learning' | 'running' | 'stopped';
+  clock_speed: number;
+  scenario: string | null;
+  scenario_started_at: string | null;
+  started_at: string;
+  baseline_ready_at: string | null;
 }
 
 export interface Flag {
   id: string;
+  run_id: string | null;
   raised_at: string;
+  status: 'open' | 'picked_up' | 'dismissed' | 'resolved';
   severity: 'info' | 'warning' | 'critical';
-  status: 'active' | 'cleared' | 'acknowledged';
-  summary: string;
   tags: string[];
-  model?: string;
-  incident_id?: string;
+  summary: string;
+  model: string | null;
+  incident_id: string | null;
+}
+
+export interface FlagEvidence {
+  verdict?: string;
+  signals?: Record<string, { current: number; baseline: number; pct: number; sigma: number; unit: string }>;
+}
+
+export interface IncidentSummary {
+  incident_id: string;
+  title: string;
+  status: 'open' | 'resolved' | 'closed';
+  severity: 'low' | 'medium' | 'high';
+  opened_at: string;
+  models_used: string[];
+  investigation_status: string | null;
+  focus: Focus | null;
+  steps_used: number | null;
+  hypotheses: number;
+  pending_tasks: number;
+}
+
+export interface Focus {
+  goal?: string;
+  blocker?: string;
+  next_step?: string;
+  focus_assets?: string[];
 }
 
 export interface Hypothesis {
-  id: string;
   label: string;
   statement: string;
-  status: 'suspected' | 'supported' | 'rejected' | 'confirmed';
-  probability: number;
-  evidence_for?: string[];
-  evidence_against?: string[];
+  status: 'open' | 'rejected' | 'supported' | 'confirmed';
+  evidence_for: unknown[];
+  evidence_against: unknown[];
+  updated_at: string;
+}
+
+export interface GaugeResult {
+  tag: string;
+  box: number[] | null;
+  sam_confidence: number | null;
+  wonder_psi: number | null;
+  needle_psi: number | null;
+  status: string;
+  value: number | null;
+}
+
+export interface VoiceComparison {
+  status: string;
+  summary?: string;
+  wonder_summary?: string;
+  spoken_readings?: Record<string, number>;
+  photo_readings?: Record<string, number>;
+  differences?: Record<string, number>;
+}
+
+export interface VoicePayload {
+  id?: string;
+  transcript?: string;
+  model?: string;
+  comparison?: VoiceComparison;
+  structured?: { readings?: Record<string, number>; observation?: string; concerns?: string[] };
+  error?: string;
+}
+
+export interface ValvePolicy {
+  status: string;
+  stages_seen: string[];
+  reasons: string[];
 }
 
 export interface FieldTaskResult {
-  readings?: Array<{ tag: string; value: number | null; status: string }>;
-  voice?: {
-    transcript?: string;
-    comparison?: { status: string };
-  };
-  policy?: {
-    status: string;
-    stages_seen: string[];
-    reasons: string[];
-  };
+  readings?: Record<string, number>;
+  note?: string;
+  source?: string;
+  gauges?: GaugeResult[];
+  voice?: VoicePayload | null;
+  policy?: ValvePolicy;
+  simulator_action?: string;
 }
 
 export interface FieldTask {
@@ -74,65 +160,83 @@ export interface FieldTask {
   kind: 'gauge_photo' | 'valve_action' | 'observation';
   status: 'pending' | 'completed' | 'cancelled';
   instruction: string;
-  asset_ids?: string[];
-  tags?: string[];
-  result?: FieldTaskResult;
+  asset_ids: string[];
+  tags: string[];
+  result: FieldTaskResult | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export interface ActionProposal {
   id: string;
-  action: string;
   asset_id: string;
+  action: string;
   rationale: string;
-  status: 'pending' | 'approved' | 'rejected';
+  sop_id: string | null;
+  status: 'pending' | 'approved' | 'rejected' | 'executed' | 'failed';
+  field_task_id: string | null;
+  result: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export interface VoiceObservation {
   id: string;
+  task_id: string | null;
   transcript: string;
-  structured?: Record<string, unknown>;
-  comparison?: { status: string };
+  structured: VoicePayload['structured'] | null;
+  comparison: VoiceComparison | null;
+  model?: string;
+  created_at: string;
 }
 
 export interface TraceEvent {
-  id: string;
-  time: string;
-  actor: 'PLANT' | 'ADK' | 'OPERATOR' | 'WONDER' | 'VERIFIER';
+  seq: number;
+  at: string;
   kind: string;
+  actor: 'system' | 'model' | 'operator' | 'verifier' | 'code';
+  hypothesis_id: string | null;
+  tool_name: string | null;
   content: string;
-  evidence?: string[];
+  evidence: unknown[];
 }
 
-export interface InvestigationDetail {
+export interface IncidentDetail {
   incident: {
     incident_id: string;
     title: string;
+    status: 'open' | 'resolved' | 'closed';
+    severity: string;
     opened_at: string;
-    status: 'open' | 'verifying' | 'resolved';
+    closed_at: string | null;
+    closed_by: string | null;
+    root_cause: string | null;
+    resolution: string | null;
+    models_used: string[];
   };
-  investigation: {
-    status: 'open' | 'waiting_field' | 'verifying' | 'resolved';
-    steps_used: number;
-    focus?: {
-      goal?: string;
-      blocker?: string;
-      next_step?: string;
-      focus_assets?: string[];
-    };
-  };
+  flag: (Omit<Flag, 'status' | 'incident_id'> & { evidence: FlagEvidence }) | null;
   hypotheses: Hypothesis[];
   field_tasks: FieldTask[];
-  action_proposals?: ActionProposal[];
-  voice_observations?: VoiceObservation[];
+  action_proposals: ActionProposal[];
+  voice_observations: VoiceObservation[];
   trace: TraceEvent[];
+  investigation: {
+    status: string;
+    steps_used: number;
+    focus: Focus;
+    model?: string | null;
+  };
 }
 
-export interface RunDiagnostics {
-  id: string;
-  status: 'starting' | 'learning' | 'running' | 'stopped';
-  started_at?: string;
-  baseline_ready_at?: string;
-  scenario?: string | null;
-  scenario_started_at?: string;
-  clock_speed: number;
+export interface PhotoResponse {
+  completed: boolean;
+  readings: GaugeResult[];
+  readings_stored?: number;
+  reason?: string;
+  voice?: VoicePayload | null;
+}
+
+export interface VideoResponse {
+  completed: boolean;
+  policy: ValvePolicy;
+  reason?: string;
 }

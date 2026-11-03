@@ -575,7 +575,7 @@ export function createTransmitter(instrument) {
     setReading(v, label) {
       const abnormal = isAbnormal(label);
       const running = label === 'RUNNING';
-      const c = abnormal ? 0xc62828 : running ? 0x2e7d32 : 0x9aa1a8;
+      const c = abnormal ? 0xc62828 : running ? 0x1b7f3b : 0x9aa1a8;
       ledMat.color.set(c);
       ledMat.emissive.set(abnormal || running ? c : 0x000000);
       ledMat.emissiveIntensity = abnormal ? 0.9 : 0.4;

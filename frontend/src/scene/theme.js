@@ -20,20 +20,20 @@ export const COLORS = {
   gasket: 0xa6342b,
   frame: 0x9aa1a8,
   label: 0xffffff,
-  accent: 0x1a6dd8,
+  accent: 0x0866ff,
   alarm: 0xc62828,
   warning: 0xe08600,
-  ok: 0x2e7d32,
+  ok: 0x1b7f3b,
 };
 
 export const CSS = {
-  accent: '#1a6dd8',
+  accent: '#0866ff',
   alarm: '#c62828',
   warning: '#e08600',
-  ok: '#2e7d32',
-  ink: '#1f2328',
-  muted: '#5f6b76',
-  line: '#c9ced4',
+  ok: '#1b7f3b',
+  ink: '#1a2028',
+  muted: '#5b6672',
+  line: '#d6dbe1',
 };
 
 // Pipe rack elevation (m) and look per medium, so crossing lines separate vertically.
