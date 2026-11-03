@@ -8,7 +8,7 @@ Steps:
 1. Clear the fault on the HMI only after the precondition holds.
 2. Confirm FC-RO reads 0 (NONE) and ST-RO reads STOPPED (0), not FAULT (2).
 3. Confirm PSL-301 reads OK (1), YS-101 reads RUNNING, LSL-101 reads LEVEL_OK.
-4. Confirm cartridge dials PI-201 to PI-208 pass SOP-CB-002.
+4. Confirm cartridge bank gauges PI-201 and PI-202 pass SOP-CB-002 (dP below 12 psi).
 5. Photograph the NV-301 reject needle valve position and record it. Do not change it unless the start-up sheet says so.
 6. Start P-301 at the controller. Confirm YS-301 reads RUNNING (1).
 7. Watch ST-RO. A pass through FLUSH (3) is expected and is not a fault. FAULT (2), or FC-RO not 0, means stop P-301 and return to SOP-RO-001.

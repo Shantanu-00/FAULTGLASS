@@ -36,7 +36,7 @@ No model can move the plant, and no claimed action is trusted.
    PIT-302, and JI-301 near baseline, AIT-301 no longer elevated, and no
    abnormal discrete states. Success resolves the incident
    (`closed_by='verifier'`), resolves the Spark flag, and writes the partial
-   recovery: roughly 92% of baseline, with line 3 cartridge replacement and
+   recovery: roughly 92% of baseline, with cartridge element replacement and
    sand-filter fines inspection still recommended. Failure or timeout marks
    the proposal failed and escalates; it never silently passes.
 
@@ -64,7 +64,7 @@ OPEN -> MID -> CLOSED action.
    against a task. A voice failure never erases valid photo evidence.
 
 Live check: a locally synthesized English WAV ("PI 203 twenty two. PI 207
-six.") transcribed, structured to PI-203=22 and PI-207=6, and returned
+six.") transcribed, structured to PI-203=22 and PI-207=6 (earlier test tags; the current flow reads PI-201 and PI-202), and returned
 `AGREE`. A real Marathi operator recording remains the remaining acceptance
 sample; the API call is biased for Marathi and the model lists it as
 supported.

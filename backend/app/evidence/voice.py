@@ -64,7 +64,7 @@ class MetaVoiceClient:
             "audioEncoding": "WAV",
             "mode": "PUSH_TO_TALK",
             "languageBias": language_bias or ["Marathi", "English"],
-            "keywords": keywords or ["PI-201", "PI-203", "PI-207", "cartridge", "pressure", "psi"],
+            "keywords": keywords or ["PI-201", "PI-202", "inlet", "outlet", "cartridge", "pressure", "psi"],
         }
         started = time.monotonic()
         try:

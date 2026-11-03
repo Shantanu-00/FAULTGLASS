@@ -1,7 +1,7 @@
 -- SYNTHETIC past incidents for the filmed mineral water plant (plant_id = 'waterplant').
 -- These are staged scenarios written for the demo. They are not records of real events.
 -- Telemetry values come from the simulated PLC points in plants/waterplant/instruments.yaml.
--- Field readings (dials, valve levers) are invented to match the photos and the pack ranges.
+-- Field readings (gauges, valve levers) are invented to match the photos and the pack ranges.
 -- Pressure is in psi (red scale). No micron rating is stated anywhere in this file.
 -- Each trace lives in 05_incident_trace.sql and must be loaded after this file.
 
@@ -10,17 +10,17 @@ insert into incidents (incident_id, plant_id, title, status, severity, opened_at
                        data_origin, models_used) values
 
 ('INC-2026-0118', 'waterplant',
- 'Line 1 back housing gauge reads low; interstage valve left half closed',
+ 'Cartridge bank dP high after a housing change; element fitted with its wrap on',
  'closed', 'medium',
  '2026-03-09 07:12:00+05:30', '2026-03-09 09:40:00+05:30',
- '[{"tag":"PI-205","reading_psi":9,"nominal_psi":16,"low_alarm_psi":15,"source":"field_photo"},
-   {"tag":"PI-201","reading_psi":24,"nominal_psi":24,"source":"field_photo","note":"line 1 front, same line"},
-   {"tag":"PI-206","reading_psi":16,"nominal_psi":16,"source":"field_photo","note":"line 2 back, same row"}]'::jsonb,
- 'A hand-operated valve between the line 1 front and back housings was left at about 45 degrees after a housing change. It restricted flow to the back housing. The gauge was fine and the elements were not loaded. The valve has no tag in the pack yet.',
- 'The operator opened the interstage valve to 0 degrees (lever in line with the pipe). PI-205 read 15 psi about 13 minutes later and 16 psi at the hourly re-read. The verifier closed the incident on two stable readings.',
+ '[{"tag":"PI-201","reading_psi":32,"nominal_psi":24,"source":"field_photo","note":"bank inlet, CB-1F"},
+   {"tag":"PI-202","reading_psi":15,"nominal_psi":16,"low_alarm_psi":15,"source":"field_photo","note":"bank outlet, CB-1B; PIT-301 streamed 15.8 psi"},
+   {"tag":"dP","reading_psi":17,"nominal_psi":8,"limit_psi":12,"source":"code","note":"PI-201 minus PI-202"}]'::jsonb,
+ 'A new cartridge was fitted in the line 1 front housing at the start of the shift with its plastic wrap left on. The bank was restricted: the inlet rose and the outlet fell, so dP was 17 psi against a normal of about 8. Both gauges were fine (PI-202 agreed with the streamed PIT-301) and supply to the bank was normal.',
+ 'The operator stopped the pumps, vented the housing, removed the wrapped element and refitted it unwrapped per SOP-CB-004. dP read 11 psi about 13 minutes after the restart and 8 psi at the hourly re-read. The verifier closed the incident on two stable readings.',
  array['SOP-CB-002', 'SOP-CB-004'],
  'verifier',
- 'After any housing change, photograph every lever on that line and re-read the back housing within 30 minutes. The interstage valve needs a tag in the pack.',
+ 'After any housing change, check that every new element is unwrapped and re-photograph PI-201 and PI-202 within 30 minutes. A dP of 12 psi or more right after a change is an installation fault before it is a loaded element.',
  'synthetic',
  array['muse-wonder-1.0']),
 
@@ -31,8 +31,10 @@ insert into incidents (incident_id, plant_id, title, status, severity, opened_at
  '[{"tag":"ST-RO","value":"FAULT (2)","since":"06:19"},
    {"tag":"FC-RO","value":13,"meaning":"RAW_TANK_LOW","since":"06:19"},
    {"tag":"LSL-101","value":"raw tank low-level switch asserted","since":"05:02"},
-   {"tag":"YS-101","value":"feed pump stopped","since":"05:41"}]'::jsonb,
- 'The borewell pump tripped on its own breaker at about 04:20 and the raw tank drew down. The RO tripped on raw tank low. After refill, the coarse pre-filter PF-101 was about 70 percent covered with sediment from the draw-down. That would have restricted flow to the cartridge bank and HP pump suction on restart.',
+   {"tag":"YS-101","value":"feed pump stopped","since":"05:41"},
+   {"tag":"PI-201","reading_psi":17,"nominal_psi":24,"source":"field_photo","note":"bank inlet, P-101 run briefly after refill"},
+   {"tag":"PI-202","reading_psi":9,"nominal_psi":16,"source":"field_photo","note":"bank outlet, dP 8 psi so both gauges low together"}]'::jsonb,
+ 'The borewell pump tripped on its own breaker at about 04:20 and the raw tank drew down. The RO tripped on raw tank low. After refill, the coarse pre-filter PF-101 was about 70 percent covered with sediment from the draw-down. That restricted flow upstream of the cartridge bank: both bank gauges read low together with dP near normal, and it would have starved the HP pump suction on restart.',
  'The breaker was reset at 06:45 and supply was back at 06:50. LSL-101 cleared at 07:08 as the tank refilled. The operator cleaned the PF-101 element, refitted the bowl and restarted the RO at 08:02. ST-RO stayed RUNNING with no fault code.',
  array['SOP-RO-001', 'SOP-GEN-006'],
  'verifier',
@@ -54,15 +56,16 @@ insert into incidents (incident_id, plant_id, title, status, severity, opened_at
  array['muse-wonder-1.0']),
 
 ('INC-2026-0258', 'waterplant',
- 'Front housings on lines 2 and 4 rising after ACF-102 backwash; rinse step skipped',
+ 'Cartridge bank dP rising after ACF-102 backwash; rinse step skipped',
  'closed', 'medium',
  '2026-09-22 08:05:00+05:30', '2026-09-23 12:10:00+05:30',
- '[{"tag":"PI-202","reading_psi":31,"nominal_psi":24,"high_alarm_psi":34,"trend":"27 psi on 2026-09-20, 29 psi on 2026-09-21"},
-   {"tag":"PI-204","reading_psi":30,"nominal_psi":24,"high_alarm_psi":34,"source":"field_photo"}]'::jsonb,
- 'The carbon filter ACF-102 was backwashed on 2026-09-20 in one fast move, and the rinse step was skipped. Service was restarted the same afternoon. The bed was not settled, so carbon fines left the bottom outlet and loaded the front housings on lines 2 and 4. The coarse pre-filter PF-101 was clean and was not the source.',
- 'ACF-102 was rinsed to drain for 20 minutes on RT-M2-RINSE. The line 2 and line 4 front elements were replaced per SOP-CB-004. PI-202 and PI-204 both read 24 psi after the change, and the verifier closed the incident.',
+ '[{"tag":"PI-201","reading_psi":33,"nominal_psi":24,"source":"field_photo","note":"bank inlet"},
+   {"tag":"PI-202","reading_psi":16,"nominal_psi":16,"source":"field_photo","note":"bank outlet"},
+   {"tag":"dP","reading_psi":17,"nominal_psi":8,"limit_psi":12,"trend":"11 psi on 2026-09-20, 14 psi on 2026-09-21, 17 psi on 2026-09-22","source":"code"}]'::jsonb,
+ 'The carbon filter ACF-102 was backwashed on 2026-09-20 in one fast move, and the rinse step was skipped. Service was restarted the same afternoon. The bed was not settled, so carbon fines left the bottom outlet and loaded the cartridge elements in the bank. The coarse pre-filter PF-101 was clean and was not the source.',
+ 'ACF-102 was rinsed to drain for 20 minutes on RT-M2-RINSE. The cartridge elements were replaced per SOP-CB-004. dP read 8 psi after the change (PI-201 24 psi, PI-202 16 psi), and the verifier closed the incident.',
  array['SOP-CB-004'],
  'verifier',
- 'A backwash is not finished until the rinse step is done. A front-row rise on two lines in two days points to fines, not normal loading.',
+ 'A backwash is not finished until the rinse step is done. A dP that climbs from 11 to 17 psi in two days points to fines, not normal loading.',
  'synthetic',
  array['muse-wonder-1.0']);

@@ -24,6 +24,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from ..evidence.differential import compute_differential
 from ..plant.models import PlantPack
 from ..repositories.investigation import InvestigationRepository
 from ..repositories.runs import RunRepository
@@ -45,9 +46,9 @@ How to work:
 - Keep the focus current with update_focus (goal, blocker, next step, assets in focus) whenever your plan changes.
 - Work hypotheses in parallel where telemetry can settle several at once. Prefer cheap streamed checks before dispatching a person.
 - If the evidence needed has no API (analog gauges, valve levers, anything marked field-only), dispatch exactly one bounded field task with request_field_task, saying precisely what to photograph or read and where. Then stop; do not invent the reading.
-- Make the first field task the cartridge-bank dial gauges (PI-201 to PI-208) and nothing else. Ask for other gauges only in a later task, and only if the cartridge-bank readings leave the question open.
+- Make the first field task the two cartridge-bank gauges and nothing else: tags PI-201 (inlet) and PI-202 (outlet), one photo each. Ask for other gauges only in a later task, and only if those readings leave the question open.
 - Update several hypotheses in one turn: issue all the record_hypothesis calls together rather than one per turn. Your step budget is limited.
-- When the field readings show a restriction and the SOP supports it, call propose_action for the backwash instead of asking for more gauges.
+- Code computes the bank differential (inlet minus outlet) and reports it with the field result. A differential at or above the restriction limit points to a restricted cartridge bank; when it does and the SOP supports it, call propose_action for the V-113 backwash instead of asking for more gauges. The tool refuses the proposal when the differential is below the limit, so treat a normal differential as evidence against a cartridge restriction and look elsewhere.
 - When evidence is insufficient, ask for more data through a tool or a field task. Never answer that you cannot determine anything and stop while a check remains available.
 - You may not resolve or close the incident, move a valve, or state a cause as proven when it is only likely. Say "likely" where that is what the evidence supports.
 - Check in before any action that changes the plant: call propose_action with the evidence-based rationale and stop. A commander separately approves it; never dispatch valve_action directly.
@@ -123,7 +124,10 @@ class Investigator:
             readings = (task["result"] or {}).get("readings", {})
             note = (task["result"] or {}).get("note", "")
             detail = "; ".join(f"{tag} = {value}" for tag, value in readings.items()) or "no readings submitted"
+            differential = compute_differential({k: float(v) for k, v in readings.items()}, self._pack.instruments)
             extras = []
+            if differential is not None:
+                extras.append("Differential computed by code: " + differential.summary())
             voice = (task["result"] or {}).get("voice")
             if voice:
                 extras.append(

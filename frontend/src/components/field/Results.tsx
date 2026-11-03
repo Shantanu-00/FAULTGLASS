@@ -1,6 +1,6 @@
 import React from 'react';
 import { humanize } from '../../lib/format';
-import type { FieldTaskResult, GaugeResult, ValvePolicy, VoiceComparison, VoicePayload } from '../../types';
+import type { Differential, FieldTaskResult, GaugeResult, ValvePolicy, VoiceComparison, VoicePayload } from '../../types';
 import { Pill, type Tone } from '../common/Pill';
 
 const GAUGE_STATUS: Record<string, { text: string; tone: Tone }> = {
@@ -44,6 +44,16 @@ export const GaugeResults: React.FC<{ gauges: GaugeResult[] }> = ({ gauges }) =>
     <p className="muted small">
       All values in psi. Dials located with SAM, read by Muse Wonder on the red psi scale, cross-checked against the needle angle measured in code. Only agreeing or single-source values are stored.
     </p>
+  </div>
+);
+
+export const DifferentialResult: React.FC<{ differential: Differential }> = ({ differential: d }) => (
+  <div className={`attempt${d.restricted ? ' is-retry' : ' is-ok'}`}>
+    <p>
+      <strong>Differential {d.dp_psi.toFixed(1)} psi</strong> (inlet {d.inlet_psi.toFixed(1)} minus outlet {d.outlet_psi.toFixed(1)}).{' '}
+      <Pill tone={d.restricted ? 'alarm' : 'ok'}>{d.restricted ? 'Bank restricted' : 'Within normal range'}</Pill>
+    </p>
+    <p className="muted small">Normal is about {d.normal_dp_psi.toFixed(0)} psi; a restriction starts at {d.limit_dp_psi.toFixed(0)} psi. Computed in code.</p>
   </div>
 );
 

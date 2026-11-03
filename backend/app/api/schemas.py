@@ -4,7 +4,7 @@ import datetime as dt
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 SCENARIO_NAME = "production_decline"
 VALVE_ACTION = "backwash_completed"
@@ -44,11 +44,19 @@ class CompleteTaskIn(BaseModel):
 
 
 class PhotoTaskIn(BaseModel):
-    """Field-task completion from a photo: SAM + Wonder produce the readings."""
+    """Field-task completion from photos: one photo per gauge tag; SAM + Wonder produce the readings."""
 
-    image_base64: str = Field(min_length=100, max_length=30_000_000)
+    photos: dict[str, str] = Field(min_length=1, max_length=4)
     audio_base64: str | None = Field(default=None, max_length=45_000_000)
     note: str = Field(default="", max_length=1000)
+
+    @field_validator("photos")
+    @classmethod
+    def photos_not_empty(cls, photos: dict[str, str]) -> dict[str, str]:
+        for tag, data in photos.items():
+            if not 100 <= len(data) <= 30_000_000:
+                raise ValueError(f"photo for {tag} is empty or too large")
+        return photos
 
 
 class VoiceTaskIn(BaseModel):

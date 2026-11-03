@@ -2406,6 +2406,82 @@
    "location_note": null
   },
   {
+   "tag": "PIT-301",
+   "name": "HP pump suction pressure",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    300.0
+   ],
+   "observe": "telemetry",
+   "basis": "assumed",
+   "attach": {
+    "port": "P-301.in"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": null
+  },
+  {
+   "tag": "PIT-302",
+   "name": "HP pump discharge pressure",
+   "type": "measurement",
+   "quantity": "pressure",
+   "unit": "psi",
+   "range": [
+    0.0,
+    300.0
+   ],
+   "observe": "telemetry",
+   "basis": "assumed",
+   "attach": {
+    "port": "P-301.out"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": null
+  },
+  {
+   "tag": "JI-301",
+   "name": "HP pump motor current",
+   "type": "measurement",
+   "quantity": "current",
+   "unit": "A",
+   "range": [
+    0.0,
+    30.0
+   ],
+   "observe": "telemetry",
+   "basis": "assumed",
+   "attach": {
+    "asset": "P-301"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": null
+  },
+  {
+   "tag": "FIT-301",
+   "name": "RO permeate flow",
+   "type": "measurement",
+   "quantity": "flow",
+   "unit": "L/h",
+   "range": [
+    0.0,
+    5000.0
+   ],
+   "observe": "telemetry",
+   "basis": "assumed",
+   "attach": {
+    "edge": "E-C04"
+   },
+   "display_scales": [],
+   "state_labels": null,
+   "location_note": null
+  },
+  {
    "tag": "ST-RO",
    "name": "RO cycle state",
    "type": "status",
@@ -2456,7 +2532,7 @@
   },
   {
    "tag": "PI-201",
-   "name": "Cartridge line 1 front housing pressure gauge",
+   "name": "Cartridge bank inlet pressure gauge",
    "type": "measurement",
    "quantity": "pressure",
    "unit": "psi",
@@ -2484,11 +2560,11 @@
     }
    ],
    "state_labels": null,
-   "location_note": "Cartridge bank, front row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+   "location_note": "Cartridge bank, inlet side (front row), gauge on top of the dome. Dual scale dial: read the red psi scale."
   },
   {
-   "tag": "PI-205",
-   "name": "Cartridge line 1 back housing pressure gauge",
+   "tag": "PI-202",
+   "name": "Cartridge bank outlet pressure gauge",
    "type": "measurement",
    "quantity": "pressure",
    "unit": "psi",
@@ -2516,199 +2592,7 @@
     }
    ],
    "state_labels": null,
-   "location_note": "Cartridge bank, back row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
-  },
-  {
-   "tag": "PI-202",
-   "name": "Cartridge line 2 front housing pressure gauge",
-   "type": "measurement",
-   "quantity": "pressure",
-   "unit": "psi",
-   "range": [
-    0.0,
-    100.0
-   ],
-   "observe": "field_photo",
-   "basis": "footage",
-   "attach": {
-    "asset": "CB-2F"
-   },
-   "display_scales": [
-    {
-     "unit": "kg/cm2",
-     "min": 0.0,
-     "max": 7.0,
-     "color": "black"
-    },
-    {
-     "unit": "psi",
-     "min": 0.0,
-     "max": 100.0,
-     "color": "red"
-    }
-   ],
-   "state_labels": null,
-   "location_note": "Cartridge bank, front row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
-  },
-  {
-   "tag": "PI-206",
-   "name": "Cartridge line 2 back housing pressure gauge",
-   "type": "measurement",
-   "quantity": "pressure",
-   "unit": "psi",
-   "range": [
-    0.0,
-    100.0
-   ],
-   "observe": "field_photo",
-   "basis": "footage",
-   "attach": {
-    "asset": "CB-2B"
-   },
-   "display_scales": [
-    {
-     "unit": "kg/cm2",
-     "min": 0.0,
-     "max": 7.0,
-     "color": "black"
-    },
-    {
-     "unit": "psi",
-     "min": 0.0,
-     "max": 100.0,
-     "color": "red"
-    }
-   ],
-   "state_labels": null,
-   "location_note": "Cartridge bank, back row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
-  },
-  {
-   "tag": "PI-203",
-   "name": "Cartridge line 3 front housing pressure gauge",
-   "type": "measurement",
-   "quantity": "pressure",
-   "unit": "psi",
-   "range": [
-    0.0,
-    100.0
-   ],
-   "observe": "field_photo",
-   "basis": "footage",
-   "attach": {
-    "asset": "CB-3F"
-   },
-   "display_scales": [
-    {
-     "unit": "kg/cm2",
-     "min": 0.0,
-     "max": 7.0,
-     "color": "black"
-    },
-    {
-     "unit": "psi",
-     "min": 0.0,
-     "max": 100.0,
-     "color": "red"
-    }
-   ],
-   "state_labels": null,
-   "location_note": "Cartridge bank, front row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
-  },
-  {
-   "tag": "PI-207",
-   "name": "Cartridge line 3 back housing pressure gauge",
-   "type": "measurement",
-   "quantity": "pressure",
-   "unit": "psi",
-   "range": [
-    0.0,
-    100.0
-   ],
-   "observe": "field_photo",
-   "basis": "footage",
-   "attach": {
-    "asset": "CB-3B"
-   },
-   "display_scales": [
-    {
-     "unit": "kg/cm2",
-     "min": 0.0,
-     "max": 7.0,
-     "color": "black"
-    },
-    {
-     "unit": "psi",
-     "min": 0.0,
-     "max": 100.0,
-     "color": "red"
-    }
-   ],
-   "state_labels": null,
-   "location_note": "Cartridge bank, back row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
-  },
-  {
-   "tag": "PI-204",
-   "name": "Cartridge line 4 front housing pressure gauge",
-   "type": "measurement",
-   "quantity": "pressure",
-   "unit": "psi",
-   "range": [
-    0.0,
-    100.0
-   ],
-   "observe": "field_photo",
-   "basis": "footage",
-   "attach": {
-    "asset": "CB-4F"
-   },
-   "display_scales": [
-    {
-     "unit": "kg/cm2",
-     "min": 0.0,
-     "max": 7.0,
-     "color": "black"
-    },
-    {
-     "unit": "psi",
-     "min": 0.0,
-     "max": 100.0,
-     "color": "red"
-    }
-   ],
-   "state_labels": null,
-   "location_note": "Cartridge bank, front row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
-  },
-  {
-   "tag": "PI-208",
-   "name": "Cartridge line 4 back housing pressure gauge",
-   "type": "measurement",
-   "quantity": "pressure",
-   "unit": "psi",
-   "range": [
-    0.0,
-    100.0
-   ],
-   "observe": "field_photo",
-   "basis": "footage",
-   "attach": {
-    "asset": "CB-4B"
-   },
-   "display_scales": [
-    {
-     "unit": "kg/cm2",
-     "min": 0.0,
-     "max": 7.0,
-     "color": "black"
-    },
-    {
-     "unit": "psi",
-     "min": 0.0,
-     "max": 100.0,
-     "color": "red"
-    }
-   ],
-   "state_labels": null,
-   "location_note": "Cartridge bank, back row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale."
+   "location_note": "Cartridge bank, outlet side (back row), gauge on top of the dome. Dual scale dial: read the red psi scale."
   },
   {
    "tag": "PI-301",

@@ -12,9 +12,9 @@ the plant was faulty. Never say a model did something the code did (see "Who doe
 | Step | Model or code | Notes |
 | --- | --- | --- |
 | Watch live telemetry, flag drift | **Muse Spark Open** (Baseten) | Reads a summary card every ~10 s. Code computes the baseline, spread and distance per signal. Spark answers NORMAL, WATCH or FLAG as plain text that Python parses and checks against the card. It does not diagnose. |
-| Find the gauge dials in the photo | **SAM 3.1** (`"pressure gauge"`, then optionally `"gauge needle"`) | Returns box + mask per instance. Locates only. One concept per request. |
-| Read each dial (red psi scale) | **Muse Wonder** vision on each SAM crop | Cross-checked against needle angle computed from the SAM needle mask in Python. |
-| Tell front row from back row | Python: position and size of the masks in the image, then the pack's layout | Wonder is given the result and the pack's front/back rule. |
+| Find the dial in each of the two photos (inlet gauge PI-201, outlet gauge PI-202) | **SAM 3.1** (`"pressure gauge"`, then optionally `"gauge needle"`) | Returns box + mask per instance. Locates only. One concept per request. |
+| Read each dial (red psi scale) | **Muse Wonder** vision on each SAM crop (one crop per photo) | Cross-checked against needle angle computed from the SAM needle mask in Python. |
+| Compute the differential dP = PI-201 minus PI-202 | Python | Never typed in. dP of 12 psi or more (1.5 x the normal 8 psi) flags a restricted cartridge bank and gates the V-113 backwash proposal. |
 | Marathi transcript | **Muse Voice Transcribe** (Marathi is a supported language) | ASR only. |
 | Structure the transcript, compare with the photo reading | **Muse Wonder** | Agree or disagree is stated with both readings cited. |
 | Plan, rule out hypotheses, re-plan, Active Memory and Focus | **Muse Wonder** (Responses API, tools, encrypted reasoning replay) | The focus ledger and recall graph display only what the model wrote and what tools returned. |
@@ -30,16 +30,15 @@ Muse Image is not used: it generates images and does not read them.
 | Time | On screen | Voiceover gist |
 | --- | --- | --- |
 | 0:00-0:15 | Real footage: cartridge bank gauges, a lever, pipework. Console raises a signal flag from Spark: permeate flow 25% below baseline while suction pressure, motor current and TDS drift together. The PLC shows no alarm. | Industrial plants run on analog gauges and manual valves with no API. When flow drops without an alarm, SCADA cannot say why. FAULTGLASS closes the physical gap with Meta's multimodal models. |
-| 0:15-0:50 | Phone camera on the cartridge bank. SAM masks light up the dials. Wonder reads them: front row high, back row low, one line much lower. A pressure-drop figure appears. | SAM 3.1 isolates the dials in messy light, Muse Wonder reads the glass and knows front is inlet side, back is outlet side. |
+| 0:15-0:50 | Phone camera on the inlet gauge, then on the outlet gauge. SAM masks light up the dial in each photo. Wonder reads them: inlet high, outlet low. A differential figure appears. | SAM 3.1 isolates the dial in messy light, Muse Wonder reads the red psi scale, and code computes the differential between the inlet and outlet gauges. |
 | 0:50-1:25 | Operator speaks Marathi. Live transcript, then a structured observation, then "AGREES / DISAGREES with photo". | Muse Voice Transcribe takes the operator's native Marathi; Wonder turns it into a checked observation. |
-| 1:25-2:05 | **Reasoning view:** focus ledger (goal, hypotheses crossed out one by one using telemetry tool calls, blocker, next step) beside the memory graph (plant layout node, SOP section, past incident, site knowledge, each cited). Agent concludes line 3 is restricted, names sand filter fines as the likely source (stated as likely, not proven), and asks to backwash. | Active Memory recalls the layout, the procedure and a past case. Active Focus works the hypotheses until the evidence is enough. |
+| 1:25-2:05 | **Reasoning view:** focus ledger (goal, hypotheses crossed out one by one using telemetry tool calls, blocker, next step) beside the memory graph (plant layout node, SOP section, past incident, site knowledge, each cited). Agent concludes the cartridge bank is restricted (dP of 12 psi or more), names sand filter fines as the likely source (stated as likely, not proven), and asks to backwash. | Active Memory recalls the layout, the procedure and a past case. Active Focus works the hypotheses until the evidence is enough. |
 | 2:05-2:35 | Operator turns the backwash lever: HUD arc 0 degrees (open) to 45 degrees (50%), hold a few seconds, then 90 degrees (100%, closed). Guardrail beat: a one-move jump from 0 to 90 is blocked by code. The flow graph is shown only after the verifier checks the final readings. | SAM 3.1 masks the lever and our code measures the angle, so the staged 45-then-90 rule is checked, not trusted. |
-| 2:35-3:00 | Console: verifier window passed, flow back to about 92% of baseline with no alarms, and a recommendation to replace the line 3 cartridge. Repo and live URL. | No sensor retrofit. The operator is the physical API for Meta's models. |
+| 2:35-3:00 | Console: verifier window passed, flow back to about 92% of baseline with no alarms, and a recommendation to replace the cartridge elements. Repo and live URL. | No sensor retrofit. The operator is the physical API for Meta's models. |
 
 ## Scenario numbers (simulated, set to match the real photo)
 
-- Front-row gauges above 20 psi, back-row gauges below 20 psi. Fault: line 3 back gauge is
-  far lower than its neighbours. The pressure drop shown on screen is computed from the
+- Two gauges: inlet PI-201 (normal about 24 psi) and outlet PI-202 (normal about 16 psi, matching the streamed PIT-301). Normal dP is about 8 psi. Fault: inlet 32 psi, outlet 15 psi, dP 17 psi (12 psi or more means a restricted bank). The dP shown on screen is computed from the
   psi values actually read, never typed in.
 - Backwash valve `V-113` (sand filter backwash inlet): open lever 0 degrees (parallel to
   the pipe), 50% = 45 degrees, 100% = 90 degrees (perpendicular, closed). Hold at 45 degrees
@@ -62,7 +61,7 @@ Muse Image is not used: it generates images and does not read them.
 - "SAM 3.1 calculates angles": SAM returns masks; the angle is computed from the masks in code.
 - "14-node twin": the modelled plant has 52 assets and 26 instruments; say "full plant twin".
 - "2.4 bar": the dials are psi; show the figure the system actually computed.
-- "ALL STAGES NOMINAL": not true after the backwash alone. Say flow recovered and the line 3 cartridge needs replacing.
+- "ALL STAGES NOMINAL": not true after the backwash alone. Say flow recovered and the cartridge elements need replacing.
 - The valve clips do not identify which valve is turned. The lever is identified as `V-113` by the system overlay; never claim the footage itself shows the sand filter valve.
 
 ## Build order for this video
@@ -70,7 +69,7 @@ Muse Image is not used: it generates images and does not read them.
 1. Done: simulator and PLC emulator, edge streamer, ingest API, operations console (telemetry).
 2. Spark watcher writing signal flags: **done** (Baseten, see [SPARK_WATCHER.md](SPARK_WATCHER.md)); telemetry tools for Wonder: **done** (see [INVESTIGATOR.md](INVESTIGATOR.md)).
 3. SOPs and past incidents (written): **done**; memory tools and focus ledger: **done** (INVESTIGATOR.md). Field-task evidence is manual entry until step 4 replaces it.
-4. Gauge pipeline: SAM crops, Wonder read, needle-angle cross-check, front/back rule: **done** (see [SAM_EVIDENCE.md](SAM_EVIDENCE.md); live-verified on a synthetic dial photo, real plant photo still to run).
+4. Gauge pipeline: SAM crop per photo, Wonder read, needle-angle cross-check, dP by code: **done** (see [SAM_EVIDENCE.md](SAM_EVIDENCE.md); live-verified on a synthetic dial photo, real plant photo still to run).
 5. Voice pipeline and observation check: **done** (see [VALVE_VOICE_FIELD.md](VALVE_VOICE_FIELD.md); live ASR checked with synthesized English speech, real Marathi operator sample still to record).
 6. Valve pipeline: lever and pipe masks, angle, policy: **done** (same doc; commander-approved proposal, staged clip, simulator trigger only after a pass, deterministic verifier).
 7. Field Companion: **done** (`/field.html`); Operations Console reasoning view: **done** (built with the investigator).

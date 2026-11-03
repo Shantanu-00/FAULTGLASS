@@ -7,7 +7,8 @@ import type { FieldTask, PhotoResponse, VideoResponse } from '../../types';
 import { Bi } from '../common/Bi';
 import { Icon } from '../common/Icon';
 import { FileCapture } from './FileCapture';
-import { GaugeResults, PolicyResult, VoiceResult } from './Results';
+import { Pill } from '../common/Pill';
+import { DifferentialResult, GaugeResults, PolicyResult, VoiceResult } from './Results';
 import { VoiceRecorder } from './VoiceRecorder';
 
 interface FormProps {
@@ -15,24 +16,36 @@ interface FormProps {
   task: FieldTask;
 }
 
+const GAUGE_ROLES: Record<string, string> = { 'PI-201': 'Inlet gauge', 'PI-202': 'Outlet gauge' };
+
 export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
   const { refreshIncident, notify } = usePlant();
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<Record<string, File | null>>({});
+  const [accepted, setAccepted] = useState<Record<string, number>>(task.result?.accepted ?? {});
   const [voice, setVoice] = useState<Blob | null>(null);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState<PhotoResponse | null>(null);
 
+  const chosen = task.tags.filter((tag) => photos[tag]);
+  const ready = chosen.length > 0 && task.tags.every((tag) => photos[tag] || accepted[tag] !== undefined);
+
   const submit = async () => {
-    if (!photo) return;
     setBusy(true);
     setError(null);
     try {
-      const image = await fileToBase64(await prepareImage(photo));
+      const encoded: Record<string, string> = {};
+      for (const tag of chosen) encoded[tag] = await fileToBase64(await prepareImage(photos[tag] as File));
       const audio = voice ? await encodeWavBase64(voice) : null;
-      const response = await api.completeTaskPhoto(incidentId, task.id, image, note, audio);
+      const response = await api.completeTaskPhoto(incidentId, task.id, encoded, note, audio);
       setAttempt(response);
+      setAccepted(response.accepted ?? {});
+      setPhotos((current) => {
+        const next = { ...current };
+        for (const tag of Object.keys(response.accepted ?? {})) next[tag] = null;
+        return next;
+      });
       if (response.completed) {
         notify('Gauge evidence stored. The investigation has resumed.');
         await refreshIncident();
@@ -46,8 +59,29 @@ export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
 
   return (
     <div className="task-form">
-      <p className="hint-text">Stand square-on to the cartridge bank so every requested dial face and needle is visible, then take one photo.</p>
-      <FileCapture kind="image" label={<Bi stack en="Take gauge photo" mr="गेजचा फोटो घ्या" />} retakeLabel="Retake photo" accept="image/*" icon="camera" file={photo} onChange={setPhoto} disabled={busy} />
+      <p className="hint-text">Take one photo of the inlet gauge and one of the outlet gauge. Stand square-on so the dial face and needle are sharp.</p>
+      {task.tags.map((tag) => (
+        <section className="gauge-box" key={tag} aria-label={`${GAUGE_ROLES[tag] ?? 'Gauge'} ${tag}`}>
+          <h4>
+            {GAUGE_ROLES[tag] ?? 'Gauge'} <code className="tag">{tag}</code>
+          </h4>
+          {accepted[tag] !== undefined && !photos[tag] && (
+            <p className="gauge-read">
+              <Pill tone="ok">Read</Pill> <strong>{accepted[tag].toFixed(1)} psi</strong>
+            </p>
+          )}
+          <FileCapture
+            kind="image"
+            label={<Bi stack en={`Take ${(GAUGE_ROLES[tag] ?? 'gauge').toLowerCase()} photo`} mr="गेजचा फोटो घ्या" />}
+            retakeLabel="Retake photo"
+            accept="image/*"
+            icon="camera"
+            file={photos[tag] ?? null}
+            onChange={(file) => setPhotos({ ...photos, [tag]: file })}
+            disabled={busy}
+          />
+        </section>
+      ))}
       <VoiceRecorder blob={voice} onChange={setVoice} disabled={busy} />
       <label className="form-field">
         <span>
@@ -55,17 +89,18 @@ export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
         </span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000} disabled={busy} />
       </label>
-      <button type="button" className="btn btn-xl btn-primary" disabled={!photo || busy} onClick={() => void submit()}>
+      <button type="button" className="btn btn-xl btn-primary" disabled={!ready || busy} onClick={() => void submit()}>
         <Icon name="send" size={20} />
         {busy ? 'Analysing, please wait' : <Bi stack en="Send for reading" mr="फोटो पाठवा" />}
       </button>
-      {busy && <p className="muted" role="status">The photo is being analysed on the server. This can take up to a minute.</p>}
+      {busy && <p className="muted" role="status">The photos are being analysed on the server. This can take up to a minute.</p>}
       {error && <p className="result-error" role="alert">{error}</p>}
       {attempt && (
         <div className={`attempt${attempt.completed ? ' is-ok' : ' is-retry'}`} role="status">
-          <strong>{attempt.completed ? `Stored ${attempt.readings_stored} reading${attempt.readings_stored === 1 ? '' : 's'}` : 'No reading stored'}</strong>
+          <strong>{attempt.completed ? 'Both gauges read' : 'Not complete yet'}</strong>
           {attempt.reason && <p>{attempt.reason}</p>}
           <GaugeResults gauges={attempt.readings} />
+          {attempt.differential && <DifferentialResult differential={attempt.differential} />}
           {attempt.voice && <VoiceResult voice={attempt.voice} />}
         </div>
       )}

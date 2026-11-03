@@ -150,6 +150,8 @@ export interface FieldTaskResult {
   note?: string;
   source?: string;
   gauges?: GaugeResult[];
+  accepted?: Record<string, number>;
+  differential?: Differential | null;
   voice?: VoicePayload | null;
   policy?: ValvePolicy;
   simulator_action?: string;
@@ -227,9 +229,23 @@ export interface IncidentDetail {
   };
 }
 
+export interface Differential {
+  inlet_tag: string;
+  outlet_tag: string;
+  inlet_psi: number;
+  outlet_psi: number;
+  dp_psi: number;
+  normal_dp_psi: number;
+  limit_dp_psi: number;
+  restricted: boolean;
+}
+
 export interface PhotoResponse {
   completed: boolean;
   readings: GaugeResult[];
+  accepted?: Record<string, number>;
+  missing?: string[];
+  differential?: Differential | null;
   readings_stored?: number;
   reason?: string;
   voice?: VoicePayload | null;

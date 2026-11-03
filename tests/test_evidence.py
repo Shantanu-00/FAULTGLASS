@@ -4,7 +4,8 @@ import math
 import pytest
 from PIL import Image, ImageDraw
 
-from app.evidence.gauge import GaugePipeline, assign_gauges, needle_psi
+from app.evidence.differential import compute_differential
+from app.evidence.gauge import GaugePipeline, largest_detection, needle_psi
 from app.evidence.lever import build_track, classify_stage
 from app.evidence.sam import Detection, SamReply, parse_sam_text
 from app.plant import load_pack
@@ -27,15 +28,21 @@ def box(x, y, s=90):
     return Detection(object_id=0, frame=0, box=(x, y, x + s, y + s), frame_size=(800, 600))
 
 
-def test_assign_gauges_maps_front_back_rows_left_to_right():
+def test_largest_detection_picks_the_dial_that_fills_the_photo():
+    small, big = box(50, 40, 40), box(200, 150, 160)
+    assert largest_detection([small, big]) is big
+    assert largest_detection([]) is None
+
+
+def test_differential_flags_a_restricted_bank_only_at_the_limit():
     pack = load_pack(PACK_DIR)
-    expected = [i for i in pack.instruments if i.tag in ("PI-201", "PI-205", "PI-202", "PI-206")]
-    # back row: smaller, higher in image; front row: larger, lower. x = line order.
-    dets = [box(100, 80, 60), box(300, 80, 60), box(100, 320, 95), box(300, 320, 95)]
-    assigned = assign_gauges(dets, expected)
-    assert assigned["PI-205"].box[0] == 100 and assigned["PI-206"].box[0] == 300
-    assert assigned["PI-201"].box[0] == 100 and assigned["PI-202"].box[0] == 300
-    assert assign_gauges([], expected) == {}
+    healthy = compute_differential({"PI-201": 24.0, "PI-202": 16.0}, pack.instruments)
+    assert healthy.dp_psi == 8.0 and healthy.normal_dp_psi == 8.0 and healthy.limit_dp_psi == 12.0
+    assert healthy.restricted is False
+    assert compute_differential({"PI-201": 27.0, "PI-202": 16.0}, pack.instruments).restricted is False
+    fault = compute_differential({"PI-201": 32.0, "PI-202": 15.0}, pack.instruments)
+    assert fault.dp_psi == 17.0 and fault.restricted is True
+    assert compute_differential({"PI-201": 24.0}, pack.instruments) is None
 
 
 def line_raster(w, h, angle_deg, cx=None, cy=None, length=38):
@@ -87,25 +94,22 @@ class FakeSam:
         return SamReply(detections=[])
 
 
-async def test_pipeline_assigns_reads_and_marks_single_source():
+async def test_pipeline_reads_the_dial_in_one_photo_and_marks_single_source():
     pack = load_pack(PACK_DIR)
-    expected = [i for i in pack.instruments if i.tag in ("PI-201", "PI-205")]
+    inlet = next(i for i in pack.instruments if i.tag == "PI-201")
     image = Image.new("RGB", (800, 600), "white")
-    draw = ImageDraw.Draw(image)
-    draw.ellipse((100, 320, 195, 415), outline="black", width=3)
-    draw.ellipse((100, 80, 160, 140), outline="black", width=3)
+    ImageDraw.Draw(image).ellipse((100, 120, 400, 420), outline="black", width=3)
     buf = io.BytesIO()
     image.save(buf, format="JPEG")
-    pipeline = GaugePipeline(sam=FakeSam([box(100, 80, 60), box(100, 320, 95)]),
-                             reader=FakeReader({"PI-201": 24.0, "PI-205": 16.0}))
-    readings = await pipeline.process(buf.getvalue(), expected)
-    by_tag = {r.tag: r for r in readings}
-    assert by_tag["PI-201"].value == 24.0 and by_tag["PI-201"].status == "single_source"
-    assert by_tag["PI-205"].value == 16.0
-    # A gauge SAM cannot find is reported, never invented.
-    pipeline2 = GaugePipeline(sam=FakeSam([]), reader=FakeReader({}))
-    missing = await pipeline2.process(buf.getvalue(), expected)
-    assert all(r.status == "not_found" and r.value is None for r in missing)
+    pipeline = GaugePipeline(sam=FakeSam([box(100, 120, 300), box(600, 40, 40)]), reader=FakeReader({"PI-201": 24.0}))
+    reading = await pipeline.read_photo(buf.getvalue(), inlet)
+    assert reading.value == 24.0 and reading.status == "single_source" and reading.box[0] == 100
+    # A dial SAM cannot find is reported, never invented.
+    missing = await GaugePipeline(sam=FakeSam([]), reader=FakeReader({})).read_photo(buf.getvalue(), inlet)
+    assert missing.status == "not_found" and missing.value is None
+    # A dial the reader cannot read is reported as unreadable.
+    unread = await GaugePipeline(sam=FakeSam([box(100, 120, 300)]), reader=FakeReader({})).read_photo(buf.getvalue(), inlet)
+    assert unread.status == "unreadable" and unread.value is None
 
 
 def lever_det(frame, angle_deg):

@@ -313,6 +313,15 @@ class InvestigationRepository:
             )
             return cur.rowcount == 1
 
+    async def save_task_progress(self, task_id: UUID, result: dict[str, Any]) -> bool:
+        """Keep partial evidence on a task that is still pending (for example one of two gauges read)."""
+        async with self._pool.connection() as conn:
+            cur = await conn.execute(
+                "update field_tasks set result = %s::jsonb where id = %s and status = 'pending'",
+                (json.dumps(result), task_id),
+            )
+            return cur.rowcount == 1
+
     async def mark_consumed(self, task_id: UUID) -> None:
         async with self._pool.connection() as conn:
             await conn.execute("update field_tasks set consumed = true where id = %s", (task_id,))

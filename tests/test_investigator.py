@@ -94,8 +94,8 @@ OPENING_TURNS = [
      call("update_focus", {"goal": "Find cause of flow drop", "blocker": "No gauge data (no API)",
                           "next_step": "Read cartridge gauges", "focus_assets": ["CB-3F", "CB-3B"]}, "c10"),
      call("request_field_task", {"kind": "gauge_photo", "asset_ids": ["CB-3F", "CB-3B"],
-                                 "tags": ["PI-203", "PI-207"],
-                                 "instruction": "Photograph gauges PI-203 and PI-207 on line 3."}, "c11")],
+                                 "tags": ["PI-201", "PI-202"],
+                                 "instruction": "Photograph the bank inlet gauge PI-201 and outlet gauge PI-202."}, "c11")],
 ]
 
 
@@ -115,7 +115,7 @@ async def test_investigator_recalls_records_and_pauses_for_field(db_url):
         hyps = await repo.hypotheses(incident_id)
         assert {h["label"]: h["status"] for h in hyps} == {"H1": "rejected", "H2": "rejected", "H3": "open"}
         tasks = await repo.field_tasks(incident_id)
-        assert len(tasks) == 1 and tasks[0]["tags"] == ["PI-203", "PI-207"] and tasks[0]["status"] == "pending"
+        assert len(tasks) == 1 and tasks[0]["tags"] == ["PI-201", "PI-202"] and tasks[0]["status"] == "pending"
         checkpoint = await repo.checkpoint(incident_id)
         assert checkpoint["status"] == "waiting_field"
         assert checkpoint["focus"]["next_step"] == "Read cartridge gauges"
@@ -135,7 +135,7 @@ async def test_field_completion_resumes_and_concludes(db_url):
         wonder = ScriptedWonder(OPENING_TURNS + [
             [call("record_hypothesis", {"label": "H3", "statement": "Cartridge bank restriction line 3",
                                         "status": "supported",
-                                        "evidence_for": ["PI-203 22 psi front, PI-207 6 psi back"]}, "c12")],
+                                        "evidence_for": ["PI-201 22 psi front, PI-202 6 psi back"]}, "c12")],
             [message("Likely line 3 cartridge restriction. Proposed next action: backwash under SOP-MF-003. Checking in before any valve action; incident stays open.")],
         ])
         inv = investigator_for(pool, pack, wonder)
@@ -151,7 +151,7 @@ async def test_field_completion_resumes_and_concludes(db_url):
                                     json={"readings": {"FIT-301": 1.0}})
             assert bad.status_code == 422  # streamed tag cannot be submitted as field evidence
             done = await client.post(f"/v1/incidents/{incident_id}/tasks/{task_id}/complete",
-                                     json={"readings": {"PI-203": 22.0, "PI-207": 6.0}, "note": "Line 3 back gauge much lower"})
+                                     json={"readings": {"PI-201": 22.0, "PI-202": 6.0}, "note": "Line 3 back gauge much lower"})
             assert done.status_code == 200 and done.json()["readings_stored"] == 2
 
         assert await inv.investigate(incident_id) == "concluded"
@@ -173,13 +173,13 @@ async def test_tools_refuse_field_gauges_and_unknown_assets(db_url):
         from app.investigator.tools import ToolExecutor
         ex = ToolExecutor(pack, TelemetryRepository(pool), InvestigationRepository(pool),
                           RunRepository(pool), incident_id=incident_id, plant_id=PLANT)
-        gauge = await ex.execute("get_telemetry_window", {"tag": "PI-203"})
-        assert gauge["error"] == "requires_field_task" and "line 3" in gauge["location_note"]
+        gauge = await ex.execute("get_telemetry_window", {"tag": "PI-201"})
+        assert gauge["error"] == "requires_field_task" and "inlet" in gauge["location_note"]
         assert (await ex.execute("get_telemetry_window", {"tag": "NOPE-1"}))["error"].startswith("unknown tag")
         bad_task = await ex.execute("request_field_task", {"kind": "gauge_photo", "asset_ids": ["NOPE"],
-                                                           "tags": ["PI-203"], "instruction": "read it"})
+                                                           "tags": ["PI-201"], "instruction": "read it"})
         assert "unknown assets" in bad_task["error"]
-        bad_tags = await ex.execute("request_field_task", {"kind": "gauge_photo", "asset_ids": ["CB-3F"],
+        bad_tags = await ex.execute("request_field_task", {"kind": "gauge_photo", "asset_ids": ["CB-1F"],
                                                            "tags": ["FIT-301"], "instruction": "read it"})
         assert bad_tags["bad_tags"] == ["FIT-301"]  # streamed tags cannot be field tasks
     finally:

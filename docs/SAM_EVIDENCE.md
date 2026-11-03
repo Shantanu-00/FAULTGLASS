@@ -13,15 +13,15 @@ This follows Meta's own pairing guidance (`docs/meta/media-segmentation.md`:
 SAM returns geometry; a VLM interprets) and DEMO.md's fixed assignment:
 
 1. **SAM 3.1** (`"pressure gauge"`, one concept per request) returns a box +
-   mask per dial. The mask is geometry for code — it is **never fed to a
+   mask for the one dial in each of the two photos (inlet PI-201, outlet PI-202). The mask is geometry for code — it is **never fed to a
    reading model**. Models are bad at raw mask payloads and the mask's job
    is measurement (crop, needle angle), not interpretation.
-2. **Python** assigns front/back rows from box position/size plus the pack
-   layout (`location_note`: "front row, line 3 from the left"), crops each
+2. **Python** takes the single dial per photo, whose tag comes from the task
+   (PI-201 inlet, PI-202 outlet; `location_note` names the header), crops the
    box with margin, and **zooms** (upscales the crop to ~640 px wide). The
    zoomed crop image — not the full photo, not the mask — is what the
    reader model receives, alongside the tag and its location note.
-3. **Muse Wonder (vision)** reads the red psi scale on each crop and
+3. **Muse Wonder (vision)** reads the red psi scale on each crop (one per photo) and
    answers one number or `UNREADABLE`. Wonder is the reader because the
    reading lands inside its investigation: agreement/disagreement with the
    worker's spoken observation is Wonder's judgement to make (DEMO step
@@ -83,6 +83,7 @@ console/Field Companion submits photo
   -> POST /v1/incidents/{id}/tasks/{task_id}/photo
   -> gauge pipeline (SAM -> crops -> Wonder -> cross-check)
   -> accepted readings stored as provenance='field' telemetry
+  -> code computes dP = PI-201 minus PI-202; dP of 12 psi or more gates the V-113 backwash proposal
   -> task completed with full per-gauge evidence (boxes, both readings,
      agreement status, photo hash)
   -> checkpoint flips back to investigating
@@ -132,7 +133,7 @@ minutes; from the system's perspective it is two short, restartable turns.
   [console_routes.py](../backend/app/api/console_routes.py); console task
   cards accept a camera photo (`capture="environment"`).
 - Tests: [tests/test_evidence.py](../tests/test_evidence.py) — wire
-  parsing, front/back assignment, needle recovery (±8 psi on a synthetic
+  parsing, per-photo dial assignment, needle recovery (±8 psi on a synthetic
   mid-scale needle), staged lever sequence, missing-gauge honesty.
   Full suite 120 passing at build time.
 

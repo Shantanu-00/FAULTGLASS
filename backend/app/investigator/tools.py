@@ -14,6 +14,7 @@ import json
 from typing import Any
 
 from ..plant.memory import build_memory
+from ..evidence.differential import compute_differential
 from ..plant.models import PlantPack
 from ..repositories.investigation import InvestigationRepository
 from ..repositories.runs import RunRepository
@@ -259,6 +260,13 @@ class ToolExecutor:
                       "next_step": args.get("next_step", ""), "focus_assets": args.get("focus_assets") or []}
         return {"focus_recorded": True}
 
+    async def _bank_differential(self):
+        readings: dict[str, float] = {}
+        for task in await self._inv.field_tasks(self._incident_id):
+            if task["kind"] == "gauge_photo" and task["status"] == "completed":
+                readings.update({k: float(v) for k, v in ((task["result"] or {}).get("readings") or {}).items()})
+        return compute_differential(readings, self._pack.instruments)
+
     async def _tool_propose_action(self, args: dict) -> dict:
         if args.get("asset_id") != "V-113" or args.get("action") != "backwash":
             return {"error": "only the V-113 backwash action is currently supported"}
@@ -268,6 +276,15 @@ class ToolExecutor:
         hypotheses = await self._inv.hypotheses(self._incident_id)
         if not any(h["status"] in ("supported", "confirmed") for h in hypotheses):
             return {"error": "a supported hypothesis is required before proposing a plant-changing action"}
+        differential = await self._bank_differential()
+        if differential is None:
+            return {"error": "the cartridge bank inlet and outlet gauge readings (PI-201 and PI-202) are required "
+                             "before a backwash can be proposed; dispatch that field task first"}
+        if not differential.restricted:
+            return {"error": f"the bank differential is {differential.dp_psi:.1f} psi, below the "
+                             f"{differential.limit_dp_psi:.1f} psi restriction limit, so a backwash is not justified; "
+                             "look for the cause elsewhere",
+                    "differential": differential.to_json()}
         proposal = await self._inv.create_proposal(
             self._incident_id, asset_id="V-113", action="backwash",
             rationale=rationale[:1000], sop_id=args.get("sop_id"))

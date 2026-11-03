@@ -103,7 +103,7 @@ One investigation starts like this (exactly what the first API call carries):
   observability + SOP-RO-001/SOP-CB-002 + past incidents (recovering from
   empty search results by retrying), formed five hypotheses, rejected the
   feed-supply hypothesis on telemetry, set focus, and dispatched a
-  `gauge_photo` field task for PI-201..PI-208 — ending in `waiting_field`
+  `gauge_photo` field task for the inlet and outlet gauges PI-201 and PI-202 — ending in `waiting_field`
   with the incident still open.
 - Automated: [tests/test_investigator.py](../tests/test_investigator.py)
   (scripted fake Wonder, real Postgres): staged init, recalls traced,
@@ -113,7 +113,7 @@ One investigation starts like this (exactly what the first API call carries):
 
 ## Next steps that plug into this
 
-1. SAM gauge pipeline producing the same field readings from a photo
+1. SAM gauge pipeline producing the same field readings from the two photos (inlet and outlet)
    (replaces typed entry only).
 2. Field Companion mobile UI submitting photo/voice evidence.
 3. Marathi voice: transcript checked against the photo reading by Wonder.

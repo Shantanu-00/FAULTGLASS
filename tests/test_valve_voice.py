@@ -24,17 +24,17 @@ from test_investigator import PLANT, ScriptedWonder, call, investigator_for, mes
 
 
 def test_compare_readings_agree_disagree_partial():
-    assert compare_readings({"PI-203": 23.0}, {"PI-203": 22.0})["status"] == "AGREE"
-    assert compare_readings({"PI-203": 10.0}, {"PI-203": 22.0})["status"] == "DISAGREE"
-    assert compare_readings({"PI-203": 22.0}, {"PI-203": 22.0, "PI-207": 6.0})["status"] == "PARTIAL"
-    assert compare_readings({"PI-203": 22.0}, {})["status"] == "AWAITING_PHOTO"
+    assert compare_readings({"PI-201": 23.0}, {"PI-201": 22.0})["status"] == "AGREE"
+    assert compare_readings({"PI-201": 10.0}, {"PI-201": 22.0})["status"] == "DISAGREE"
+    assert compare_readings({"PI-201": 22.0}, {"PI-201": 22.0, "PI-202": 6.0})["status"] == "PARTIAL"
+    assert compare_readings({"PI-201": 22.0}, {})["status"] == "AWAITING_PHOTO"
 
 
 async def test_wonder_analyzer_extracts_and_compares():
-    wonder = ScriptedWonder([[message('{"readings":{"PI-203":22,"PI-207":6},"observation":"Line 3 back gauge is low","concerns":[]}')]])
+    wonder = ScriptedWonder([[message('{"readings":{"PI-201":22,"PI-202":6},"observation":"Line 3 back gauge is low","concerns":[]}')]])
     out = await WonderObservationAnalyzer(wonder).analyze(
-        "PI-203 बावीस, PI-207 सहा", {"PI-203": 22.0, "PI-207": 5.0}, ["PI-203", "PI-207"])
-    assert out["structured"]["readings"] == {"PI-203": 22.0, "PI-207": 6.0}
+        "PI-201 बावीस, PI-202 सहा", {"PI-201": 22.0, "PI-202": 5.0}, ["PI-201", "PI-202"])
+    assert out["structured"]["readings"] == {"PI-201": 22.0, "PI-202": 6.0}
     assert out["comparison"]["status"] == "AGREE"
 
 
@@ -57,7 +57,11 @@ async def test_proposal_approval_video_trigger_and_resume(db_url, monkeypatch, t
     pool, pack, incident_id = await seed_incident(db_url)
     try:
         repo = InvestigationRepository(pool)
-        await repo.upsert_hypothesis(incident_id, "H3", "Line 3 cartridge restriction", "supported", ["PI-207 low"], [])
+        await repo.upsert_hypothesis(incident_id, "H3", "Cartridge bank restriction", "supported", ["differential 17 psi"], [])
+        gauges = await repo.create_field_task(
+            incident_id, kind="gauge_photo", asset_ids=["CB-1F", "CB-1B"], tags=["PI-201", "PI-202"],
+            instruction="Photograph the bank inlet and outlet gauges")
+        await repo.complete_field_task(gauges["id"], {"readings": {"PI-201": 32.0, "PI-202": 15.0}})
         wonder = ScriptedWonder([
             [call("propose_action", {"asset_id": "V-113", "action": "backwash",
                                      "rationale": "Line 3 restriction supported by gauge differential",
@@ -115,20 +119,20 @@ async def test_voice_endpoint_transcribes_and_compares(db_url, monkeypatch, tmp_
         repo = InvestigationRepository(pool)
         task = await repo.create_field_task(
             incident_id, kind="gauge_photo", asset_ids=["CB-3F", "CB-3B"],
-            tags=["PI-203", "PI-207"], instruction="Photograph line 3 gauges")
-        await repo.complete_field_task(task["id"], {"readings": {"PI-203": 22.0, "PI-207": 6.0}})
+            tags=["PI-201", "PI-202"], instruction="Photograph line 3 gauges")
+        await repo.complete_field_task(task["id"], {"readings": {"PI-201": 22.0, "PI-202": 6.0}})
 
         class FakeVoice:
             def __init__(self, key): pass
             async def transcribe_wav(self, data, **kwargs):
                 from app.evidence.voice import Transcript
-                return Transcript(text="PI-203 बावीस आणि PI-207 सहा", session_id="s1", model="muse-voice-transcribe-1.0")
+                return Transcript(text="PI-201 बावीस आणि PI-202 सहा", session_id="s1", model="muse-voice-transcribe-1.0")
             async def aclose(self): pass
 
         class FakeWonder:
             def __init__(self, key): pass
             async def create(self, items, tools, *, reasoning_effort="medium"):
-                return WonderReply(output=[message('{"readings":{"PI-203":22,"PI-207":6},"observation":"Line 3 outlet low","concerns":[]}')])
+                return WonderReply(output=[message('{"readings":{"PI-201":22,"PI-202":6},"observation":"Line 3 outlet low","concerns":[]}')])
             async def aclose(self): pass
 
         import app.evidence.voice as voice_module
@@ -147,7 +151,7 @@ async def test_voice_endpoint_transcribes_and_compares(db_url, monkeypatch, tmp_
             assert out.status_code == 200
             assert out.json()["voice"]["comparison"]["status"] == "AGREE"
             detail = (await client.get(f"/v1/incidents/{incident_id}")).json()
-            assert detail["voice_observations"][0]["transcript"].startswith("PI-203")
+            assert detail["voice_observations"][0]["transcript"].startswith("PI-201")
     finally:
         await pool.close()
 
@@ -214,3 +218,74 @@ def test_normalize_clip_passes_through_without_ffmpeg(monkeypatch):
     from app.evidence import valve
     monkeypatch.setattr(valve.shutil, "which", lambda _: None)
     assert valve.normalize_clip(b"raw", "a.mov", "video/quicktime", 30.0) == (b"raw", "a.mov", "video/quicktime", 30.0)
+
+
+async def test_backwash_proposal_is_gated_on_the_bank_differential(db_url):
+    from app.investigator.tools import ToolExecutor
+    from app.repositories.runs import RunRepository
+    from app.repositories.telemetry import TelemetryRepository
+    pool, pack, incident_id = await seed_incident(db_url)
+    try:
+        repo = InvestigationRepository(pool)
+        await repo.upsert_hypothesis(incident_id, "H1", "Cartridge bank restriction", "supported", ["x"], [])
+        ex = ToolExecutor(pack, TelemetryRepository(pool), repo, RunRepository(pool),
+                          incident_id=incident_id, plant_id="waterplant")
+        args = {"asset_id": "V-113", "action": "backwash", "rationale": "restricted bank", "sop_id": "SOP-MF-003"}
+
+        no_gauges = await ex.execute("propose_action", args)
+        assert "PI-201 and PI-202" in no_gauges["error"]
+
+        task = await repo.create_field_task(incident_id, kind="gauge_photo", asset_ids=["CB-1F", "CB-1B"],
+                                            tags=["PI-201", "PI-202"], instruction="read both")
+        await repo.complete_field_task(task["id"], {"readings": {"PI-201": 24.0, "PI-202": 16.0}})
+        normal = await ex.execute("propose_action", args)
+        assert "below the 12.0 psi restriction limit" in normal["error"] and normal["differential"]["dp_psi"] == 8.0
+
+        other = await repo.create_field_task(incident_id, kind="gauge_photo", asset_ids=["CB-1F", "CB-1B"],
+                                             tags=["PI-201", "PI-202"], instruction="read both again")
+        await repo.complete_field_task(other["id"], {"readings": {"PI-201": 32.0, "PI-202": 15.0}})
+        allowed = await ex.execute("propose_action", args)
+        assert allowed["action_proposed"]["status"] == "pending"
+    finally:
+        await pool.close()
+
+
+async def test_two_gauge_photos_complete_the_task_and_record_the_differential(db_url, monkeypatch, tmp_path):
+    import app.investigator.__main__ as investigator_main
+    from app.evidence.gauge import GaugePipeline, GaugeReading
+
+    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(investigator_main, "meta_key", lambda: "test-key")
+    values = {"PI-201": ("agree", 32.0), "PI-202": ("unreadable", None)}
+
+    async def fake_read_photo(self, image_bytes, inst):
+        status, value = values[inst.tag]
+        return GaugeReading(tag=inst.tag, status=status, value=value, wonder_psi=value)
+
+    monkeypatch.setattr(GaugePipeline, "read_photo", fake_read_photo)
+    pool, pack, incident_id = await seed_incident(db_url)
+    try:
+        repo = InvestigationRepository(pool)
+        task = await repo.create_field_task(incident_id, kind="gauge_photo", asset_ids=["CB-1F", "CB-1B"],
+                                            tags=["PI-201", "PI-202"], instruction="Photograph inlet and outlet")
+        photo = base64.b64encode(b"x" * 300).decode()
+        app = create_app(pool, pack)
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+            url = f"/v1/incidents/{incident_id}/tasks/{task['id']}/photo"
+            wrong = await client.post(url, json={"photos": {"PI-301": photo}})
+            assert wrong.status_code == 422
+
+            first = (await client.post(url, json={"photos": {"PI-201": photo, "PI-202": photo}})).json()
+            assert first["completed"] is False and first["missing"] == ["PI-202"] and first["accepted"] == {"PI-201": 32.0}
+
+            values["PI-202"] = ("agree", 15.0)
+            second = (await client.post(url, json={"photos": {"PI-202": photo}})).json()
+            assert second["completed"] is True and second["accepted"] == {"PI-201": 32.0, "PI-202": 15.0}
+            assert second["differential"]["dp_psi"] == 17.0 and second["differential"]["restricted"] is True
+
+            detail = (await client.get(f"/v1/incidents/{incident_id}")).json()
+            done = next(t for t in detail["field_tasks"] if t["id"] == str(task["id"]))
+            assert done["status"] == "completed" and done["result"]["readings"] == {"PI-201": 32.0, "PI-202": 15.0}
+            assert any("differential" in e["content"].lower() for e in detail["trace"])
+    finally:
+        await pool.close()

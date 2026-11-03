@@ -14,10 +14,10 @@ insert into sops (sop_id, title, version, applies_to, triggers, requires_human, 
   {"n":3,"action":"Read raw tank level","actor":"model","asset":"LSL-101","expect":"LEVEL_OK","caution":"If LOW_LEVEL, stop: raw tank fault (FC-RO 13), not this SOP."},
   {"n":4,"action":"Read feed pump P-101 run state","actor":"model","asset":"YS-101","expect":"YS-101 = 1 (RUNNING)","caution":"If STOPPED, the feed is the cause; go back to step 3."},
   {"n":5,"action":"Visual check of the pre-filter for visible loading","actor":"operator","asset":"PF-101","expect":"No visible loading","caution":"No dial in the pack; visual only."},
-  {"n":6,"action":"Read cartridge gauges on the red psi scale and apply SOP-CB-002","actor":"operator","asset":"PI-201..PI-208","expect":"Eight psi readings recorded by tag","caution":"Red psi scale only. Never the black kg/cm2 scale."},
-  {"n":7,"action":"Compute drop per line and flag restricted lines (provisional rule)","actor":"code","asset":"PI-201..PI-208","expect":"Flagged lines listed, or none","caution":"Thresholds are PROVISIONAL."},
+  {"n":6,"action":"Photograph the inlet gauge PI-201 and the outlet gauge PI-202 and read the red psi scale; apply SOP-CB-002","actor":"operator","asset":"PI-201","expect":"Two psi readings recorded by tag","caution":"Red psi scale only. Never the black kg/cm2 scale."},
+  {"n":7,"action":"Compute dP = PI-201 minus PI-202 and flag a restricted bank at dP of 12 psi or more (provisional rule)","actor":"code","asset":"PI-202","expect":"Bank flagged restricted, or not","caution":"Thresholds are PROVISIONAL."},
   {"n":8,"action":"Check media manifold lever positions against SOP-GEN-006","actor":"operator","asset":"MGF-101","expect":"Positions match the service route","caution":"No media vessel dials are modelled."},
-  {"n":9,"action":"If all front-row gauges read low together, propose sand filter backwash under SOP-MF-003","actor":"model","asset":"MGF-101","expect":"Proposal with cited evidence","caution":"Proposal only. The operator confirms and code policy clamps."},
+  {"n":9,"action":"If PI-201 and PI-202 both read low together with dP near normal, or dP is 12 psi or more, propose sand filter backwash under SOP-MF-003","actor":"model","asset":"MGF-101","expect":"Proposal with cited evidence","caution":"Proposal only. The operator confirms and code policy clamps."},
   {"n":10,"action":"Keep P-301 stopped until the cause is fixed and SOP-RO-005 is followed","actor":"operator","asset":"P-301","expect":"YS-301 = 0","caution":"PSL-301 chatter near 14.5 psi means cavitation risk."}
  ]$steps$::jsonb,
  $body$SYNTHETIC - written for the demo, not an approved site procedure
@@ -30,8 +30,8 @@ Diagnose in this order. Telemetry checks come first because they cost nothing; v
 
 1. Feed. Read LSL-101 (raw tank level) and YS-101 (feed pump P-101 run state). If LSL-101 is LOW_LEVEL, stop: this is a raw tank fault (FC-RO 13), not this SOP.
 2. Pre-filter. Look at PF-101 for visible loading. There is no dial on PF-101 in the pack, so this is a visual check only.
-3. Cartridge bank. Read PI-201 to PI-208 on the red psi scale and apply SOP-CB-002. One flagged line points to that housing.
-4. Media. Check the lever positions of the MGF-101, ACF-102 and SOF-103 manifolds against SOP-GEN-006. No media vessel dials are modelled. If all front-row gauges read low together, the restriction is upstream of the bank. Propose a sand filter backwash under SOP-MF-003. The model proposes; the operator confirms.
+3. Cartridge bank. Photograph the inlet gauge PI-201 and the outlet gauge PI-202 (red psi scale), let code compute dP = PI-201 minus PI-202, and apply SOP-CB-002. dP at or above 12 psi points to the cartridge bank; dP near 8 psi means the restriction is elsewhere.
+4. Media. Check the lever positions of the MGF-101, ACF-102 and SOF-103 manifolds against SOP-GEN-006. No media vessel dials are modelled. If PI-201 and PI-202 both read low together with dP near normal, the restriction is upstream of the bank. Propose a sand filter backwash under SOP-MF-003. The model proposes; the operator confirms.
 
 Keep P-301 stopped until the cause is fixed and SOP-RO-005 is followed. PSL-301 chatter near 14.5 psi means cavitation risk.
 
@@ -40,37 +40,41 @@ $body$,
  'synthetic'),
 
 ('SOP-CB-002', 'Cartridge bank differential check (red psi scale)', '1.0',
- ARRAY['CB-1F','CB-1B','CB-2F','CB-2B','CB-3F','CB-3B','CB-4F','CB-4B'],
- ARRAY['cartridge bank','cartridge differential','differential pressure','restricted line','PI-201','PI-205','front back'],
+ ARRAY['HDR-CB-IN','HDR-CB-OUT','CB-1F','CB-1B','CB-2F','CB-2B','CB-3F','CB-3B','CB-4F','CB-4B'],
+ ARRAY['cartridge bank','cartridge differential','differential pressure','restricted bank','PI-201','PI-202','inlet outlet'],
  true,
  $steps$[
-  {"n":1,"action":"Photograph each cartridge dial square-on with the needle visible","actor":"operator","asset":"PI-201..PI-208","expect":"One sharp photo per dial","caution":"Re-shoot if glare hides the needle."},
-  {"n":2,"action":"Read the red psi scale on each dial and record the value by tag","actor":"model","asset":"PI-201..PI-208","expect":"Eight psi values, each with its tag","caution":"Never read the black kg/cm2 scale. 1 kg/cm2 = 14.22 psi."},
-  {"n":3,"action":"Compute drop per line as front minus back","actor":"code","asset":"CB-1F..CB-4B","expect":"Four drop values in psi","caution":"Code computes the drop; never typed in by hand."},
-  {"n":4,"action":"Flag a back gauge below about 10 psi while sibling back gauges read about 16 psi as restricted","actor":"code","asset":"PI-205","expect":"Restricted line flagged by tag","caution":"PROVISIONAL. Pack back-row low alarm is 15 psi; reconcile on site."},
-  {"n":5,"action":"Front high and back low on one line means flow is restricted on that line","actor":"code","asset":"CB-1F..CB-4B","expect":"Line named with its two tags","caution":"PROVISIONAL rule."},
-  {"n":6,"action":"If all front gauges read low together, mark restriction as upstream of the bank","actor":"code","asset":"PI-201..PI-204","expect":"Upstream flag; go to SOP-RO-001 media step","caution":"PROVISIONAL rule."},
-  {"n":7,"action":"Record result per line with tags, psi values, drop and time","actor":"operator","asset":"CB-1F..CB-4B","expect":"Record complete","caution":null}
+  {"n":1,"action":"Photograph the inlet gauge PI-201 on CB-1F square-on with the needle visible","actor":"operator","asset":"PI-201","expect":"One sharp photo of the inlet gauge","caution":"Re-shoot if glare hides the needle."},
+  {"n":2,"action":"Photograph the outlet gauge PI-202 on CB-1B square-on with the needle visible; add an optional voice note","actor":"operator","asset":"PI-202","expect":"One sharp photo of the outlet gauge","caution":"One photo per gauge."},
+  {"n":3,"action":"Read the red psi scale on each photo and record the value by tag","actor":"model","asset":"PI-201","expect":"Two psi values, each with its tag","caution":"Never read the black kg/cm2 scale. 1 kg/cm2 = 14.22 psi."},
+  {"n":4,"action":"Compute dP as PI-201 minus PI-202","actor":"code","asset":"PI-202","expect":"One dP value in psi; normal about 8 psi (inlet about 24, outlet about 16)","caution":"Code computes dP; never typed in by hand."},
+  {"n":5,"action":"dP of 12 psi or more (1.5 x normal) means the cartridge bank is restricted; the inlet rises and the outlet falls","actor":"code","asset":"CB-1F","expect":"Bank flagged restricted with both tags and dP","caution":"PROVISIONAL. Example: inlet 32 psi, outlet 15 psi, dP 17 psi."},
+  {"n":6,"action":"dP near normal means the restriction is not in the bank; look upstream at the media filters or downstream at the RO","actor":"code","asset":"CB-1B","expect":"Not-in-bank result; go to SOP-RO-001 media step","caution":"PROVISIONAL rule."},
+  {"n":7,"action":"If PI-201 and PI-202 both read low together, mark the cause as upstream of the bank","actor":"code","asset":"PI-201","expect":"Upstream flag; go to SOP-RO-001 media step","caution":"PROVISIONAL rule. PI-202 should agree with PIT-301 (about 16 psi)."},
+  {"n":8,"action":"Record result with tags, psi values, dP and time","actor":"operator","asset":"CB-1B","expect":"Record complete","caution":null}
  ]$steps$::jsonb,
  $body$SYNTHETIC - written for the demo, not an approved site procedure
 
 # SOP-CB-002: Cartridge bank differential check
 
-Gauges sit on the domes of the cartridge housings. Front row: PI-201 (line 1), PI-202 (line 2), PI-203 (line 3), PI-204 (line 4). Back row: PI-205 (line 1), PI-206 (line 2), PI-207 (line 3), PI-208 (line 4).
+Two dial gauges sit on the cartridge bank headers: PI-201 on the inlet side (front housing CB-1F) and PI-202 on the outlet side (back housing CB-1B). The four lines and 8 housings have no gauges of their own.
 
-Each dial has two scales. Read the red psi scale only. The black kg/cm2 scale is not stored (1 kg/cm2 = 14.22 psi).
+Each dial has two scales. Read the red psi scale only (range 0 to 100). The black kg/cm2 scale is not stored (1 kg/cm2 = 14.22 psi).
 
 Reading:
-1. Photograph each dial square-on with the needle visible. Re-shoot if glare hides the needle.
-2. Record the psi value per tag.
-3. Per line, drop = front minus back (psi). Code computes the drop; do not type it in.
+1. Photograph the inlet gauge PI-201 square-on with the needle visible. Re-shoot if glare hides the needle.
+2. Photograph the outlet gauge PI-202 the same way. One photo per gauge. A voice note is optional.
+3. Record the psi value per tag.
+4. dP = PI-201 minus PI-202 (psi). Code computes dP; do not type it in.
 
 Reading the pattern (PROVISIONAL thresholds, to be checked on site):
-- Front high, back low on one line: flow is restricted on that line.
-- A back gauge below about 10 psi while its sibling back gauges read about 16 psi is flagged restricted.
-- If all front gauges read low together, the restriction is upstream of the bank. See SOP-RO-001, media step.
+- Normal: PI-201 about 24 psi, PI-202 about 16 psi, dP about 8 psi. PI-202 feeds the HP pump suction and should agree with the streamed PIT-301 (about 16 psi).
+- dP at or above 12 psi (1.5 x normal): the cartridge bank is restricted. A restricted bank raises PI-201 and lowers PI-202 (for example inlet 32 psi, outlet 15 psi, dP 17 psi). The backwash of MGF-101 under SOP-MF-003 may be proposed, but backwash alone does not clear a loaded cartridge: flow recovers to about 92 percent and replacing the cartridge elements is still recommended (SOP-CB-004).
+- dP only near normal (about 8 psi) while flow or suction is poor: the restriction is not in the cartridge bank. Look upstream at the media filters or downstream at the RO.
+- PI-201 and PI-202 both low together: the cause is upstream of the bank. See SOP-RO-001, media step.
+- If PI-202 disagrees with PIT-301 by a wide margin, suspect the gauge or the reading and re-shoot before acting.
 
-The pack's instrument limits set a back-row low alarm of 15 psi. The 10 psi and 16 psi figures above are provisional and must be reconciled with that before use.
+The pack's instrument limits set a low alarm of 15 psi at the HP pump suction. The 12 psi dP threshold and the 24, 16 and 8 psi normals above are provisional and must be reconciled with that before use.
 $body$,
  'synthetic'),
 
@@ -126,44 +130,44 @@ Caution: do not close manifold valves against a running pump.
 $body$,
  'synthetic'),
 
-('SOP-CB-004', 'Cartridge replacement on one line', '1.0',
+('SOP-CB-004', 'Cartridge replacement', '1.0',
  ARRAY['CB-1F','CB-1B','CB-2F','CB-2B','CB-3F','CB-3B','CB-4F','CB-4B','HDR-CB-IN','HDR-CB-OUT'],
- ARRAY['cartridge replacement','cartridge change','swap cartridge','housing','restricted line'],
+ ARRAY['cartridge replacement','cartridge change','swap cartridge','housing','restricted bank'],
  true,
  $steps$[
-  {"n":1,"action":"Confirm the failing line with SOP-CB-002","actor":"operator","asset":"CB-1F..CB-4B","expect":"One line named, with its two tags","caution":null},
+  {"n":1,"action":"Confirm the restricted bank with SOP-CB-002 (dP of 12 psi or more)","actor":"operator","asset":"PI-201","expect":"dP recorded from PI-201 and PI-202","caution":null},
   {"n":2,"action":"Stop P-301 and P-101; confirm both read STOPPED","actor":"operator","asset":"YS-301","expect":"YS-301 = 0 and YS-101 = 0","caution":"Stopping the feed also stops supply to the HP pump."},
-  {"n":3,"action":"Close the isolating valve for the line; record its tag","actor":"operator","asset":"HDR-CB-IN","expect":"Isolating valve closed; tag recorded","caution":"The pack has no isolation tag on the cartridge headers. Use only the tag recorded on site."},
-  {"n":4,"action":"Open the vent; confirm both dials of the line read 0 psi before opening the housing","actor":"operator","asset":"PI-201..PI-208","expect":"0 psi on both dials of the line (red scale)","caution":"Do not open a housing while any dial reads above zero."},
+  {"n":3,"action":"Close the isolating valve for the housing; record its tag","actor":"operator","asset":"HDR-CB-IN","expect":"Isolating valve closed; tag recorded","caution":"The pack has no isolation tag on the cartridge headers. Use only the tag recorded on site."},
+  {"n":4,"action":"Open the vent; confirm PI-201 and PI-202 both read 0 psi before opening the housing","actor":"operator","asset":"PI-201","expect":"0 psi on both gauges (red scale)","caution":"Do not open a housing while PI-201 or PI-202 reads above zero."},
   {"n":5,"action":"Open the housing, remove the spent cartridge, photograph it in place","actor":"operator","asset":"CB-1F","expect":"Photo on record","caution":null},
   {"n":6,"action":"Fit the new cartridge, close the housing, check the seal","actor":"operator","asset":"CB-1F","expect":"Seal seated","caution":null},
   {"n":7,"action":"Open the isolating valve slowly; vent air until water runs; close the vent","actor":"operator","asset":"HDR-CB-IN","expect":"Water with no air","caution":null},
-  {"n":8,"action":"Restart P-101; check the housing for leaks; let the line settle","actor":"operator","asset":"YS-101","expect":"YS-101 = 1 and no leaks","caution":null},
-  {"n":9,"action":"Read both dials of the line on the red psi scale and compare with SOP-CB-002","actor":"model","asset":"PI-201..PI-208","expect":"Both within SOP-CB-002 limits; drop matches sibling lines","caution":"Thresholds are PROVISIONAL."},
+  {"n":8,"action":"Restart P-101; check the housing for leaks; let the bank settle","actor":"operator","asset":"YS-101","expect":"YS-101 = 1 and no leaks","caution":null},
+  {"n":9,"action":"Photograph PI-201 and PI-202 again, read the red psi scale and compare with SOP-CB-002","actor":"model","asset":"PI-202","expect":"dP back near 8 psi, below 12 psi; PI-202 agrees with PIT-301","caution":"Thresholds are PROVISIONAL."},
   {"n":10,"action":"Verifier checks the recheck and records a pass before P-301 may start","actor":"code","asset":"YS-301","expect":"Pass recorded","caution":"Recheck must pass before P-301 restart."},
   {"n":11,"action":"Restart P-301 and watch PSL-301","actor":"operator","asset":"PSL-301","expect":"PSL-301 = 1 (OK)","caution":"Stop again if PSL-301 trips."}
  ]$steps$::jsonb,
  $body$SYNTHETIC - written for the demo, not an approved site procedure
 
-# SOP-CB-004: Cartridge replacement on one line
+# SOP-CB-004: Cartridge replacement
 
-Scope: one housing line (1 to 4), front and back. Gauges PI-201 to PI-208, red psi scale.
+Scope: replacing the cartridge elements of the bank after SOP-CB-002 shows dP at or above 12 psi. Gauges: PI-201 (inlet) and PI-202 (outlet), red psi scale. The housings have no gauges of their own.
 
 Gap: the pack has no isolation valve, vent or drain tag on the cartridge headers (HDR-CB-IN, HDR-CB-OUT). The operator identifies the isolating, vent and drain points on site and records their tags before work starts. Do not use a tag that is not recorded.
 
 Steps:
-1. Confirm the failing line with SOP-CB-002.
+1. Confirm the restricted bank with SOP-CB-002 (dP = PI-201 minus PI-202 at or above 12 psi).
 2. Stop P-301 and P-101. Confirm YS-301 and YS-101 read STOPPED.
-3. Close the isolating valve for the line. Record its tag.
-4. Open the vent. Confirm both dials of the line read 0 psi (red scale) before opening the housing.
+3. Close the isolating valve for the housing. Record its tag.
+4. Open the vent. Confirm PI-201 and PI-202 both read 0 psi (red scale) before opening the housing.
 5. Open the housing. Remove the spent cartridge. Photograph it in place.
 6. Fit the new cartridge. Close the housing and check the seal.
 7. Open the isolating valve slowly. Vent air until water runs, then close the vent.
-8. Restart P-101. Check the housing for leaks and let the line settle.
-9. Read both dials on the red psi scale. Compare with SOP-CB-002. Both must be within its limits and the drop must match the sibling lines.
+8. Restart P-101. Check the housing for leaks and let the bank settle.
+9. Photograph PI-201 and PI-202 again and read the red psi scale. Compare with SOP-CB-002. dP must be back near 8 psi (below 12 psi) and PI-202 must agree with PIT-301.
 10. Only when step 9 passes, restart P-301. Watch PSL-301; stop again if it trips.
 
-Caution: do not open a housing while any dial reads above zero. Do not restart P-301 before the recheck passes.
+Caution: do not open a housing while PI-201 or PI-202 reads above zero. Do not restart P-301 before the recheck passes.
 $body$,
  'synthetic'),
 
@@ -176,7 +180,7 @@ $body$,
   {"n":2,"action":"Confirm FC-RO reads 0 (NONE) and ST-RO reads STOPPED (0), not FAULT (2)","actor":"system","asset":"FC-RO","expect":"FC-RO = 0 and ST-RO = 0","caution":null},
   {"n":3,"action":"Confirm PSL-301 reads OK (1)","actor":"model","asset":"PSL-301","expect":"PSL-301 = 1","caution":null},
   {"n":4,"action":"Confirm feed pump P-101 is RUNNING and raw tank level is LEVEL_OK","actor":"model","asset":"YS-101","expect":"YS-101 = 1 and LSL-101 LEVEL_OK","caution":null},
-  {"n":5,"action":"Confirm cartridge dials PI-201 to PI-208 pass SOP-CB-002","actor":"operator","asset":"PI-201..PI-208","expect":"No line flagged","caution":"Thresholds are PROVISIONAL."},
+  {"n":5,"action":"Confirm cartridge bank gauges PI-201 and PI-202 pass SOP-CB-002","actor":"operator","asset":"PI-201","expect":"dP below 12 psi","caution":"Thresholds are PROVISIONAL."},
   {"n":6,"action":"Photograph the NV-301 reject needle valve position and record it; do not change it","actor":"operator","asset":"NV-301","expect":"Photo recorded; position unchanged","caution":"Change only if the start-up sheet says so."},
   {"n":7,"action":"Start P-301 at the controller; confirm RUNNING","actor":"operator","asset":"YS-301","expect":"YS-301 = 1","caution":"Watch PSL-301 during start."},
   {"n":8,"action":"Watch ST-RO through FLUSH; FAULT or FC-RO not 0 means stop P-301 and return to SOP-RO-001","actor":"system","asset":"ST-RO","expect":"Pass through FLUSH (3) then RUNNING (1)","caution":"FLUSH is expected and is not a fault."},
@@ -195,7 +199,7 @@ Steps:
 1. Clear the fault on the HMI only after the precondition holds.
 2. Confirm FC-RO reads 0 (NONE) and ST-RO reads STOPPED (0), not FAULT (2).
 3. Confirm PSL-301 reads OK (1), YS-101 reads RUNNING, LSL-101 reads LEVEL_OK.
-4. Confirm cartridge dials PI-201 to PI-208 pass SOP-CB-002.
+4. Confirm cartridge bank gauges PI-201 and PI-202 pass SOP-CB-002 (dP below 12 psi).
 5. Photograph the NV-301 reject needle valve position and record it. Do not change it unless the start-up sheet says so.
 6. Start P-301 at the controller. Confirm YS-301 reads RUNNING (1).
 7. Watch ST-RO. A pass through FLUSH (3) is expected and is not a fault. FAULT (2), or FC-RO not 0, means stop P-301 and return to SOP-RO-001.
@@ -255,8 +259,8 @@ $body$,
  true,
  $steps$[
   {"n":1,"action":"Check telemetry against nominal for the plant state in use","actor":"code","asset":"FC-RO","expect":"FC-RO 0; PSL-301 and PSH-301 OK; LSL-101 LEVEL_OK; AIT-301 below 25 ppm; ST-RO and YS-301 match intended run state","caution":null},
-  {"n":2,"action":"Re-read cartridge dials PI-201 to PI-208 on the red psi scale and photograph them","actor":"operator","asset":"PI-201..PI-208","expect":"Photos on record","caution":"Red psi scale only."},
-  {"n":3,"action":"Recheck each line against SOP-CB-002","actor":"code","asset":"PI-201..PI-208","expect":"No line flagged","caution":"Thresholds are PROVISIONAL."},
+  {"n":2,"action":"Re-read cartridge bank gauges PI-201 and PI-202 on the red psi scale and photograph them","actor":"operator","asset":"PI-201","expect":"Photos on record","caution":"Red psi scale only."},
+  {"n":3,"action":"Recheck dP = PI-201 minus PI-202 against SOP-CB-002","actor":"code","asset":"PI-202","expect":"dP below 12 psi","caution":"Thresholds are PROVISIONAL."},
   {"n":4,"action":"Confirm route valve positions with SOP-GEN-006 photos","actor":"operator","asset":"V-111..V-115","expect":"Verifier pass for the route","caution":null},
   {"n":5,"action":"Re-check any logged operator observation against a fresh photo reading","actor":"model","asset":null,"expect":"Observation agrees with photo, or is recorded as disagreeing","caution":"Cite both readings."},
   {"n":6,"action":"Draft root_cause, resolution and sops_used with cited evidence","actor":"model","asset":null,"expect":"Draft written; incident not closed","caution":"The model drafts only."},
@@ -269,7 +273,7 @@ $body$,
 
 An incident closes only when all of these are true:
 1. Telemetry nominal for the plant state in use: FC-RO 0; PSL-301 and PSH-301 OK; LSL-101 LEVEL_OK; AIT-301 below its 25 ppm high alarm; ST-RO and YS-301 match the intended run state.
-2. Cartridge dials PI-201 to PI-208 re-read on the red psi scale after the fix. No line flagged under SOP-CB-002.
+2. Cartridge bank gauges PI-201 (inlet) and PI-202 (outlet) re-read on the red psi scale after the fix. dP below 12 psi under SOP-CB-002.
 3. Valve positions for the route in use match SOP-GEN-006, with fresh photos.
 4. Any operator observation logged for the incident has been re-checked against a fresh photo reading and agrees.
 5. Root cause, resolution and SOPs used are written in the incident record, with evidence cited.
@@ -277,7 +281,7 @@ An incident closes only when all of these are true:
 
 Who signs:
 - The verifier (code) sets closed_by = verifier when all six hold. The model never closes an incident.
-- The operator signs the on-site record of the physical checks (dial and lever photos).
+- The operator signs the on-site record of the physical checks (gauge and lever photos).
 - An operator-only close (closed_by = operator) needs a written reason and is marked as a manual override.
 $body$,
  'synthetic')

@@ -17,20 +17,18 @@ def pack():
     return load_pack(PACK)
 
 
-def test_eight_dual_scale_gauges_on_the_cartridge_bank(pack):
+def test_two_dual_scale_gauges_on_the_cartridge_bank(pack):
     gauges = [i for i in pack.instruments if i.tag.startswith("PI-20")]
-    assert len(gauges) == 8
+    assert [g.tag for g in gauges] == ["PI-201", "PI-202"]
     for g in gauges:
         assert g.observe == "field_photo" and g.unit == "psi"
         assert {s.unit for s in g.display_scales} == {"kg/cm2", "psi"}
-    front = {i.tag for i in gauges if "front" in i.location_note}
-    assert front == {"PI-201", "PI-202", "PI-203", "PI-204"}
+    assert "inlet" in gauges[0].name and "outlet" in gauges[1].name
 
 
-def test_front_gauges_are_expected_above_20_psi_and_back_below(pack):
+def test_inlet_is_expected_above_outlet_by_the_normal_differential(pack):
     by = {i.tag: i for i in pack.instruments}
-    assert all(by[f"PI-20{k}"].limits.nominal > 20 for k in (1, 2, 3, 4))
-    assert all(by[f"PI-20{k}"].limits.nominal < 20 for k in (5, 6, 7, 8))
+    assert by["PI-201"].limits.nominal - by["PI-202"].limits.nominal == 8
 
 
 def test_only_the_plc_points_are_streamed(pack):
@@ -48,7 +46,7 @@ def test_hp_pump_trip_is_the_only_remote_hint_about_the_cartridge_bank(pack):
     blind = {b["asset"]: b for b in observability(pack)["blind_assets"]}
     assert "PSL-301" in blind["CB-2B"]["nearby_streamed"]
     assert blind["CB-3F"]["nearby_streamed"] == []
-    assert "PI-203" in blind["CB-3F"]["nearby_field"]
+    assert "PI-201" in blind["CB-1F"]["nearby_field"]
 
 
 @pytest.mark.parametrize("n", [1, 2, 3])
@@ -102,7 +100,7 @@ def test_unverified_items_are_flagged_not_hidden(pack):
 
 def test_rows_import_ready(pack):
     rows = to_rows(pack, str(uuid.uuid4()), content_hash(pack))
-    assert len(rows["instruments"]) == 26 and len(rows["plant_edges"]) == len(pack.edges)
+    assert len(rows["instruments"]) == 20 and len(rows["plant_edges"]) == len(pack.edges)
     assert rows["plant_releases"][0]["layout"]["approximate"] is True
 
 

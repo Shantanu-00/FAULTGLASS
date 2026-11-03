@@ -294,7 +294,9 @@ async def complete_task(request: Request, incident_id: str, task_id: UUID, body:
     ]
     await state.telemetry.insert_field_readings(
         state.plant_id, readings, run_id=run.id if run else None)
-    await inv.complete_field_task(task_id, {"readings": body.readings, "note": body.note, "source": "manual_entry"})
+    differential = await _record_differential(state, incident_id, body.readings)
+    await inv.complete_field_task(task_id, {
+        "readings": body.readings, "differential": differential, "note": body.note, "source": "manual_entry"})
     await _resume(state, incident_id)
     return {"completed": True, "readings_stored": len(readings)}
 
@@ -310,12 +312,11 @@ async def _resume(state, incident_id: str) -> None:
 
 @router.post("/incidents/{incident_id}/tasks/{task_id}/photo")
 async def complete_task_photo(request: Request, incident_id: str, task_id: UUID, body: PhotoTaskIn):
-    """Gauge photo -> SAM masks -> zoomed crops -> Wonder reads -> field telemetry.
+    """Gauge photos (one per gauge) -> SAM finds the dial -> Wonder reads it -> field telemetry.
 
-    Only cross-checked (agree) or single-source readings are stored; uncertain
-    or unreadable gauges are reported and the task stays completable by a
-    re-shoot. The original photo is kept under uploads/ (git-ignored) with its
-    hash recorded on the task.
+    Only cross-checked (agree) or single-source readings are stored. A gauge that cannot be read
+    is reported and the task stays pending; accepted gauges are kept, so the worker re-shoots only
+    the missing one. When every gauge of the task is read, code computes the bank differential.
     """
     state = request.app.state
     inv = state.investigation
@@ -324,8 +325,11 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
         raise HTTPException(409, "task is not pending")
     if task["kind"] != "gauge_photo":
         raise HTTPException(422, "photo submission is only for gauge_photo tasks")
-    image_bytes = _decode_base64(body.image_base64, "image_base64")
-    digest, photo_path = _save_upload(image_bytes, f"{task_id}.jpg")
+    unknown = sorted(t for t in body.photos if t not in task["tags"])
+    if unknown:
+        raise HTTPException(422, f"photos must be for this task's gauges {task['tags']}: {unknown}")
+    images = {tag: _decode_base64(data, f"photos.{tag}") for tag, data in body.photos.items()}
+    saved = {tag: _save_upload(data, f"{task_id}-{tag}.jpg") for tag, data in images.items()}
 
     from ..evidence.gauge import GaugePipeline, WonderGaugeReader
     from ..evidence.sam import SamClient, SamError
@@ -333,12 +337,13 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
     from ..investigator.wonder import WonderClient
 
     by_tag = {i.tag: i for i in state.pack.instruments}
-    expected = [by_tag[t] for t in task["tags"] if t in by_tag]
+
     async def read_gauges():
         sam = SamClient(meta_key())
         wonder = WonderClient(meta_key())
         try:
-            return await GaugePipeline(sam=sam, reader=WonderGaugeReader(wonder)).process(image_bytes, expected)
+            pipeline = GaugePipeline(sam=sam, reader=WonderGaugeReader(wonder))
+            return await asyncio.gather(*(pipeline.read_photo(data, by_tag[tag]) for tag, data in images.items()))
         finally:
             await sam.aclose()
             await wonder.aclose()
@@ -348,19 +353,24 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
     except SamError as exc:
         raise HTTPException(502, f"segmentation failed: {exc}")
 
-    accepted = {r.tag: r.value for r in results if r.value is not None and r.status in ("agree", "single_source")}
-    details = [r.to_json() for r in results]
-    if not accepted:
-        return {"completed": False, "readings": details,
-                "reason": "No gauge could be read with confidence; re-shoot closer, square-on, needle visible."}
-    now = dt.datetime.now(dt.timezone.utc)
-    run = await state.runs.active(state.plant_id)
-    readings = [
-        Reading(tag=tag, observed_at=now, value=value, raw_value=None,
-                unit=by_tag[tag].unit, quality="good", source_id="field_photo")
-        for tag, value in accepted.items()
-    ]
-    await state.telemetry.insert_field_readings(state.plant_id, readings, run_id=run.id if run else None)
+    progress = task["result"] or {}
+    gauges = {**(progress.get("gauges_by_tag") or {}), **{r.tag: r.to_json() for r in results}}
+    accepted_now = {r.tag: r.value for r in results if r.value is not None and r.status in ("agree", "single_source")}
+    accepted = {**(progress.get("accepted") or {}), **accepted_now}
+    if accepted_now:
+        now = dt.datetime.now(dt.timezone.utc)
+        run = await state.runs.active(state.plant_id)
+        await state.telemetry.insert_field_readings(
+            state.plant_id,
+            [Reading(tag=tag, observed_at=now, value=value, raw_value=None, unit=by_tag[tag].unit,
+                     quality="good", source_id="field_photo") for tag, value in accepted_now.items()],
+            run_id=run.id if run else None)
+    missing = [t for t in task["tags"] if t not in accepted]
+    if missing:
+        await inv.save_task_progress(task_id, {"accepted": accepted, "gauges_by_tag": gauges})
+        return {"completed": False, "readings": list(gauges.values()), "accepted": accepted, "missing": missing,
+                "reason": "Still needed: " + ", ".join(missing)
+                          + ". Re-shoot that gauge closer, square-on, with the needle visible."}
     voice_payload = None
     if body.audio_base64:
         try:
@@ -369,13 +379,28 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
                 accepted, ["Marathi", "English"])
         except Exception as exc:  # voice must not erase valid photo evidence
             voice_payload = {"error": f"voice processing failed: {exc.__class__.__name__}"}
+    differential = await _record_differential(state, incident_id, accepted)
     await inv.complete_field_task(task_id, {
-        "readings": accepted, "note": body.note, "source": "gauge_photo",
-        "photo_sha256": digest, "photo_path": photo_path, "gauges": details,
-        "voice": voice_payload,
+        "readings": accepted, "differential": differential, "note": body.note, "source": "gauge_photo",
+        "photos": {tag: {"sha256": digest, "path": path} for tag, (digest, path) in saved.items()},
+        "gauges": list(gauges.values()), "voice": voice_payload,
     })
     await _resume(state, incident_id)
-    return {"completed": True, "readings_stored": len(readings), "readings": details, "voice": voice_payload}
+    return {"completed": True, "readings_stored": len(accepted_now), "readings": list(gauges.values()),
+            "accepted": accepted, "differential": differential, "voice": voice_payload}
+
+
+async def _record_differential(state, incident_id: str, readings: dict[str, float]) -> dict | None:
+    """Compute the bank differential in code and put it in the audit trail."""
+    from ..evidence.differential import compute_differential
+
+    differential = compute_differential(readings, state.pack.instruments)
+    if differential is None:
+        return None
+    await state.investigation.add_trace(
+        incident_id, kind="observation", actor="code", content="Cartridge bank differential: " + differential.summary(),
+        evidence=[differential.to_json()["inlet_tag"], differential.to_json()["outlet_tag"]])
+    return differential.to_json()
 
 
 @router.post("/incidents/{incident_id}/tasks/{task_id}/voice")

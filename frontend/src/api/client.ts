@@ -71,9 +71,9 @@ export const api = {
       `/v1/incidents/${enc(incidentId)}/tasks/${taskId}/complete`,
       { readings, note },
     ),
-  completeTaskPhoto: (incidentId: string, taskId: string, imageBase64: string, note: string, audioBase64: string | null) =>
+  completeTaskPhoto: (incidentId: string, taskId: string, photos: Record<string, string>, note: string, audioBase64: string | null) =>
     request<PhotoResponse>('POST', `/v1/incidents/${enc(incidentId)}/tasks/${taskId}/photo`, {
-      image_base64: imageBase64,
+      photos,
       audio_base64: audioBase64,
       note,
     }),

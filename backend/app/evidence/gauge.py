@@ -1,16 +1,19 @@
-"""Gauge pipeline: SAM boxes -> row assignment -> zoomed crops -> Wonder
-reads each dial -> needle-angle cross-check in code (docs/DEMO.md).
+"""Gauge pipeline for one photo of one dial: SAM finds the dial -> zoomed crop -> Wonder
+reads the red psi scale -> needle-angle cross-check in code.
 
-Division of labour (exactly as the demo script fixes it):
-- SAM 3.1 locates the dials (and optionally the needle). It reads nothing.
-- Python assigns front/back rows from box position and size + the pack layout,
-  crops and zooms each dial, and measures the needle angle from the mask.
-- Muse Wonder (vision) reads the red psi scale on each zoomed crop.
-- Python cross-checks the two: disagreement beyond tolerance, a missing
-  needle, or an unreadable dial yields UNCERTAIN, never an invented value.
+The worker uploads one photo per gauge (cartridge bank inlet, cartridge bank outlet), so each
+photo holds one dial of interest.
 
-The pixel mask itself is never sent to a reading model. Models get images
-(the crop); masks stay in code where geometry is measured.
+Division of labour:
+- SAM 3.1 locates the dial (and the needle). It reads nothing.
+- Python picks the dial that fills the frame, crops and zooms it, and measures the needle angle
+  from the mask.
+- Muse Wonder (vision) reads the red psi scale on the zoomed crop.
+- Python cross-checks the two: disagreement beyond tolerance, a missing needle, or an unreadable
+  dial yields UNCERTAIN or UNREADABLE, never an invented value.
+
+The pixel mask itself is never sent to a reading model. Models get images (the crop); masks stay
+in code where geometry is measured.
 """
 from __future__ import annotations
 
@@ -55,37 +58,11 @@ def image_data_url(image_bytes: bytes) -> str:
     return "data:image/jpeg;base64," + base64.b64encode(image_bytes).decode()
 
 
-def assign_gauges(detections: list[Detection], expected: list[Instrument]) -> dict[str, Detection]:
-    """Map SAM gauge boxes to instrument tags by image position + pack layout.
-
-    Front row sits lower in the photo and appears larger; within a row, lines
-    run left to right. Expected tags carry their row/line in location_note
-    ("front row, line 3 from the left"). Unmatched tags stay absent, which
-    the caller turns into a re-shoot request, not a guess.
-    """
-    wanted: dict[tuple[str, int], str] = {}
-    for inst in expected:
-        m = re.search(r"(front|back) row, line (\d+)", inst.location_note or "")
-        if m:
-            wanted[(m.group(1), int(m.group(2)))] = inst.tag
-    if not wanted or not detections:
-        return {}
-    ordered = sorted(detections, key=lambda d: d.center[1])
-    # Split rows at the largest vertical gap between successive centres.
-    if len(ordered) > 1:
-        gaps = [(ordered[i + 1].center[1] - ordered[i].center[1], i) for i in range(len(ordered) - 1)]
-        split = max(gaps)[1] + 1 if max(gaps)[0] > 0 else len(ordered) // 2
-    else:
-        split = 1
-    back = sorted(ordered[:split], key=lambda d: d.center[0])
-    front = sorted(ordered[split:], key=lambda d: d.center[0])
-    assigned: dict[str, Detection] = {}
-    for row_name, row in (("back", back), ("front", front)):
-        for n, det in enumerate(row, start=1):
-            tag = wanted.get((row_name, n))
-            if tag:
-                assigned[tag] = det
-    return assigned
+def largest_detection(detections: list[Detection]) -> Detection | None:
+    """The dial the photo is about: the biggest box, ties broken by SAM confidence."""
+    if not detections:
+        return None
+    return max(detections, key=lambda d: ((d.box[2] - d.box[0]) * (d.box[3] - d.box[1]), d.confidence or 0.0))
 
 
 def needle_psi(det: Detection, raster: bytes | None) -> float | None:
@@ -176,34 +153,29 @@ class GaugePipeline:
     sam: SamClient
     reader: GaugeReader
 
-    async def process(self, image_bytes: bytes, expected: list[Instrument]) -> list[GaugeReading]:
+    async def read_photo(self, image_bytes: bytes, inst: Instrument) -> GaugeReading:
+        """Read the one dial in a photo for instrument `inst`."""
         image = Image.open(io.BytesIO(image_bytes))
         full_url = image_data_url(image_bytes if image.format == "JPEG" else self._as_jpeg(image))
         reply = await self.sam.segment_image(full_url, "pressure gauge")
-        assigned = assign_gauges(reply.detections, expected)
-        readings: list[GaugeReading] = []
-        for inst in expected:
-            det = assigned.get(inst.tag)
-            if det is None:
-                readings.append(GaugeReading(tag=inst.tag, status="not_found"))
-                continue
-            reading = GaugeReading(tag=inst.tag, box=det.box, sam_confidence=det.confidence)
-            crop = crop_data_url(image, det.box)
-            reading.wonder_psi = await self.reader.read_gauge(crop, inst.tag, inst.location_note or "")
-            # Needle cross-check: second SAM concept on the crop, best-effort.
-            reading.needle_psi = await self._needle(full_url, det)
-            if reading.wonder_psi is None:
-                reading.status = "unreadable"
-            elif reading.needle_psi is None:
-                reading.status = "single_source"  # Wonder only; reported, flagged as unchecked
-                reading.value = reading.wonder_psi
-            elif abs(reading.wonder_psi - reading.needle_psi) <= max(3.0, AGREE_TOLERANCE * max(reading.wonder_psi, 1.0)):
-                reading.status = "agree"
-                reading.value = reading.wonder_psi
-            else:
-                reading.status = "uncertain"  # value deliberately withheld
-            readings.append(reading)
-        return readings
+        gauge = largest_detection(reply.detections)
+        if gauge is None:
+            return GaugeReading(tag=inst.tag, status="not_found")
+        reading = GaugeReading(tag=inst.tag, box=gauge.box, sam_confidence=gauge.confidence)
+        crop = crop_data_url(image, gauge.box)
+        reading.wonder_psi = await self.reader.read_gauge(crop, inst.tag, inst.location_note or "")
+        reading.needle_psi = await self._needle(full_url, gauge)
+        if reading.wonder_psi is None:
+            reading.status = "unreadable"
+        elif reading.needle_psi is None:
+            reading.status = "single_source"  # Wonder only; reported, flagged as unchecked
+            reading.value = reading.wonder_psi
+        elif abs(reading.wonder_psi - reading.needle_psi) <= max(3.0, AGREE_TOLERANCE * max(reading.wonder_psi, 1.0)):
+            reading.status = "agree"
+            reading.value = reading.wonder_psi
+        else:
+            reading.status = "uncertain"  # value deliberately withheld
+        return reading
 
     async def _needle(self, image_url: str, gauge: Detection) -> float | None:
         try:

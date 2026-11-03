@@ -112,14 +112,8 @@ a person reads them on site and the value arrives as a field entry.
 - FC-RO fault_code (enum) on RO-301: SRC-PLC1 modbus_tcp holding offset 1 uint16; fresh within 5 s; states 0=NONE, 11=LOW_SUCTION_PRESSURE, 12=HIGH_DISCHARGE_PRESSURE, 13=RAW_TANK_LOW, 14=PURE_TANK_HIGH
 
 ## NO API (a person must look)
-- PI-201 pressure (psi): Cartridge bank, front row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-205 pressure (psi): Cartridge bank, back row, line 1 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-202 pressure (psi): Cartridge bank, front row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-206 pressure (psi): Cartridge bank, back row, line 2 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-203 pressure (psi): Cartridge bank, front row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-207 pressure (psi): Cartridge bank, back row, line 3 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-204 pressure (psi): Cartridge bank, front row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
-- PI-208 pressure (psi): Cartridge bank, back row, line 4 from the left, gauge on top of the dome. Dual scale dial: read the red psi scale.
+- PI-201 pressure (psi): Cartridge bank, inlet side (front row), gauge on top of the dome. Dual scale dial: read the red psi scale.
+- PI-202 pressure (psi): Cartridge bank, outlet side (back row), gauge on top of the dome. Dual scale dial: read the red psi scale.
 - PI-301 pressure (psi): Teal instrument console above the RO array, inlet pressure gauge.
 - PI-302 pressure (psi): Teal instrument console above the RO array, reject pressure gauge.
 - FI-301 flow (L/h): Teal instrument console, vertical acrylic rotameter marked permeate. Read the top edge of the float.
@@ -135,13 +129,13 @@ Format: asset; streamed points nearby; field dials nearby.
 - SOF-103; streamed nearby: none; field nearby: none
 - PF-101; streamed nearby: none; field nearby: none
 - CB-1F; streamed nearby: none; field nearby: PI-201
-- CB-1B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-205
-- CB-2F; streamed nearby: none; field nearby: PI-202
-- CB-2B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-206
-- CB-3F; streamed nearby: none; field nearby: PI-203
-- CB-3B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-207
-- CB-4F; streamed nearby: none; field nearby: PI-204
-- CB-4B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-208
+- CB-1B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-202
+- CB-2F; streamed nearby: none; field nearby: none
+- CB-2B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: none
+- CB-3F; streamed nearby: none; field nearby: none
+- CB-3B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: none
+- CB-4F; streamed nearby: none; field nearby: none
+- CB-4B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: none
 - OZ-401; streamed nearby: AIT-301, FIT-301; field nearby: none
 - PF-401; streamed nearby: YS-401; field nearby: none
 
@@ -171,14 +165,8 @@ Lever valves: 0 degrees = lever parallel to the pipe = OPEN; 45 degrees = half t
 - NV-301 RO reject needle valve (L1). needle valve, throttled (not fully open or closed); sets recovery ratio and reject back-pressure. Normal: throttled.
 
 ## DIAL AND ROTAMETER READINGS BY PHOTO (no API)
-- PI-201. Where to stand: Cartridge bank, front row, line 1 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 24 psi.
-- PI-205. Where to stand: Cartridge bank, back row, line 1 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 16 psi.
-- PI-202. Where to stand: Cartridge bank, front row, line 2 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 24 psi.
-- PI-206. Where to stand: Cartridge bank, back row, line 2 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 16 psi.
-- PI-203. Where to stand: Cartridge bank, front row, line 3 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 24 psi.
-- PI-207. Where to stand: Cartridge bank, back row, line 3 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 16 psi.
-- PI-204. Where to stand: Cartridge bank, front row, line 4 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 24 psi.
-- PI-208. Where to stand: Cartridge bank, back row, line 4 from the left, gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 16 psi.
+- PI-201. Where to stand: Cartridge bank, inlet side (front row), gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 24 psi.
+- PI-202. Where to stand: Cartridge bank, outlet side (back row), gauge on top of the dome. Read the red psi scale (0-100). Also printed: black kg/cm2 0-7; do not read it. Expected nominal 16 psi.
 - PI-301. Where to stand: Teal instrument console above the RO array, inlet pressure gauge. Reading in psi, range 0-300. Expected nominal 180 psi.
 - PI-302. Where to stand: Teal instrument console above the RO array, reject pressure gauge. Reading in psi, range 0-300. Expected nominal 165 psi.
 - FI-301. Where to stand: Teal instrument console, vertical acrylic rotameter marked permeate. Read the top edge of the float. Reading in L/h, range 0-3000. Expected nominal 2000 L/h.
