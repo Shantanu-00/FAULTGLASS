@@ -21,8 +21,7 @@ in `ARCHITECTURE.md` still apply. Model facts come from the docs mirrored in `do
    different commands (`python -m app.api`, `app.simulator`, `app.edge`, and the worker once
    built). Containers in one Lightsail deployment share localhost, so the edge reads the
    simulator at 127.0.0.1:5020 and posts to the API at 127.0.0.1:8000. Only the API has a
-   public endpoint; the simulator and the edge listen on nothing public. Start on `small`
-   (2 GB) for four Python processes, measure memory, and drop to `micro` if it fits. Scale 1.
+   public endpoint; the simulator and the edge listen on nothing public. Lightsail `small` is only 1 GB; use `medium` (2 GB, 1 vCPU) for the six Python processes. Scale 1.
 2. **No Procrastinate.** Use a plain `jobs` table (`status`, `locked_until`,
    `idempotency_key`) polled with `SELECT … FOR UPDATE SKIP LOCKED`. The pause/resume
    requirement is met by persisting the Wonder continuation items and the open task.

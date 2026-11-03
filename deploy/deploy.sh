@@ -10,12 +10,12 @@
 # Needs the aws CLI with Lightsail permissions and a repo-root .env with DATABASE_URL,
 # CORS_ORIGINS (the Vercel origin), MODEL_API_KEY, BASETEN_API_KEY and EDGE_API_KEY.
 # Optional environment: AWS_REGION (default eu-west-3), SERVICE (default faultglass),
-# POWER (default small).
+# POWER (default medium).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 SERVICE="${SERVICE:-faultglass}"
-POWER="${POWER:-small}"
+POWER="${POWER:-medium}"
 REGION="${AWS_REGION:-eu-west-3}"
 LS=(aws lightsail --region "$REGION")
 
