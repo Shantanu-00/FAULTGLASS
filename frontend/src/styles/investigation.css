@@ -1,7 +1,14 @@
+.commander {
+  --investigation-blue: #2857b8;
+  --investigation-blue-soft: #edf2fb;
+  --investigation-coral: #cc643d;
+  --investigation-ink: #202d3b;
+}
+
 .commander .investigation-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
   min-width: 0;
   font-size: 16px;
   line-height: 1.55;
@@ -14,7 +21,7 @@
   flex-direction: column;
   gap: 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 3px;
   background: var(--surface);
   overflow-wrap: anywhere;
 }
@@ -22,7 +29,7 @@
 .commander .investigation-card h3 {
   margin: 0;
   color: var(--text);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.35;
   letter-spacing: -0.025em;
@@ -41,11 +48,13 @@
 .commander .investigation-card-head { flex-wrap: wrap; }
 .commander .investigation-eyebrow {
   display: block;
-  font-size: 13px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   line-height: 1.4;
   font-weight: 600;
-  letter-spacing: .025em;
-  color: var(--accent-strong);
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  color: var(--investigation-blue);
 }
 
 .commander .investigation-card-foot,
@@ -79,7 +88,7 @@
 .commander .investigation-blocker strong { display: block; }
 .commander .investigation-error { padding: 10px 12px; background: var(--alarm-soft); color: var(--alarm) !important; border-radius: 6px; font-size: 14px; }
 
-.commander .detection-card { border-top: 3px solid #bd853a; }
+.commander .detection-card { border-top: 3px solid var(--investigation-coral); }
 .commander .detection-summary { font-size: 16px; }
 .commander .detection-signals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
 .commander .detection-signal { display: flex; flex-direction: column; gap: 5px; padding: 12px 0; border-top: 1px solid var(--border); min-width: 0; }
@@ -91,7 +100,7 @@
 .commander .detection-change { color: var(--warning); font-size: 13px; font-weight: 600; }
 .commander .detection-baseline { color: var(--text-3); font-size: 12px; }
 
-.commander .investigation-disclosure { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.commander .investigation-disclosure { min-width: 0; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); }
 .commander .investigation-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; list-style: none; padding: 17px 20px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--text-2); }
 .commander .investigation-disclosure > summary::-webkit-details-marker { display: none; }
 .commander .investigation-disclosure > summary:hover { color: var(--accent-strong); }
@@ -106,23 +115,25 @@
 .commander .investigation-inline-details[open] > summary { margin-bottom: 8px; color: var(--accent-strong); }
 .commander .investigation-meta-list { margin: 7px 0 0; padding-left: 18px; }
 
-.commander .finding-list { display: flex; flex-direction: column; gap: 22px; padding: 0; margin: 0; list-style: none; }
-.commander .finding { display: flex; flex-direction: column; gap: 12px; }
-.commander .finding + .finding { padding-top: 20px; border-top: 1px solid var(--border); }
+.commander .finding-list { display: flex; flex-direction: column; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.commander .finding { display: flex; flex-direction: column; gap: 7px; padding: 13px 15px; border: 1px solid var(--border); border-left: 3px solid #a8b0bc; background: var(--surface); }
+.commander .finding + .finding { padding-top: 13px; }
 .commander .finding-status { display: flex; align-items: center; gap: 10px; }
-.commander .finding-evidence { font-size: 15px; color: var(--text-2); }
+.commander .finding-evidence { font-size: 14px; line-height: 1.5; color: var(--text-2); }
 .commander .finding-evidence ul { padding-left: 18px; margin: 0; }
 .commander .finding-evidence li + li { margin-top: 5px; }
-.commander .finding-rejected h3 { color: var(--text-3); font-size: 18px; }
+.commander .finding-rejected h4 { color: var(--text-2); }
 .commander .investigation-finding { white-space: pre-wrap; }
 
-.commander .command-proposal-pending { background: var(--accent-soft); border-color: #adc9bd; }
+.commander .command-proposal-pending { background: #fff8f1; border-color: #ddc7b8; border-top: 3px solid var(--investigation-coral); }
+.commander .command-proposal-pending .investigation-eyebrow { color: #a34625; }
 .commander .proposal-asset { font-family: var(--font-mono); font-size: .8em; color: var(--accent-strong); margin-left: 7px; }
 .commander .proposal-approval-note { font-size: 14px; color: var(--text-2); }
 .commander .proposal-actions { display: flex; gap: 10px; margin-top: 3px; }
 .commander .proposal-actions .btn-primary { flex: 1; min-height: 44px; font-size: 16px; }
 .commander .proposal-reject { min-width: 80px; background: transparent; border-color: #b7cbc1; }
-.commander .command-field-task.task-pending { border-left: 3px solid var(--accent); }
+.commander .command-field-task.task-pending { border-top: 3px solid var(--investigation-coral); background: #fffaf4; }
+.commander .command-field-task.task-pending .investigation-eyebrow { color: #a34625; }
 .commander .field-workspace-link { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--accent-strong); font-size: 14px; font-weight: 600; text-decoration: none; align-self: flex-start; padding: 4px 0; }
 .commander .field-workspace-link:hover { text-decoration: underline; }
 .commander .gauge-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
@@ -172,6 +183,75 @@
 .commander .voice-item + .voice-item { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; }
 .commander .voice-result blockquote { margin: 10px 0; padding-left: 12px; border-left: 2px solid var(--border-strong); }
 
+/* The investigation is a set of visible, persistent records. Color identifies
+   responsibility: Wonder is blue; worker/command action is copper. */
+.commander .investigation-card-head > div { min-width: 0; }
+.commander .investigation-card-head > div h3 { margin-top: 5px; }
+.commander .hypothesis-board { border-top: 3px solid var(--investigation-blue); gap: 16px; }
+.commander .hypothesis-total { display: flex; align-items: baseline; gap: 5px; color: var(--investigation-ink); font-family: var(--font-mono); font-size: 22px; font-weight: 500; white-space: nowrap; }
+.commander .hypothesis-total small { font-family: var(--font-sans); font-size: 12px; color: var(--text-3); font-weight: 400; }
+.commander .hypothesis-key { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 0 0 13px; border-bottom: 1px solid var(--border); }
+.commander .hypothesis-key > span { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.commander .hypothesis-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: #89929d; }
+.commander .hypothesis-dot.is-supported { background: var(--investigation-blue); }
+.commander .hypothesis-dot.is-rejected { background: #b1aaa0; }
+.commander .finding-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.commander .hypothesis-id { color: var(--investigation-blue); font-family: var(--font-mono); font-size: 12px; font-weight: 600; letter-spacing: .03em; }
+.commander .finding h4 { margin: 0; font-size: 17px; line-height: 1.4; letter-spacing: -.02em; font-weight: 600; color: var(--investigation-ink); }
+.commander .finding-supported,
+.commander .finding-confirmed { border-left-color: var(--investigation-blue); background: #f7f9ff; }
+.commander .finding-supported .pill-accent { color: #224b9e; background: #e7eefa; border-color: #c9d6ef; }
+.commander .finding-rejected { background: #f6f5f0; border-left-color: #b8afa0; }
+.commander .finding-rejected .hypothesis-id { color: #7f7668; }
+.commander .finding-rejected .pill { background: #ebe9e3; color: #68655f; border-color: #d9d6ce; }
+.commander .finding-evidence .investigation-meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: .045em; line-height: 1.5; color: #596574; }
+.commander .finding-evidence ul { padding-left: 16px; }
+.commander .finding-counterevidence { padding-top: 8px; border-top: 1px dashed var(--border); }
+.commander .finding-pending { font-size: 13px; color: var(--text-3) !important; }
+.commander .finding-updated { margin-top: 2px; color: var(--text-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+.commander .finding-more .finding-evidence + .finding-evidence { margin-top: 12px; }
+.commander .hypothesis-source { margin-top: -4px; }
+.commander .hypothesis-empty { display: flex; gap: 14px; align-items: flex-start; padding: 15px 0; }
+.commander .hypothesis-empty-mark { color: #8b98ad; font-family: var(--font-mono); font-size: 26px; line-height: 1.2; flex: none; }
+.commander .hypothesis-empty p { font-size: 14px; }
+
+.commander .investigation-journey { container-type: inline-size; border-top: 3px solid var(--investigation-ink); gap: 17px; }
+.commander .journey-count { flex: none; font-family: var(--font-mono); color: var(--text-3); font-size: 11px; padding: 4px 7px; border: 1px solid var(--border); }
+.commander .journey-handoff { position: relative; display: grid; grid-template-columns: 1fr; gap: 12px; }
+.commander .journey-node { position: relative; display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 12px; align-items: start; min-width: 0; }
+.commander .journey-actor { position: relative; display: flex; flex-direction: column; align-items: flex-start; font-size: 14px; font-weight: 650; line-height: 1.4; color: var(--investigation-coral); }
+.commander .journey-actor small { margin-top: 3px; color: var(--text-3); font-size: 10px; line-height: 1.4; font-weight: 400; }
+.commander .journey-node p { font-size: 13px; line-height: 1.55; }
+.commander .journey-spark { border-bottom: 1px solid var(--border); padding-bottom: 13px; }
+.commander .journey-wonder .journey-actor { color: var(--investigation-blue); }
+.commander .journey-wonder::before { content: '↓'; position: absolute; color: #b4b8bf; font-size: 14px; top: -19px; left: 52px; background: var(--surface); padding: 0 3px; line-height: 1; }
+.commander .journey-actions { list-style: none; margin: 0; padding: 0; }
+.commander .journey-activity { padding: 14px 15px; border: 1px solid #d4dcea; border-left: 3px solid var(--investigation-blue); background: #f6f8fd; min-width: 0; }
+.commander .journey-activity + .journey-activity { margin-top: 10px; }
+.commander .journey-activity-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; color: var(--investigation-blue); font-size: 11px; font-weight: 600; }
+.commander .journey-activity-head time { color: var(--text-3); font-family: var(--font-mono); font-weight: 400; font-size: 10px; white-space: nowrap; }
+.commander .journey-activity h4 { margin: 0; font-size: 15px; color: var(--investigation-ink); font-weight: 600; line-height: 1.45; }
+.commander .journey-outcome { display: flex; align-items: flex-start; gap: 7px; font-size: 13px; line-height: 1.5; margin: 7px 0 !important; }
+.commander .journey-outcome > span { color: var(--investigation-blue); flex: none; }
+.commander .journey-source > summary { font-size: 11px; color: var(--text-3); }
+.commander .journey-source[open] { padding-bottom: 2px; }
+.commander .journey-source .activity-content { padding: 10px; background: var(--surface); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; line-height: 1.6; }
+.commander .journey-activity.is-failed { border-color: #e5d2b4; border-left-color: #b98232; background: #fffaf0; }
+.commander .journey-history { border-top: 1px solid var(--border); padding-top: 10px; margin-top: -4px; }
+.commander .journey-history > summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; list-style: none; color: var(--investigation-blue); font-size: 12px; font-weight: 500; padding: 2px 0; }
+.commander .journey-history > summary::-webkit-details-marker { display: none; }
+.commander .journey-history[open] > summary { margin-bottom: 13px; }
+.commander .journey-history[open] > summary > span { transform: rotate(90deg); }
+
+@container (min-width: 540px) {
+  .commander .journey-handoff { grid-template-columns: 1fr 1fr; gap: 26px; }
+  .commander .journey-node { display: flex; flex-direction: column; gap: 9px; }
+  .commander .journey-actor { flex-direction: row; align-items: baseline; gap: 7px; }
+  .commander .journey-spark { border-bottom: 0; padding-bottom: 0; }
+  .commander .journey-wonder { border-left: 1px solid var(--border); padding-left: 22px; }
+  .commander .journey-wonder::before { content: '→'; left: -8px; top: 26px; }
+}
+
 @media (max-width: 1440px) {
   .commander .investigation-card { padding: 18px; }
   .commander .investigation-card h3 { font-size: 19px; }
@@ -187,4 +267,8 @@
   .commander .detection-values { gap: 4px; }
   .commander .proposal-actions { flex-wrap: wrap; }
   .commander .proposal-actions .btn-primary { min-width: 180px; }
+  .commander .finding { padding: 14px; }
+  .commander .finding h4 { font-size: 16px; }
+  .commander .journey-node { grid-template-columns: 62px minmax(0, 1fr); gap: 9px; }
+  .commander .journey-wonder::before { left: 44px; }
 }

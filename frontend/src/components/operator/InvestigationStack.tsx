@@ -1,12 +1,11 @@
 import React from 'react';
-import { hasWonderFindings, latestTrace, latestWonderNote } from '../../lib/commander';
+import { hasWonderFindings, latestTrace } from '../../lib/commander';
 import { usePlant } from '../../state/PlantContext';
-import { Pill } from '../common/Pill';
 import { ClosedResult } from './ClosedResult';
 import { FlagCard } from './FlagCard';
 import { FocusLedger } from './FocusLedger';
 import { Hypotheses } from './Hypotheses';
-import { AuditTrail, MemoryRecalled } from './MemoryAndTrace';
+import { MemoryRecalled } from './MemoryAndTrace';
 import { FieldTaskCard, GaugeEvidence, ProposalCard, VoiceCard } from './ProposalsAndTasks';
 import '../../styles/investigation.css';
 
@@ -30,6 +29,7 @@ export const InvestigationStack: React.FC = () => {
         : 'Spark monitors the live readings. When it finds abnormal drift, Wonder investigates the cause and requests the evidence it needs.'}
     </Waiting>}
     {live[0] && <p className="investigation-handoff" role="status">{connection === 'offline' ? 'Updates are paused. Reconnect to retrieve the investigation.' : 'Opening the incident for Wonder to investigate.'}</p>}
+    <Hypotheses items={[]} model={null} />
   </div>;
 
   if (!detail) return <div className="investigation-stack">
@@ -53,11 +53,6 @@ export const InvestigationStack: React.FC = () => {
   const completedTasks = detail.field_tasks.filter((task) => task.status !== 'pending')
     .sort((a, b) => Date.parse(b.completed_at ?? b.created_at) - Date.parse(a.completed_at ?? a.created_at));
   const gauge = completedTasks.find((task) => task.kind === 'gauge_photo' && task.status === 'completed' && task.result);
-  const activeHypotheses = [...detail.hypotheses].filter((hypothesis) => hypothesis.status === 'supported' || hypothesis.status === 'confirmed'
-      || (hypothesis.status === 'open' && hypothesis.evidence_for.length > 0))
-    .sort((a, b) => ({ confirmed: 3, supported: 2, open: 1, rejected: 0 }[b.status] - { confirmed: 3, supported: 2, open: 1, rejected: 0 }[a.status]) || Date.parse(b.updated_at) - Date.parse(a.updated_at));
-  const rejectedFinding = [...detail.hypotheses].filter((hypothesis) => hypothesis.status === 'rejected').sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0];
-  const note = latestWonderNote(detail);
   const failed = detail.action_proposals.some((proposal) => proposal.status === 'failed');
   const verification = latestTrace(detail, (entry) => entry.kind === 'verification');
   const waitingVerification = !closed && detail.action_proposals.some((proposal) => proposal.status === 'executed');
@@ -76,36 +71,30 @@ export const InvestigationStack: React.FC = () => {
         <span className="investigation-eyebrow">Wonder investigation</span>
         <p>{inv.status === 'not_started' ? 'Ready to investigate the detected drift.' : 'Reviewing the plant history and telemetry. Findings will appear when evidence is recorded.'}</p>
       </div>}
+      <Hypotheses items={detail.hypotheses} model={model} />
       {pendingProposals.map((proposal) => <ProposalCard key={proposal.id} incidentId={base.incident_id} proposal={proposal} model={model} />)}
       {pendingTasks.map((task) => <FieldTaskCard key={task.id} task={task} />)}
       {waitingVerification && <section className="investigation-card investigation-verifying" role="status">
         <span className="investigation-eyebrow">Verification in progress</span><h3>Watching the plant recover</h3>
         <p>The staged valve movement passed. The verifier is checking live telemetry before confirming the outcome.</p>
       </section>}
-      {progressed && activeHypotheses.length > 0 && <Hypotheses items={activeHypotheses.slice(0, 1)} model={model} title="Current finding" compact />}
-      {progressed && activeHypotheses.length === 0 && note && <section className="investigation-card">
-        <div className="investigation-card-head"><span className="investigation-eyebrow">Wonder · current findings</span><Pill tone="accent">Recorded</Pill></div>
-        <p className="investigation-finding">{note.content}</p>
-      </section>}
-      {progressed && activeHypotheses.length === 0 && !note && rejectedFinding && <Hypotheses items={[rejectedFinding]} model={model} title="Latest finding" compact />}
-      {gauge?.result && <GaugeEvidence result={gauge.result} completedAt={gauge.completed_at} />}
-      {progressed && !hasNextAction && !waitingVerification && inv.status !== 'escalated' && !failed && <FocusLedger focus={inv.focus} model={model} status={inv.status} steps={inv.steps_used} />}
     </>}
+    {closed && <Hypotheses items={detail.hypotheses} model={model} />}
+    {gauge?.result && <GaugeEvidence result={gauge.result} completedAt={gauge.completed_at} />}
+    {!closed && progressed && !hasNextAction && !waitingVerification && inv.status !== 'escalated' && !failed && <FocusLedger focus={inv.focus} model={model} status={inv.status} steps={inv.steps_used} />}
     {(progressed || closed) && flag && <details className="investigation-disclosure initial-detection">
       <summary><span>Initial detection <span className="investigation-summary-detail">Spark</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
       <div className="investigation-disclosure-body"><FlagCard flag={flag} /></div>
     </details>}
     <details className="investigation-disclosure investigation-history">
-      <summary><span>Investigation history <span className="investigation-summary-detail">Evidence & activity</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
+      <summary><span>Evidence archive <span className="investigation-summary-detail">Field records & sources</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
       <div className="investigation-disclosure-body investigation-stack">
         <p className="investigation-record-id">Incident {base.incident_id}</p>
         <FocusLedger focus={inv.focus} model={model} status={inv.status} steps={inv.steps_used} />
-        {detail.hypotheses.length > 0 && <Hypotheses items={detail.hypotheses} model={model} title="Hypothesis record" />}
         {completedTasks.map((task) => <FieldTaskCard key={task.id} task={task} />)}
         <VoiceCard items={detail.voice_observations} />
         {previousProposals.map((proposal) => <ProposalCard key={proposal.id} incidentId={base.incident_id} proposal={proposal} model={model} />)}
         <MemoryRecalled trace={detail.trace} model={model} />
-        <AuditTrail trace={detail.trace} investigatorModel={model} watcherModel={detail.flag?.model ?? null} />
       </div>
     </details>
   </div>;

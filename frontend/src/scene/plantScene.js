@@ -394,7 +394,7 @@ export function createPlantScene(container, model, { labels = true, compactFrami
         ? [...instruments.values()].filter((instrument) => ids.includes(instrument.host) && instrument.instr.observe === 'field_photo' && instrument.instr.quantity.includes('pressure')).map((instrument) => instrument.widget.group)
         : ids.filter((id) => nodes.has(id)).map((id) => nodes.get(id).group);
       const boxes = groups.map((group) => new THREE.Box3().setFromObject(group)).filter((bounds) => !bounds.isEmpty());
-      const compactDir = overview && camera.aspect > 2.2 ? [0.62, 0.34, 1] : dir;
+      const compactDir = overview && camera.aspect > 2.8 ? [0.62, 0.5, 1] : dir;
       const fitted = fitPerspectiveBounds(boxes, compactDir, camera.fov, camera.aspect, { pad, lift, width: container.clientWidth, height: container.clientHeight });
       if (!fitted) return;
       controls.maxDistance = Math.max(60, fitted.distance * 2);

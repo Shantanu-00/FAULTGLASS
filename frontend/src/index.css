@@ -1,20 +1,21 @@
 /* Design tokens. Neutral surfaces carry the interface; colour is reserved for state
    (ok, warning, alarm) and a single accent marks selection, focus and primary actions. */
 :root {
-  --bg: #f1f4f2;
-  --surface: #ffffff;
-  --surface-2: #f6f8f6;
-  --surface-3: #eaf0ec;
-  --border: #dce4e0;
-  --border-strong: #acbcb4;
+  --bg: #eeeee8;
+  --surface: #fffefa;
+  --surface-2: #f5f5f0;
+  --surface-3: #e9edea;
+  --border: #d0d5d3;
+  --border-strong: #97a3a6;
 
-  --text: #1b302e;
-  --text-2: #425653;
-  --text-3: #64736f;
+  --text: #1e2b37;
+  --text-2: #465462;
+  --text-3: #687580;
 
-  --accent: #25625b;
-  --accent-strong: #164d46;
-  --accent-soft: #e8f1ed;
+  --accent: #315bd4;
+  --accent-strong: #2449b0;
+  --accent-soft: #edf1fc;
+  --action: #cc6239;
 
   --ok: #1b7f3b;
   --ok-soft: #e8f5ec;
@@ -28,8 +29,8 @@
   --font-display: 'Manrope', var(--font-sans);
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
-  --radius: 8px;
-  --radius-sm: 6px;
+  --radius: 3px;
+  --radius-sm: 3px;
   --header-h: 72px;
   --tabs-h: 60px;
 }
@@ -170,7 +171,7 @@ a {
   letter-spacing: -1.1px;
 }
 
-.brand-period { color: var(--accent); }
+.brand-period { color: var(--action); }
 
 .brand-plant {
   font-size: 12px;
