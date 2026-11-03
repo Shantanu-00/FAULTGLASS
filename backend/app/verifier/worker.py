@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -24,6 +25,18 @@ MEASUREMENTS = ("FIT-301", "PIT-301", "PIT-302", "JI-301", "AIT-301")
 MIN_SETTLE_S = 20.0
 TIMEOUT_S = 240.0
 WINDOW_POINTS = 10
+
+
+ABNORMAL_STATE = re.compile(r"(^|_)(TRIP|FAULT)($|_)|^(LOW|HIGH)_|^(RAW|PURE)_TANK_(LOW|HIGH)$")
+
+
+def is_abnormal_state(label: str) -> bool:
+    """A discrete state label that signals a trip, fault or out-of-range level.
+
+    Matches whole words at the start of the label: BELOW_HIGH (tank below its high-level switch)
+    is the healthy state and must not read as LOW_.
+    """
+    return bool(ABNORMAL_STATE.search(label))
 
 
 def _mean(values: list[float]) -> float | None:
@@ -121,7 +134,7 @@ class IncidentVerifier:
             row = latest.get(tag)
             if row and row["value"] is not None:
                 label = labels.get(str(int(row["value"])))
-                if label and any(word in label for word in ("TRIP", "FAULT", "LOW_", "HIGH_")):
+                if label and is_abnormal_state(label):
                     abnormal.append(f"{tag}={label}")
         flag_signals = ((flag or {}).get("evidence") or {}).get("signals") or {}
         flag_current = {

@@ -17,7 +17,7 @@ from app.plant import load_pack
 from app.repositories.investigation import InvestigationRepository
 from app.repositories.runs import RunRepository
 from app.repositories.telemetry import Reading, TelemetryRepository
-from app.verifier.worker import IncidentVerifier, VerifierConfig, evaluate_recovery
+from app.verifier.worker import IncidentVerifier, VerifierConfig, evaluate_recovery, is_abnormal_state
 
 from conftest import PACK_DIR
 from test_investigator import PLANT, ScriptedWonder, call, investigator_for, message, seed_incident
@@ -304,3 +304,11 @@ async def test_two_gauge_photos_complete_the_task_and_record_the_differential(db
             assert any("differential" in e["content"].lower() for e in detail["trace"])
     finally:
         await pool.close()
+
+
+def test_only_real_trips_and_faults_are_abnormal_states():
+    healthy = ["RUNNING", "STOPPED", "LEVEL_OK", "BELOW_HIGH", "OK", "NONE", "FLUSH"]
+    abnormal = ["LOW_LEVEL", "HIGH_LEVEL", "LOW_PRESSURE_TRIP", "HIGH_PRESSURE_TRIP", "FAULT",
+                "LOW_SUCTION_PRESSURE", "HIGH_DISCHARGE_PRESSURE", "RAW_TANK_LOW", "PURE_TANK_HIGH"]
+    assert not any(is_abnormal_state(label) for label in healthy)
+    assert all(is_abnormal_state(label) for label in abnormal)
