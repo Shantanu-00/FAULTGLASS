@@ -8,8 +8,8 @@ import pytest
 
 from app.api.main import create_app
 from app.db import create_pool
-from app.evidence.lever import FrameAngle, LeverTrack
-from app.evidence.valve import evaluate_lever_track
+from app.evidence.lever import LeverMotion, MotionFrame, Segment
+from app.evidence.valve import evaluate_lever_motion
 from app.evidence.voice import WonderObservationAnalyzer, compare_readings
 from app.investigator.wonder import WonderReply
 from app.investigator.worker import Investigator, InvestigatorConfig
@@ -38,18 +38,34 @@ async def test_wonder_analyzer_extracts_and_compares():
     assert out["comparison"]["status"] == "AGREE"
 
 
-def track(stages):
-    angles = {"OPEN": 0, "MID": 45, "CLOSED": 90, "BETWEEN": 25, "UNCERTAIN": None}
-    return LeverTrack(frames=[FrameAngle(i, angles[s], s, 1.0) for i, s in enumerate(stages)])
+def motion(plan, rests):
+    """LeverMotion from (kind, seconds) periods at 10 fps and one rest position per still period."""
+    frames, segments, t = [], [], 0.0
+    for kind, seconds in plan:
+        n = round(seconds * 10)
+        segments.append(Segment(kind, t, t + n / 10, len(frames), len(frames) + n - 1))
+        for _ in range(n):
+            frames.append(MotionFrame(len(frames), t, True, True, kind == "moving", 0.0, (0.0, 0.0),
+                                      True, True, False))
+            t += 0.1
+    return LeverMotion(fps=10.0, handle_seen=True, operated_ids=[1], reference_ids=[2],
+                       camera_reference="handles", contact_frames=len(frames), frames=frames,
+                       segments=segments, rest_positions=rests, lever_length_px=100.0)
 
 
 def test_valve_policy_pass_hold_and_skip():
-    passed = evaluate_lever_track(track(["OPEN", "OPEN", "MID", "MID", "MID", "CLOSED"]), fps=1)
-    assert passed.status == "passed" and passed.mid_hold_s == 3
-    assert evaluate_lever_track(track(["OPEN", "CLOSED"]), fps=30).status == "violated"
-    short = evaluate_lever_track(track(["OPEN", "MID", "CLOSED"]), fps=10)
-    assert short.status == "violated" and "held" in short.reasons[0]
-    assert evaluate_lever_track(LeverTrack(frames=[]), fps=30).status == "uncertain"
+    rests = [(0.0, 0.0), (40.0, 30.0), (60.0, 90.0)]
+    staged = [("still", 1), ("moving", 0.5), ("still", 2.5), ("moving", 0.5), ("still", 1)]
+    passed = evaluate_lever_motion(motion(staged, rests), 10.0)
+    assert passed.status == "passed" and passed.movements == 2 and passed.hold_s == 2.5
+    assert passed.to_json()["min_hold_s"] == 2.0
+    one = evaluate_lever_motion(motion([("still", 1), ("moving", 1), ("still", 1)], rests[::2]), 10.0)
+    assert one.status == "violated" and one.movements == 1
+    short = staged[:2] + [("still", 1.2)] + staged[3:]
+    assert evaluate_lever_motion(motion(short, rests), 10.0).status == "violated"
+    near = evaluate_lever_motion(motion(staged, [(0.0, 0.0), (5.0, 5.0), (60.0, 90.0)]), 10.0)
+    assert near.status == "uncertain"
+    assert evaluate_lever_motion(LeverMotion(fps=10.0), 10.0).status == "uncertain"
 
 
 async def test_proposal_approval_video_trigger_and_resume(db_url, monkeypatch, tmp_path):
@@ -83,10 +99,9 @@ async def test_proposal_approval_video_trigger_and_resume(db_url, monkeypatch, t
 
         async def fake_analysis(sam, data, filename, mime, *, fps=None):
             return {"file_id": "file-test", "policy": {
-                        "status": "passed", "reasons": ["staged"], "stages_seen": ["OPEN", "MID", "CLOSED"],
-                        "mid_hold_s": 2.5, "measured_ratio": 1.0},
-                    "track": {"frames": [], "stages_seen": ["OPEN", "MID", "CLOSED"],
-                              "staged_sequence_ok": True}}
+                        "status": "passed", "reasons": ["staged"], "movements": 2, "hold_s": 2.5,
+                        "segments": [], "required": "two hand-driven movements", "min_hold_s": 2.0},
+                    "track": {"frames": [], "segments": [], "operated_ids": [1], "camera_reference": "handles"}}
         monkeypatch.setattr("app.evidence.valve.analyze_valve_clip", fake_analysis)
         import app.investigator.__main__ as investigator_main
         monkeypatch.setattr(investigator_main, "meta_key", lambda: "test-key")
