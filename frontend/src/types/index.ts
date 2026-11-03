@@ -115,8 +115,8 @@ export interface GaugeResult {
   tag: string;
   box: number[] | null;
   sam_confidence: number | null;
-  wonder_psi: number | null;
-  needle_psi: number | null;
+  mask_applied: boolean;
+  wonder_reasoning: string | null;
   status: string;
   value: number | null;
 }
@@ -139,10 +139,21 @@ export interface VoicePayload {
   error?: string;
 }
 
+export interface ValveSegment {
+  kind: 'still' | 'moving' | string;
+  start_s: number;
+  end_s: number;
+  duration_s: number;
+}
+
 export interface ValvePolicy {
   status: string;
-  stages_seen: string[];
   reasons: string[];
+  movements: number;
+  hold_s: number | null;
+  segments: ValveSegment[];
+  required?: string;
+  min_hold_s?: number;
 }
 
 export interface FieldTaskResult {

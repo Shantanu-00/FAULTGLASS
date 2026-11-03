@@ -4,11 +4,15 @@ import type { Differential, FieldTaskResult, GaugeResult, ValvePolicy, VoiceComp
 import { Pill, type Tone } from '../common/Pill';
 
 const GAUGE_STATUS: Record<string, { text: string; tone: Tone }> = {
-  agree: { text: 'Agree', tone: 'ok' },
-  single_source: { text: 'Single source', tone: 'warning' },
-  uncertain: { text: 'Uncertain', tone: 'warning' },
+  read: { text: 'Read', tone: 'ok' },
+  ambiguous: { text: 'Two dials in photo', tone: 'warning' },
   unreadable: { text: 'Unreadable', tone: 'alarm' },
   not_found: { text: 'Not found', tone: 'alarm' },
+};
+
+const between = (reasoning: string | null | undefined) => {
+  const m = reasoning?.match(/^BETWEEN:\s*(.+)$/im);
+  return m ? m[1].trim() : '-';
 };
 
 const fmt = (n: number | null | undefined) => (n === null || n === undefined ? '-' : n.toFixed(1));
@@ -21,8 +25,7 @@ export const GaugeResults: React.FC<{ gauges: GaugeResult[] }> = ({ gauges }) =>
         <tr>
           <th scope="col">Gauge</th>
           <th scope="col" className="num">Value</th>
-          <th scope="col" className="num">Wonder</th>
-          <th scope="col" className="num">Needle</th>
+          <th scope="col">Pointer between</th>
           <th scope="col">Status</th>
         </tr>
       </thead>
@@ -33,8 +36,7 @@ export const GaugeResults: React.FC<{ gauges: GaugeResult[] }> = ({ gauges }) =>
             <tr key={g.tag}>
               <th scope="row"><code className="tag">{g.tag}</code></th>
               <td className="num strong">{fmt(g.value)}</td>
-              <td className="num">{fmt(g.wonder_psi)}</td>
-              <td className="num">{fmt(g.needle_psi)}</td>
+              <td>{between(g.wonder_reasoning)}</td>
               <td><Pill tone={status.tone}>{status.text}</Pill></td>
             </tr>
           );
@@ -42,7 +44,7 @@ export const GaugeResults: React.FC<{ gauges: GaugeResult[] }> = ({ gauges }) =>
       </tbody>
     </table>
     <p className="muted small">
-      All values in psi. Dials located with SAM, read by Muse Wonder on the red psi scale, cross-checked against the needle angle measured in code. Only agreeing or single-source values are stored.
+      All values in psi. SAM 3.1 masks the dial, code cuts out the masked dial, and Muse Wonder reads the red psi scale on that cut-out. Only read values are stored.
     </p>
   </div>
 );
@@ -123,7 +125,16 @@ export const PolicyResult: React.FC<{ policy: ValvePolicy }> = ({ policy }) => {
         <strong>Lever clip</strong>
         <Pill tone={status.tone}>{status.text}</Pill>
       </div>
-      {policy.stages_seen.length > 0 && <p className="small">Stages seen: {policy.stages_seen.map((s) => humanize(s)).join(' then ')}</p>}
+      {(policy.segments ?? []).length > 0 && (
+        <p className="small">
+          Timeline:{' '}
+          {policy.segments.map((seg) => `${seg.kind === 'moving' ? 'moved' : 'still'} ${seg.duration_s.toFixed(1)} s`).join(', then ')}
+        </p>
+      )}
+      <p className="small">
+        Movements by hand: {policy.movements ?? 0}
+        {policy.hold_s !== null && policy.hold_s !== undefined && <> · hold between them {policy.hold_s.toFixed(1)} s</>}
+      </p>
       {policy.reasons.length > 0 && (
         <ul className="small plain-list">
           {policy.reasons.map((r, i) => (
@@ -131,7 +142,7 @@ export const PolicyResult: React.FC<{ policy: ValvePolicy }> = ({ policy }) => {
           ))}
         </ul>
       )}
-      <p className="muted small">Lever and pipe masks tracked by SAM; the angle and the staged rule are computed in code.</p>
+      <p className="muted small">SAM 3.1 tracks the lever and the hand; code times the movements and checks the staged rule. No angle is measured; the closed position is confirmed by the verifier on telemetry.</p>
     </div>
   );
 };

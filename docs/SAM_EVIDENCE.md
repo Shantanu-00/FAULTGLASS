@@ -1,75 +1,82 @@
-# SAM evidence pipelines (gauge photo + lever angle)
+# SAM evidence pipelines (gauge photo + lever motion)
 
-Status: **gauge pipeline implemented and live-verified on a synthetic dial
-photo**; lever-angle estimator, staged policy, verifier, and the Field
-Companion are now implemented too — see
-[VALVE_VOICE_FIELD.md](VALVE_VOICE_FIELD.md) for that half.
+Status: both pipelines implemented and live-checked on the real plant
+photos and lever clips (2026-11-03). Proposal, approval, verifier and the
+Field Companion are in [VALVE_VOICE_FIELD.md](VALVE_VOICE_FIELD.md).
 
 ## Decisions (and why)
 
-### Who reads the gauge: SAM locates, Wonder reads, code cross-checks
+### Who reads the gauge: SAM masks, code cuts out, Wonder reads
 
 This follows Meta's own pairing guidance (`docs/meta/media-segmentation.md`:
-SAM returns geometry; a VLM interprets) and DEMO.md's fixed assignment:
+SAM returns geometry; a VLM interprets):
 
 1. **SAM 3.1** (`"pressure gauge"`, one concept per request) returns a box +
-   mask for the one dial in each of the two photos (inlet PI-201, outlet PI-202). The mask is geometry for code — it is **never fed to a
-   reading model**. Models are bad at raw mask payloads and the mask's job
-   is measurement (crop, needle angle), not interpretation.
-2. **Python** takes the single dial per photo, whose tag comes from the task
-   (PI-201 inlet, PI-202 outlet; `location_note` names the header), crops the
-   box with margin, and **zooms** (upscales the crop to ~640 px wide). The
-   zoomed crop image — not the full photo, not the mask — is what the
-   reader model receives, alongside the tag and its location note.
-3. **Muse Wonder (vision)** reads the red psi scale on each crop (one per photo) and
-   answers one number or `UNREADABLE`. Wonder is the reader because the
-   reading lands inside its investigation: agreement/disagreement with the
-   worker's spoken observation is Wonder's judgement to make (DEMO step
-   0:50–1:25). Muse Spark Open (Baseten) stays in its assigned role,
-   telemetry watching; it is not given the image.
-4. **Python cross-checks**: a second SAM concept (`"gauge needle"`) gives a
-   needle mask; code fits its principal axis, maps angle to psi using the
-   dial geometry (0–100 psi red scale, ~270° sweep; calibration constants
-   in `gauge.py` to confirm on the real dial), and compares. Agreement
-   within tolerance → `agree`. No needle mask → `single_source` (reported,
-   flagged unchecked). Disagreement or unreadable → `uncertain` /
-   `unreadable`, value withheld, re-shoot requested. Nothing is invented.
+   mask for the dial in each photo (inlet PI-201, outlet PI-202). SAM only
+   masks: no needle segmentation, no angle maths.
+2. **Python** takes the dial that fills the photo (whose tag comes from the
+   task). If a second dial is at least 60% of its size, the photo is
+   `ambiguous` and nothing is read. Otherwise code places the box-local SAM
+   mask on the photo, dilates it slightly so the bezel and pointer tip are
+   kept, blanks everything outside it to flat grey, crops tight and upscales
+   to 768 px. That **masked cut-out** is the only image the reader sees. With
+   no usable mask, the plain box crop is used and `mask_applied` is false.
+3. **Muse Wonder (vision)** reasons over the cut-out: red psi scale, ignore
+   the black kg/cm2 scale, thin end is the pointer, the paddle is the tail.
+   It ends with `SCALE:`, `BETWEEN:` and `PSI:` lines; code parses `PSI:`
+   strictly (0-100 or `UNREADABLE`) and keeps the reply as
+   `wonder_reasoning` for the audit trail. An empty reply is retried once.
+4. **Statuses**: `read` (value stored as field telemetry), `unreadable`,
+   `not_found`, `ambiguous`. Only `read` values count toward the
+   differential; nothing is invented.
 
-Live check (2026-11-02, synthetic rendered dials at 24 and 6 psi): SAM
-found both gauges (confidence 0.60) and both needles; Wonder read 24 and 5
-on the zoomed crops. Real-photo accuracy is unproven until the plant photo
-is run — treat all readings as approximate either way.
+Live check on the real plant photos (2026-11-03): 19.53.30 read 36 psi
+(pointer just below the red 40), 19.53.33 read 15, 19.53.33 (1) read 14,
+19.53.29 (1) read 14 on retry after one empty reply, and 19.53.32 (two
+dials side by side) returned `ambiguous` as designed.
 
-### Lever angle: video, tracked masks, stage classification
+### Lever: video, tracked masks, motion timeline (no angle)
 
-- **Input is a recording, not a photo**: the staged rule (hold at 45°, then
-  full close) is a sequence over time; only video can prove the order.
-- SAM 3.1 segments video on the same Responses call and **tracks object
-  identity across frames** (stable object id per frame line). Two requests:
-  `"valve lever"` and `"pipe"`.
-- **Code measures the angle** between the lever mask's principal axis and
-  the pipe mask's axis, per frame. Per Meta's docs, identity holds while
-  the object stays in frame and is *not* reliable across full occlusion or
-  exit/re-entry. The mitigations, in order:
-  1. Shooting protocol: one second with the lever visible before the hand
-     grips it, and the lever visible again at the end.
-  2. Prompt on a visible frame (box/point prompt with an operator-chosen
-     id) and propagate `both` directions, so later visibility recovers the
-     start — the documented answer to "covered at the start".
-  3. Partial masks still work: a hand-covered lever leaves visible patches,
-     and the axis fit only needs a clear length of lever. Frames below the
-     coverage floor (`MIN_COVERAGE`) are excluded and reported, never
-     silently interpolated.
-- **How sure is the angle? Approximate, and the design assumes it.** This
-  is an image-plane angle. Square-on to the lever's plane of rotation with
-  most of the lever visible: roughly ±5–10°. At 30–45° off-axis,
-  perspective compresses the swing: roughly ±10–25°. With less than ~a
-  third of the lever visible, treat it as unmeasurable. The staged stops
-  are 45° apart, so the verifier consumes **stages with dead bands**
-  (OPEN 0–20°, MID 35–55°, CLOSED 70–90°) and a sequence rule
-  (OPEN → MID → CLOSED, no skip), not exact degrees. A direct 0→90 jump,
-  a missing MID, or low coverage fails or flags UNCERTAIN — it never
-  passes quietly.
+The real clips decided this. The operator's fist covers nearly the whole
+lever (often only the yellow tip shows), the pipe mask at a valve runs into
+elbows and the vessel, and the phone pans. An image-plane angle from those
+masks would be invented, so no angle is measured.
+
+- **Input is a recording**: the staged rule is a sequence over time.
+- **SAM 3.1 is the only model.** Two concept video calls run in parallel:
+  `"yellow valve handle"` (every handle in shot) and `"hand"`. A `"pipe"`
+  call is made only when no still handle is available as a fixed reference.
+- **Code** (Python + Pillow, [lever.py](../backend/app/evidence/lever.py)):
+  1. Places the box-local masks on a 400 px canvas.
+  2. Removes camera movement: handles the hand never touches are fixed
+     references; the translation that best overlaps them with a keyframe
+     is found per frame (overlap search, so a passing arm does not break it).
+  3. Per frame: hand contact with each handle; lever motion as 1 - overlap
+     of the visible lever pixels (lever minus the dilated hand) against
+     frames 0.2 s either side, counted only where the hand covers neither
+     frame, so a re-grip is not motion; the grip point (fist at the tip).
+  4. The handle with the most hand-driven motion is the operated lever.
+  5. Smoothing and hysteresis give a still/moving timeline.
+- **Policy** ([valve.py](../backend/app/evidence/valve.py)): passed only for
+  exactly two hand-driven movements, a still hold of at least 2 s between
+  them with no creep, a still start and end, three distinct rest positions,
+  and a first move that is a real part of the travel. One continuous
+  movement is `violated` (the 0 to 90 guardrail); a short hold is
+  `violated`; everything unclear is `uncertain`, never passed.
+- **What a pass does not prove**: the hold is not shown to be at 45 degrees,
+  and the closed end state is confirmed by the verifier on telemetry.
+
+Live check on real clips (2026-11-03):
+
+| Clip | Result | Footage |
+| --- | --- | --- |
+| 19.53.11 (14.4 s) | uncertain: 3 movements (still 3.9 s, move, hold 4.0 s, move, still 4.2 s, move) | staged close with a real mid hold, then the operator turns the lever back. Cut before 13 s it passes (hold 3.8 s). |
+| 19.53.07 (2.7 s) | violated: one movement | one turn, then held |
+| 19.53.13 (4.4 s) | uncertain: ends while moving | turn, slow continued rotation, return at the end |
+
+On 19.53.11 the operated handle and both still handles (the drain lever and
+one at the top right) were identified correctly. Two SAM calls took about
+26 s in total on the 10 fps clip.
 
 ## How the loop works while the worker walks across the plant
 
@@ -81,11 +88,11 @@ no tokens burn while the operator travels. When evidence lands:
 ```text
 console/Field Companion submits photo
   -> POST /v1/incidents/{id}/tasks/{task_id}/photo
-  -> gauge pipeline (SAM -> crops -> Wonder -> cross-check)
+  -> gauge pipeline (SAM mask -> masked cut-out -> Wonder read)
   -> accepted readings stored as provenance='field' telemetry
   -> code computes dP = PI-201 minus PI-202; dP of 12 psi or more gates the V-113 backwash proposal
-  -> task completed with full per-gauge evidence (boxes, both readings,
-     agreement status, photo hash)
+  -> task completed with full per-gauge evidence (box, value, Wonder's
+     reasoning, status, photo hash)
   -> checkpoint flips back to investigating
   -> investigator worker resumes the same continuation and re-scores
      hypotheses with exactly the readings listed in the resume turn
@@ -128,19 +135,20 @@ minutes; from the system's perspective it is two short, restartable turns.
 - SAM client + wire parser: [backend/app/evidence/sam.py](../backend/app/evidence/sam.py)
   (masks decoded with Meta's official `meta_sam_parser`).
 - Gauge pipeline: [backend/app/evidence/gauge.py](../backend/app/evidence/gauge.py)
-- Lever estimator: [backend/app/evidence/lever.py](../backend/app/evidence/lever.py)
+- Lever motion tracker: [backend/app/evidence/lever.py](../backend/app/evidence/lever.py), policy: [valve.py](../backend/app/evidence/valve.py), tests: [tests/test_lever_motion.py](../tests/test_lever_motion.py)
 - Photo endpoint: `POST /v1/incidents/{id}/tasks/{task_id}/photo` in
   [console_routes.py](../backend/app/api/console_routes.py); console task
   cards accept a camera photo (`capture="environment"`).
 - Tests: [tests/test_evidence.py](../tests/test_evidence.py) — wire
-  parsing, per-photo dial assignment, needle recovery (±8 psi on a synthetic
-  mid-scale needle), staged lever sequence, missing-gauge honesty.
-  Full suite 120 passing at build time.
+  parsing, masked cut-out pixels, PSI-line parsing, ambiguous two-dial
+  photos, empty-reply retry, missing-gauge honesty.
 
-## Shooting checklist for the lever clip (from the constraints above)
+## Shooting checklist for the lever clip
 
-1. Start recording with the lever fully visible for ~1 second before the
-   hand touches it; end with the hand off and the lever visible again.
-2. Keep the valve and a straight run of pipe in frame the whole time.
-3. Film as square-on to the lever's swing plane as the plant allows.
-4. Move 0 → 45 (hold a few seconds) → 90 as one continuous take.
+1. Start recording with the lever at rest; end once it is fully closed.
+   Do not turn it back or let go before stopping the recording.
+2. Keep a fixed fitting in frame the whole time (another handle, such as
+   the drain lever, is ideal): it is how code removes camera movement.
+3. Keep part of the yellow handle visible beyond the fist.
+4. Move to half, hold at least 2 seconds without creeping, then close, as
+   one continuous take. A steady phone (second person or braced) helps.

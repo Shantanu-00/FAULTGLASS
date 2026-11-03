@@ -111,7 +111,7 @@ export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
 const STAGES = [
   { angle: '0 degrees', name: 'Open', hint: 'Lever parallel to the pipe. Hold 1 s.' },
   { angle: '45 degrees', name: 'Half', hint: 'Hold for at least 2 s.', mr: 'किमान 2 sec' },
-  { angle: '90 degrees', name: 'Closed', hint: 'Lever perpendicular to the pipe.' },
+  { angle: '90 degrees', name: 'Closed', hint: 'Lever perpendicular to the pipe. Stop recording here.' },
 ];
 
 export const ValveForm: React.FC<FormProps> = ({ incidentId, task }) => {
