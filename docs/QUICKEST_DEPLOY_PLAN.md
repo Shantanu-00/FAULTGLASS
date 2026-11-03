@@ -126,9 +126,11 @@ so the edge reads Modbus at 127.0.0.1:5020 and posts to the API at 127.0.0.1:800
 # 1. Supabase: the six migrations in supabase/migrations/ (applied 2026-11-03 through the MCP).
 # 2. Seed the plant and memory, then create the edge key (needs DATABASE_URL in .env):
 cd backend && uv run python -m app.edge.provision EDGE-01   # copy EDGE_API_KEY into .env
-# 3. .env needs DATABASE_URL, CORS_ORIGINS (the Vercel origin), MODEL_API_KEY (or META_MODEL_API),
-#    BASETEN_API_KEY (or BASETEN_API), EDGE_API_KEY. Then, from the repo root:
-AWS_REGION=<region> deploy/deploy.sh
+# 3. .env needs DATABASE_URL (session pooler, IPv4), CORS_ORIGINS (the Vercel origin), MODEL_API_KEY
+#    (or META_MODEL_API), BASETEN_API_KEY (or BASETEN_API), EDGE_API_KEY.
+#    No local Docker: push to GitHub, .github/workflows/backend-image.yml builds the image and
+#    publishes ghcr.io/shantanu-00/faultglass-backend (make the package public once). Then:
+AWS_REGION=eu-west-3 deploy/deploy.sh      # LOCAL_DOCKER=1 builds here instead
 # 4. Vercel: import the repo, root directory `frontend`, env VITE_API_URL = the URL the script prints.
 ```
 
