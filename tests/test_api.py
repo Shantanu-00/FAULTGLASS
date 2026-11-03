@@ -210,3 +210,35 @@ async def test_simulation_controls_are_refused_for_a_live_plant(db_url):
             assert (await client.post("/v1/sim/runs", json={})).status_code == 403
     finally:
         await pool.close()
+
+
+async def test_reset_replaces_the_run_and_closes_open_work(api, db_url):
+    first = (await api.post("/v1/sim/runs", json={"clock_speed": 10})).json()
+    with psycopg.connect(db_url, autocommit=True) as conn:
+        conn.execute(
+            "insert into incidents (incident_id, plant_id, title, status, severity, opened_at, data_origin) "
+            "values ('INC-LIVE-T1', %s, 'drift', 'open', 'high', now(), 'live')", (PLANT,))
+        conn.execute(
+            "insert into field_tasks (incident_id, kind, instruction) values ('INC-LIVE-T1', 'gauge_photo', 'read')")
+        conn.execute(
+            "insert into signal_flags (plant_id, run_id, severity, tags, summary, incident_id) "
+            "values (%s, %s, 'critical', array['FIT-301'], 'drift', 'INC-LIVE-T1')", (PLANT, first["id"]))
+
+    reset = await api.post("/v1/sim/reset", json={"clock_speed": 5})
+    assert reset.status_code == 201
+    second = reset.json()
+    assert second["id"] != first["id"] and second["clock_speed"] == 5 and second["status"] == "starting"
+    assert (await api.post(f"/v1/sim/runs/{first['id']}/heartbeat")).status_code == 404
+
+    with psycopg.connect(db_url, autocommit=True) as conn:
+        incident = conn.execute("select status, closed_by from incidents where incident_id = 'INC-LIVE-T1'").fetchone()
+        task = conn.execute("select status from field_tasks where incident_id = 'INC-LIVE-T1'").fetchone()
+        flag = conn.execute("select status from signal_flags where incident_id = 'INC-LIVE-T1'").fetchone()
+        reason = conn.execute("select stop_reason from sim_runs where id = %s", (first["id"],)).fetchone()
+    assert incident == ("closed", "operator") and task == ("cancelled",) and flag == ("dismissed",)
+    assert reason == ("replaced",)
+
+
+async def test_reset_with_no_active_run_just_starts_one(api):
+    reset = await api.post("/v1/sim/reset", json={})
+    assert reset.status_code == 201

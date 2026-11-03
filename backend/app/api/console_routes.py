@@ -138,6 +138,22 @@ async def create_run(request: Request, body: CreateRun):
     return run.to_json()
 
 
+@router.post("/sim/reset", status_code=201)
+async def reset_run(request: Request, body: CreateRun):
+    """Stop the active run, close its incidents and open work, and start a fresh run."""
+    require_simulation(request)
+    state = request.app.state
+    active = await state.runs.active(state.plant_id)
+    if active is not None:
+        await state.runs.stop(active.id, "replaced")
+    await state.investigation.abandon_open_work(state.plant_id)
+    try:
+        run = await state.runs.create(state.plant_id, seed=secrets.randbits(31), clock_speed=body.clock_speed)
+    except ActiveRunExists:
+        raise HTTPException(409, "a run is already active")
+    return run.to_json()
+
+
 @router.post("/sim/runs/{run_id}/heartbeat", status_code=204)
 async def heartbeat(request: Request, run_id: UUID):
     if not await request.app.state.runs.heartbeat(run_id):

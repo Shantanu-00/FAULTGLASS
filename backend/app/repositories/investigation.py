@@ -208,6 +208,31 @@ class InvestigationRepository:
                     )
             return changed
 
+    async def abandon_open_work(self, plant_id: str) -> list[str]:
+        """Close every live incident and everything waiting on it; used when a run is replaced."""
+        async with self._pool.connection() as conn:
+            async with conn.transaction():
+                cur = await conn.execute(
+                    "update incidents set status = 'closed', closed_at = now(), closed_by = 'operator', "
+                    "resolution = 'Run reset by the operator.' "
+                    "where plant_id = %s and data_origin = 'live' and status = 'open' returning incident_id",
+                    (plant_id,),
+                )
+                ids = [row["incident_id"] for row in await cur.fetchall()]
+                await conn.execute(
+                    "update signal_flags set status = 'dismissed' "
+                    "where plant_id = %s and status in ('open', 'picked_up')",
+                    (plant_id,),
+                )
+                if ids:
+                    await conn.execute(
+                        "update field_tasks set status = 'cancelled' "
+                        "where incident_id = any(%s) and status = 'pending'", (ids,))
+                    await conn.execute(
+                        "update action_proposals set status = 'rejected' "
+                        "where incident_id = any(%s) and status in ('pending', 'approved')", (ids,))
+            return ids
+
     # ---- voice observations -------------------------------------------------
     async def create_voice_observation(
         self, incident_id: str, *, task_id: UUID | None, transcript: str,
