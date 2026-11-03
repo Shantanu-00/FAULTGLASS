@@ -33,7 +33,8 @@ from .wonder import WonderReply
 
 log = logging.getLogger("investigator")
 
-MAX_STEPS = 12
+MAX_STEPS = 12  # model turns per working segment: a field result starts a new segment
+STEP_CAP_FACTOR = 3  # overall cap per incident is max_steps * this
 
 SYSTEM_PROMPT = """You are Muse Wonder, the lead investigator for FAULTGLASS at a mineral-water plant.
 A telemetry watcher (Muse Spark Open) has already flagged drift and opened this incident. Your job is to find the likely cause by gathering evidence, not to guess.
@@ -44,11 +45,14 @@ How to work:
 - Keep the focus current with update_focus (goal, blocker, next step, assets in focus) whenever your plan changes.
 - Work hypotheses in parallel where telemetry can settle several at once. Prefer cheap streamed checks before dispatching a person.
 - If the evidence needed has no API (analog gauges, valve levers, anything marked field-only), dispatch exactly one bounded field task with request_field_task, saying precisely what to photograph or read and where. Then stop; do not invent the reading.
+- Make the first field task the cartridge-bank dial gauges (PI-201 to PI-208) and nothing else. Ask for other gauges only in a later task, and only if the cartridge-bank readings leave the question open.
+- Update several hypotheses in one turn: issue all the record_hypothesis calls together rather than one per turn. Your step budget is limited.
+- When the field readings show a restriction and the SOP supports it, call propose_action for the backwash instead of asking for more gauges.
 - When evidence is insufficient, ask for more data through a tool or a field task. Never answer that you cannot determine anything and stop while a check remains available.
 - You may not resolve or close the incident, move a valve, or state a cause as proven when it is only likely. Say "likely" where that is what the evidence supports.
 - Check in before any action that changes the plant: call propose_action with the evidence-based rationale and stop. A commander separately approves it; never dispatch valve_action directly.
 
-Telemetry is SIMULATED for this demonstration; gauge and valve evidence will arrive as field-task results."""
+Telemetry is SIMULATED; gauge and valve evidence will arrive as field-task results."""
 
 
 class WonderLike(Protocol):
@@ -100,6 +104,7 @@ class Investigator:
             return f"skipped-{status}"
         continuation: list[dict[str, Any]] = list(checkpoint["continuation"]) if checkpoint else []
         steps = checkpoint["steps_used"] if checkpoint else 0
+        segment_start = steps
         focus: dict[str, Any] = dict(checkpoint["focus"]) if checkpoint else {}
         executor = ToolExecutor(
             self._pack, self._telemetry, self._inv, self._runs,
@@ -138,7 +143,8 @@ class Investigator:
                                       content=f"Field result: {detail}", evidence=list(readings.keys()))
             await self._inv.mark_consumed(task["id"])
 
-        while steps < self._config.max_steps:
+        while (steps - segment_start < self._config.max_steps
+               and steps < self._config.max_steps * STEP_CAP_FACTOR):
             reply = await self._wonder.create(continuation, TOOL_DEFS)
             steps += 1
             continuation.extend(reply.output)  # reasoning items replayed intact, never edited

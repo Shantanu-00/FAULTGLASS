@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
 import secrets
 from uuid import UUID
@@ -88,6 +89,11 @@ async def _process_voice(state, incident_id: str, task: dict, audio_bytes: bytes
         content=f"Voice ({analyzed['comparison']['status']}): {transcript.text[:400]}",
         evidence=list(task["tags"]))
     return payload
+
+
+async def run_isolated(make_coroutine):
+    """Run model analysis on its own thread and event loop so decoding and fitting never stall the API."""
+    return await asyncio.to_thread(lambda: asyncio.run(make_coroutine()))
 
 
 @router.get("/healthz")
@@ -328,16 +334,19 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
 
     by_tag = {i.tag: i for i in state.pack.instruments}
     expected = [by_tag[t] for t in task["tags"] if t in by_tag]
-    sam = SamClient(meta_key())
-    wonder = WonderClient(meta_key())
+    async def read_gauges():
+        sam = SamClient(meta_key())
+        wonder = WonderClient(meta_key())
+        try:
+            return await GaugePipeline(sam=sam, reader=WonderGaugeReader(wonder)).process(image_bytes, expected)
+        finally:
+            await sam.aclose()
+            await wonder.aclose()
+
     try:
-        pipeline = GaugePipeline(sam=sam, reader=WonderGaugeReader(wonder))
-        results = await pipeline.process(image_bytes, expected)
+        results = await run_isolated(read_gauges)
     except SamError as exc:
         raise HTTPException(502, f"segmentation failed: {exc}")
-    finally:
-        await sam.aclose()
-        await wonder.aclose()
 
     accepted = {r.tag: r.value for r in results if r.value is not None and r.status in ("agree", "single_source")}
     details = [r.to_json() for r in results]
@@ -452,14 +461,18 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
     from ..evidence.valve import analyze_valve_clip
     from ..investigator.__main__ import meta_key
 
-    sam = SamClient(meta_key())
+    async def track_lever():
+        sam = SamClient(meta_key())
+        try:
+            return await analyze_valve_clip(
+                sam, video_bytes, f"{task_id}{suffix}", body.mime_type, fps=body.fps)
+        finally:
+            await sam.aclose()
+
     try:
-        analysis = await analyze_valve_clip(
-            sam, video_bytes, f"{task_id}{suffix}", body.mime_type, fps=body.fps)
+        analysis = await run_isolated(track_lever)
     except Exception as exc:
         raise HTTPException(502, f"lever segmentation failed: {exc.__class__.__name__}: {exc}")
-    finally:
-        await sam.aclose()
     policy = analysis["policy"]
     base_result = {"note": body.note, "source": "valve_video", "video_sha256": digest,
                    "video_path": video_path, "video_file_id": analysis["file_id"],
