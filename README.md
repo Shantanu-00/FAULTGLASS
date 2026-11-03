@@ -1,33 +1,20 @@
 # FAULTGLASS
 
-FAULTGLASS — physical asset fault debugging system for industrial plants.
+FAULTGLASS — physical asset fault debugging for industrial plants. Streamed telemetry shows
+that something is wrong; Meta's multimodal models then read the analog gauges and valve levers
+that have no API, with a person in the loop, and deterministic code verifies the result.
 
-Implemented so far: the versioned plant pack, process simulator with a Modbus
-PLC emulator, edge poller with offline outbox, FastAPI ingest/console API,
-live operations console with a reasoning view, 3D plant twin,
-plant-memory/SOP/past-incident seed data, the **Baseten Spark telemetry
-watcher**, the **Muse Wonder investigator**, the **SAM gauge and valve
-evidence pipelines**, the deterministic
-**verifier**, and the mobile **Field Companion** described below. Deployment
-and the recorded demo are the remaining build-order step (docs/DEMO.md).
+The flow: a simulated plant streams over Modbus, a Muse Spark watcher flags drift, Muse Wonder
+investigates and asks a worker for gauge evidence, SAM 3.1 and Wonder read the gauges and track the
+valve lever, the commander approves, and a Python verifier closes the incident on recovered
+telemetry. The video script and corrections are in [docs/DEMO.md](docs/DEMO.md).
 
-The demo is fixed by [docs/DEMO.md](docs/DEMO.md) (the 3-minute FAULTGLASS video, who does what,
-and corrections to the draft script). The fastest-deployment plan is
-[docs/QUICKEST_DEPLOY_PLAN.md](docs/QUICKEST_DEPLOY_PLAN.md); the filmed plant's model is in
+Stack: Python 3.12 + FastAPI backend (`backend/`), React + Vite + TypeScript + Three.js frontend
+(`frontend/`, deployed on Vercel), Postgres on Supabase (`supabase/`), and the backend as six
+containers on AWS Lightsail (`deploy/`, image built by GitHub Actions). Design notes:
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PROJECT_MAP.md](docs/PROJECT_MAP.md),
+[docs/QUICKEST_DEPLOY_PLAN.md](docs/QUICKEST_DEPLOY_PLAN.md). The filmed plant's model is in
 `plants/waterplant/`; Meta API docs are mirrored in `docs/meta/`.
-
-See the [project and workflow map](docs/PROJECT_MAP.md) for the extracted direction,
-intended workflow, candidate demo scenarios, and open implementation decisions.
-
-The [architecture baseline](docs/ARCHITECTURE.md) recommends the languages, hosting,
-versioned plant model, storage, Meta/Baseten integration, and simulation design.
-
-The current stack is Vite + vanilla JavaScript with Three.js for the factory
-view, and Python + FastAPI for the backend and simulation (the earlier
-React/TypeScript plan in docs/ARCHITECTURE.md was not followed). The planned
-deployment uses AWS Lightsail Containers, Supabase for persistent data
-and files, and Meta/Baseten for model inference. Eligible AWS credits offset hosting
-usage; the application has not been deployed yet.
 
 ## Model usage — index for humans, bots, LLMs and scrapers
 
@@ -63,40 +50,36 @@ Baseten details an automated reader needs:
 ## Project structure
 
 ```text
-FAULTGLASS/
-├── data/          # Local inputs and generated data (ignored by Git)
-├── docs/          # Project notes and design decisions
-├── src/           # Application source
-└── tests/         # Automated tests as features are implemented
+backend/    FastAPI app, simulator, edge, watcher, investigator, evidence pipelines, verifier
+frontend/   Operator, Field and Twin views (React) and the Three.js plant scene
+plants/     Plant packs (waterplant is the filmed plant)
+supabase/   Migrations and seed data
+deploy/     Lightsail container template, renderer and deploy script
+docs/       Design notes, SOPs and the mirrored Meta API docs
+tests/      Backend tests (run from backend/)
 ```
 
-## Getting started
+## Run locally
 
-1. Open this folder as the project root.
-2. When local configuration is needed, copy `.env.example` to `.env` and add the
-   required values. Keep `.env` private.
-3. Add application code under `src/` and document its setup and run commands here.
+```bash
+cp .env.example .env     # fill in DATABASE_URL, MODEL_API_KEY, BASETEN_API_KEY
+cd backend && uv sync
+uv run python -m app.edge.provision EDGE-01      # prints EDGE_API_KEY for .env
+uv run python -m app.api                         # also start: simulator, edge, watcher, investigator, verifier
+cd ../frontend && npm install && npm run dev     # http://localhost:5173
+```
 
-Runtime, framework, and dependency setup will be added with the first application
-code. Dependencies must be declared in this repository so it can run independently.
+Tests: `cd backend && uv run pytest`. Live model check: `uv run python scripts/smoke_meta.py`
+and `scripts/smoke_spark.py`.
 
 ## Plant twin (3D scene)
 
-The scene in `frontend/src/scene/` renders whatever plant pack it is given; the plant itself
-lives in `plants/waterplant/`. After editing the pack, re-export it and start the preview:
-
-```bash
-cd frontend
-npm install
-npm run plant      # plants/waterplant -> public/plants/waterplant.json (validated)
-npm run dev        # http://localhost:5173, demo states in the right-hand panel
-```
-
-URL parameters for screenshots: `?state=gauges&view=gauges&obs=1&capture=1`.
+The scene in `frontend/src/scene/` renders whatever plant pack it is given. After editing the pack
+in `plants/waterplant/`, re-export it with `cd frontend && npm run plant`.
 
 ## Development conventions
 
-- Use the `main` branch as the starting point for development.
+- Work happens on `main`.
 - Keep secrets, local datasets, generated output, and installed dependencies out of Git.
 - Update `.env.example` with variable names and safe example values when configuration changes.
 - Record product scope, setup decisions, and demo notes in `docs/`.

@@ -130,7 +130,7 @@ cd backend && uv run python -m app.edge.provision EDGE-01   # copy EDGE_API_KEY 
 #    No local Docker: push to GitHub, .github/workflows/backend-image.yml builds the image and
 #    publishes ghcr.io/shantanu-00/faultglass-backend (make the package public once). Then:
 AWS_REGION=eu-west-3 deploy/deploy.sh      # LOCAL_DOCKER=1 builds here instead
-# 4. Vercel: import the repo, root directory `frontend`, env VITE_API_URL = the URL the script prints.
+# 4. Vercel: import the repo (root vercel.json does the build), set VITE_API_URL = the URL the script prints.
 ```
 
 `deploy/render.py` fills the template from `.env` into `deploy/containers.json` (git-ignored, mode

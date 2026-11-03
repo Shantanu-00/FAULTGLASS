@@ -2,7 +2,7 @@ name: backend-image
 
 on:
   push:
-    branches: [main, feat/edge-simulator-console]
+    branches: [main]
     paths:
       - backend/**
       - plants/waterplant/**
