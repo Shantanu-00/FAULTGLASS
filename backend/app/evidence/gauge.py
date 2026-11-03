@@ -36,7 +36,8 @@ from .sam import Detection, SamClient
 DIAL_MAX_PSI = 100.0
 DIAL_START_DEG = 225.0   # math angle (deg, y-up) pointing at 0 psi
 DIAL_SWEEP_DEG = 270.0   # clockwise sweep to full scale
-AGREE_TOLERANCE = 0.20   # relative tolerance between Wonder and needle estimate
+AGREE_ABS_PSI = 10.0     # the needle estimate from a phone photo is rough: it only has to catch gross misreads
+AGREE_REL = 0.30         # (flipped needle, kg/cm2 scale read as psi), so the tolerance is deliberately wide
 
 
 def crop_data_url(image: Image.Image, box: tuple[int, int, int, int], *,
@@ -65,20 +66,28 @@ def largest_detection(detections: list[Detection]) -> Detection | None:
     return max(detections, key=lambda d: ((d.box[2] - d.box[0]) * (d.box[3] - d.box[1]), d.confidence or 0.0))
 
 
-def needle_psi(det: Detection, raster: bytes | None) -> float | None:
+def needle_psi(det: Detection, raster: bytes | None, needle: Detection | None = None) -> float | None:
     """Estimate psi from a needle mask raster mapped onto the gauge box.
 
-    Principal-axis fit over mask pixels; direction resolved toward the
-    mask centroid offset from the dial centre. Returns None when there is
-    not enough visible needle to trust a direction (occlusion, bad mask) —
-    absence of a cross-check, not a zero reading.
+    `det` is the dial; `needle` (when given) owns the raster and its dimensions. The needle axis is
+    a principal-axis fit over the mask pixels, pointed at the end of the mask that lies farthest
+    from the dial centre (the tip is longer than the counterweight tail). Returns None when there
+    is not enough visible needle to trust a direction (occlusion, bad mask): absence of a
+    cross-check, not a zero reading.
     """
-    if not raster or det.mask_w <= 0 or det.mask_h <= 0:
+    source = needle or det
+    mask_w, mask_h = source.mask_w, source.mask_h
+    if not raster or mask_w <= 0 or mask_h <= 0:
         return None
-    pts = [(i % det.mask_w, i // det.mask_w) for i, v in enumerate(raster) if v]
+    pts = [(i % mask_w, i // mask_w) for i, v in enumerate(raster) if v]
     if len(pts) < 12:
         return None
-    cx, cy = det.mask_w / 2, det.mask_h / 2
+    frame_w, frame_h = det.frame_size if det.frame_size else (0, 0)
+    if frame_w and frame_h:
+        cx = (det.box[0] + det.box[2]) / 2 * mask_w / frame_w
+        cy = (det.box[1] + det.box[3]) / 2 * mask_h / frame_h
+    else:
+        cx, cy = mask_w / 2, mask_h / 2
     mx = sum(p[0] for p in pts) / len(pts)
     my = sum(p[1] for p in pts) / len(pts)
     sxx = sum((p[0] - mx) ** 2 for p in pts)
@@ -86,8 +95,8 @@ def needle_psi(det: Detection, raster: bytes | None) -> float | None:
     sxy = sum((p[0] - mx) * (p[1] - my) for p in pts)
     angle = 0.5 * math.atan2(2 * sxy, sxx - syy)
     dx, dy = math.cos(angle), math.sin(angle)
-    # Principal axis is unsigned; point it away from centre through the centroid.
-    if (mx - cx) * dx + (my - cy) * dy < 0:
+    reach = max(((p[0] - cx) * dx + (p[1] - cy) * dy for p in pts), key=abs)
+    if reach < 0:
         dx, dy = -dx, -dy
     math_deg = math.degrees(math.atan2(-dy, dx))  # image y grows downward
     swept = (DIAL_START_DEG - math_deg) % 360.0
@@ -170,7 +179,7 @@ class GaugePipeline:
         elif reading.needle_psi is None:
             reading.status = "single_source"  # Wonder only; reported, flagged as unchecked
             reading.value = reading.wonder_psi
-        elif abs(reading.wonder_psi - reading.needle_psi) <= max(3.0, AGREE_TOLERANCE * max(reading.wonder_psi, 1.0)):
+        elif abs(reading.wonder_psi - reading.needle_psi) <= max(AGREE_ABS_PSI, AGREE_REL * max(reading.wonder_psi, 1.0)):
             reading.status = "agree"
             reading.value = reading.wonder_psi
         else:
@@ -185,7 +194,7 @@ class GaugePipeline:
                 return None
             gx, gy = gauge.center
             needle = min(reply.detections, key=lambda d: abs(d.center[0] - gx) + abs(d.center[1] - gy))
-            return needle_psi(gauge, decode_raster(needle))
+            return needle_psi(gauge, decode_raster(needle), needle)
         except Exception:
             return None
 
