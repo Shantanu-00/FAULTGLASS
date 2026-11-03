@@ -1,0 +1,12 @@
+{
+  "containerName": "api",
+  "containerPort": 8000,
+  "healthCheck": {
+    "healthyThreshold": 2,
+    "unhealthyThreshold": 3,
+    "timeoutSeconds": 5,
+    "intervalSeconds": 10,
+    "path": "/v1/healthz",
+    "successCodes": "200"
+  }
+}

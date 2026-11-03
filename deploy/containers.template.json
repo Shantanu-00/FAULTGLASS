@@ -1,0 +1,69 @@
+{
+  "api": {
+    "image": "${IMAGE}",
+    "command": ["python", "-m", "app.api"],
+    "ports": { "8000": "HTTP" },
+    "environment": {
+      "DATABASE_URL": "${DATABASE_URL}",
+      "API_HOST": "0.0.0.0",
+      "API_PORT": "8000",
+      "CORS_ORIGINS": "${CORS_ORIGINS}",
+      "SIMULATION_ENABLED": "true",
+      "MODEL_API_KEY": "${MODEL_API_KEY}",
+      "META_BASE_URL": "${META_BASE_URL}"
+    }
+  },
+  "simulator": {
+    "image": "${IMAGE}",
+    "command": ["python", "-m", "app.simulator"],
+    "environment": {
+      "DATABASE_URL": "${DATABASE_URL}",
+      "MODBUS_BIND": "127.0.0.1",
+      "MODBUS_PORT": "5020",
+      "SIM_BASELINE_S": "${SIM_BASELINE_S}",
+      "SIM_HEARTBEAT_TIMEOUT_S": "30"
+    }
+  },
+  "edge": {
+    "image": "${IMAGE}",
+    "command": ["python", "-m", "app.edge"],
+    "environment": {
+      "API_URL": "http://127.0.0.1:8000",
+      "EDGE_NODE_ID": "${EDGE_NODE_ID}",
+      "EDGE_API_KEY": "${EDGE_API_KEY}",
+      "MODBUS_HOST": "127.0.0.1",
+      "MODBUS_PORT": "5020"
+    }
+  },
+  "watcher": {
+    "image": "${IMAGE}",
+    "command": ["python", "-m", "app.watcher"],
+    "environment": {
+      "DATABASE_URL": "${DATABASE_URL}",
+      "BASETEN_API_KEY": "${BASETEN_API_KEY}",
+      "BASETEN_BASE_URL": "${BASETEN_BASE_URL}",
+      "BASETEN_MODEL": "${BASETEN_MODEL}",
+      "SPARK_INTERVAL_S": "10"
+    }
+  },
+  "investigator": {
+    "image": "${IMAGE}",
+    "command": ["python", "-m", "app.investigator"],
+    "environment": {
+      "DATABASE_URL": "${DATABASE_URL}",
+      "MODEL_API_KEY": "${MODEL_API_KEY}",
+      "META_BASE_URL": "${META_BASE_URL}",
+      "WONDER_MODEL": "${WONDER_MODEL}",
+      "INVESTIGATOR_INTERVAL_S": "5",
+      "INVESTIGATOR_MAX_STEPS": "12"
+    }
+  },
+  "verifier": {
+    "image": "${IMAGE}",
+    "command": ["python", "-m", "app.verifier"],
+    "environment": {
+      "DATABASE_URL": "${DATABASE_URL}",
+      "VERIFIER_INTERVAL_S": "5"
+    }
+  }
+}

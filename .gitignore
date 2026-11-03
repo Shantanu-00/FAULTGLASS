@@ -89,3 +89,6 @@ edge_outbox.db*
 .mcp.json
 skills-lock.json
 
+
+# Rendered Lightsail deployment (holds secrets)
+deploy/containers.json

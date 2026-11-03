@@ -114,18 +114,28 @@ only the backend verifier marks an incident `RESOLVED`.
 
 Deploy at step 2 and redeploy at every step; do not leave deployment to the end.
 
-### Deployment commands (reference)
+### Deployment (files exist: `backend/Dockerfile`, `.dockerignore`, `deploy/`)
+
+One image (`backend/Dockerfile`, built from the repo root so the plant pack is baked in; footage
+under `plants/*/assets` is excluded). `deploy/containers.template.json` runs it as six
+containers on one `small` Lightsail service: `api` (public, port 8000, health check
+`/v1/healthz`), `simulator`, `edge`, `watcher`, `investigator`, `verifier`. They share localhost,
+so the edge reads Modbus at 127.0.0.1:5020 and posts to the API at 127.0.0.1:8000.
 
 ```bash
-# Backend (from repo root, after writing backend/Dockerfile)
-docker build -t faultglass-api backend/
-aws lightsail create-container-service --service-name faultglass --power micro --scale 1
-aws lightsail push-container-image --service-name faultglass --label api --image faultglass-api
-aws lightsail create-container-service-deployment --service-name faultglass \
-  --containers file://deploy/containers.json --public-endpoint file://deploy/endpoint.json
-# containers.json lists api, simulator, edge, worker: same image, different command; env per .env.example
-# Frontend: import the repo in Vercel, root directory `frontend`, set VITE_* env vars.
+# 1. Supabase: the six migrations in supabase/migrations/ (applied 2026-11-03 through the MCP).
+# 2. Seed the plant and memory, then create the edge key (needs DATABASE_URL in .env):
+cd backend && uv run python -m app.edge.provision EDGE-01   # copy EDGE_API_KEY into .env
+# 3. .env needs DATABASE_URL, CORS_ORIGINS (the Vercel origin), MODEL_API_KEY (or META_MODEL_API),
+#    BASETEN_API_KEY (or BASETEN_API), EDGE_API_KEY. Then, from the repo root:
+AWS_REGION=<region> deploy/deploy.sh
+# 4. Vercel: import the repo, root directory `frontend`, env VITE_API_URL = the URL the script prints.
 ```
+
+`deploy/render.py` fills the template from `.env` into `deploy/containers.json` (git-ignored, mode
+600, holds secrets). Lightsail has no shared volume: uploaded photos, video and audio live in
+`/tmp` and are lost on redeploy; the edge outbox is likewise ephemeral. Rerun the script to roll out
+a new image; rotating the edge key means rerunning provision and the script.
 
 ## 4. Open questions for you
 
