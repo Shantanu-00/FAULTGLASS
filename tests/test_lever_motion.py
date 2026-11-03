@@ -210,3 +210,10 @@ async def test_no_box_prompt_without_the_clip_size():
     sam = PromptingSam(handles, hands, [])
     motion = await LeverTracker(sam).track_file("file", FPS)
     assert sam.prompts == [] and motion.lever_track == "concept"
+
+
+def test_lever_turned_back_after_the_staged_close_is_named():
+    handles, hands, _ = scene(staged() + ramp(90, 0, 6) + [0.0] * 12)
+    _, policy = evaluate(handles, hands)
+    assert policy.status == "uncertain" and policy.movements == 3
+    assert "turned back toward where it started" in policy.reasons[0]

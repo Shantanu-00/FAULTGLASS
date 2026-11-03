@@ -5,6 +5,7 @@ import contextlib
 import datetime as dt
 import logging
 import secrets
+import time
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
@@ -381,11 +382,25 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
             await sam.aclose()
             await wonder.aclose()
 
+    await inv.add_trace(
+        incident_id, kind="observation", actor="code",
+        content=f"Gauge photos received for {', '.join(sorted(images))}"
+                + (" with a voice note" if body.audio_base64 else "")
+                + ". SAM 3.1 is masking the dials and Muse Wonder is reading them; this takes about a minute.",
+        evidence=sorted(images))
+    started = time.monotonic()
     try:
         async with run_kept_alive(state):
             results = await run_isolated(read_gauges)
     except SamError as exc:
+        await inv.add_trace(incident_id, kind="observation", actor="code",
+                            content=f"Gauge reading failed: {exc}. Re-send the photos.", evidence=sorted(images))
         raise HTTPException(502, f"segmentation failed: {exc}")
+    await inv.add_trace(
+        incident_id, kind="observation", actor="code",
+        content=f"Gauge photos analysed in {time.monotonic() - started:.0f} s: "
+                + "; ".join(f"{r.tag} {r.status}" + (f" {r.value:g} psi" if r.value is not None else "") for r in results),
+        evidence=sorted(images))
 
     progress = task["result"] or {}
     gauges = {**(progress.get("gauges_by_tag") or {}), **{r.tag: r.to_json() for r in results}}
@@ -528,19 +543,30 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
         finally:
             await sam.aclose()
 
+    await inv.add_trace(
+        incident_id, kind="observation", actor="code",
+        content="Lever clip received. SAM 3.1 is tracking the handles and the hand; code then times the movements. "
+                "This takes about a minute.",
+        evidence=list(task["asset_ids"]))
+    started = time.monotonic()
     try:
         async with run_kept_alive(state):
             analysis = await run_isolated(track_lever)
     except Exception as exc:
+        await inv.add_trace(incident_id, kind="observation", actor="code",
+                            content=f"Lever clip analysis failed ({exc.__class__.__name__}). Re-send the clip.",
+                            evidence=list(task["asset_ids"]))
         raise HTTPException(502, f"lever segmentation failed: {exc.__class__.__name__}: {exc}")
+    analysis_s = round(time.monotonic() - started)
     policy = analysis["policy"]
     base_result = {"note": body.note, "source": "valve_video", "video_sha256": digest,
                    "video_path": video_path, "video_file_id": analysis["file_id"],
                    "duration_s": body.duration_s, "fps": body.fps,
-                   "track": analysis["track"], "policy": policy}
+                   "track": analysis["track"], "policy": policy, "analysis_s": analysis_s}
     if policy["status"] != "passed":
         await inv.add_trace(incident_id, kind="observation", actor="code",
-                            content=f"Valve clip {policy['status']}: {'; '.join(policy['reasons'])}",
+                            content=f"Valve clip {policy['status']} (analysed in {analysis_s} s): "
+                                    f"{'; '.join(policy['reasons'])}",
                             evidence=list(task["asset_ids"]))
         return {"completed": False, **base_result,
                 "reason": "The staged rule was not proven. Keep the task open and submit a clearer continuous clip."}

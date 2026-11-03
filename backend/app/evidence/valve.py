@@ -103,6 +103,10 @@ def evaluate_lever_motion(motion: LeverMotion | None, fps: float | None) -> Valv
     if movements == 1:
         return result("violated", "The lever moved in one continuous movement; no hold at a partial position was seen.")
     if movements > 2:
+        rests = motion.rest_positions
+        if len(rests) >= 3 and math.dist(rests[0], rests[-1]) < math.dist(rests[-2], rests[-1]):
+            return result("uncertain", f"The lever moved {movements} times: after the staged close it was turned back "
+                                        "toward where it started. Stop recording once the lever is fully closed.")
         return result("uncertain", f"The lever moved {movements} times; the staged rule expects exactly two movements. "
                                     "Stop recording once the lever is fully closed, before turning it back.")
 
