@@ -104,6 +104,10 @@ a person reads them on site and the value arrives as a field entry.
 - PSL-301 pressure_switch (state) on P-301.in: SRC-PLC1 modbus_tcp discrete offset 5 bool; fresh within 5 s; states 1=OK, 0=LOW_PRESSURE_TRIP
 - PSH-301 pressure_switch (state) on P-301.out: SRC-PLC1 modbus_tcp discrete offset 6 bool; fresh within 5 s; states 1=OK, 0=HIGH_PRESSURE_TRIP
 - AIT-301 tds (ppm) on E-C04: SRC-PLC1 modbus_tcp input offset 0 uint16; fresh within 10 s
+- PIT-301 pressure (psi) on P-301.in: SRC-PLC1 modbus_tcp input offset 1 uint16; fresh within 5 s
+- PIT-302 pressure (psi) on P-301.out: SRC-PLC1 modbus_tcp input offset 2 uint16; fresh within 5 s
+- JI-301 current (A) on P-301: SRC-PLC1 modbus_tcp input offset 3 uint16; fresh within 5 s
+- FIT-301 flow (L/h) on E-C04: SRC-PLC1 modbus_tcp input offset 4 uint16; fresh within 5 s
 - ST-RO cycle_state (enum) on RO-301: SRC-PLC1 modbus_tcp holding offset 0 uint16; fresh within 5 s; states 0=STOPPED, 1=RUNNING, 2=FAULT, 3=FLUSH
 - FC-RO fault_code (enum) on RO-301: SRC-PLC1 modbus_tcp holding offset 1 uint16; fresh within 5 s; states 0=NONE, 11=LOW_SUCTION_PRESSURE, 12=HIGH_DISCHARGE_PRESSURE, 13=RAW_TANK_LOW, 14=PURE_TANK_HIGH
 
@@ -131,14 +135,14 @@ Format: asset; streamed points nearby; field dials nearby.
 - SOF-103; streamed nearby: none; field nearby: none
 - PF-101; streamed nearby: none; field nearby: none
 - CB-1F; streamed nearby: none; field nearby: PI-201
-- CB-1B; streamed nearby: PSH-301, PSL-301, YS-301; field nearby: PI-205
+- CB-1B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-205
 - CB-2F; streamed nearby: none; field nearby: PI-202
-- CB-2B; streamed nearby: PSH-301, PSL-301, YS-301; field nearby: PI-206
+- CB-2B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-206
 - CB-3F; streamed nearby: none; field nearby: PI-203
-- CB-3B; streamed nearby: PSH-301, PSL-301, YS-301; field nearby: PI-207
+- CB-3B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-207
 - CB-4F; streamed nearby: none; field nearby: PI-204
-- CB-4B; streamed nearby: PSH-301, PSL-301, YS-301; field nearby: PI-208
-- OZ-401; streamed nearby: AIT-301; field nearby: none
+- CB-4B; streamed nearby: JI-301, PIT-301, PIT-302, PSH-301, PSL-301, YS-301; field nearby: PI-208
+- OZ-401; streamed nearby: AIT-301, FIT-301; field nearby: none
 - PF-401; streamed nearby: YS-401; field nearby: none
 
 # Human tasks at the plant: manual valves, dial readings, samples
@@ -304,8 +308,10 @@ Tag and id prefixes used in this plant (prefix: meaning):
 - FC: RO fault code (PLC)
 - FI: flow indicator, vertical rotameter (L/h)
 - FILL: filler / bottling line (outside the building outline)
+- FIT: flow indicating transmitter (RO permeate flow, L/h)
 - HDR: header manifold for the cartridge bank
 - HMI: HMI/PLC operator console
+- JI: current indicator (HP pump motor current, A)
 - LSH: level switch, high
 - LSL: level switch, low
 - MCC: motor control centre (corner power panel)
@@ -316,6 +322,7 @@ Tag and id prefixes used in this plant (prefix: meaning):
 - P: pump
 - PF: filter (PF-101 coarse pre-filter, PF-401 inline trap filter)
 - PI: pressure indicator, dial gauge (psi scale)
+- PIT: pressure indicating transmitter (HP pump suction and discharge, psi)
 - PSH: pressure switch, high (trip)
 - PSL: pressure switch, low (trip)
 - RO: reverse osmosis membrane array
