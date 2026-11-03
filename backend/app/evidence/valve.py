@@ -7,12 +7,18 @@ after this policy returns `passed`.
 """
 from __future__ import annotations
 
+import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from .lever import LeverTrack, LeverTracker, STAGE_BANDS
 from .sam import SamClient
 
+ANALYSIS_FPS = 10.0
+ANALYSIS_HEIGHT = 540
 MIN_MID_HOLD_S = 2.0
 MIN_MEASURED_RATIO = 0.60
 
@@ -69,9 +75,34 @@ def evaluate_lever_track(track: LeverTrack, *, fps: float | None = None) -> Valv
                              stages, mid_hold_s, measured_ratio)
 
 
+def normalize_clip(video_bytes: bytes, filename: str, mime_type: str,
+                   fps: float | None) -> tuple[bytes, str, str, float | None]:
+    """Downsample a phone clip to 10 fps / 540p without audio so SAM tracks it several times faster.
+
+    A 14 s clip at 60 fps took about 8 minutes; the same clip at 10 fps takes about 75 s. Falls
+    back to the original upload when ffmpeg is missing or fails.
+    """
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        return video_bytes, filename, mime_type, fps
+    with tempfile.TemporaryDirectory() as tmp:
+        source = Path(tmp) / ("in" + Path(filename).suffix)
+        target = Path(tmp) / "out.mp4"
+        source.write_bytes(video_bytes)
+        done = subprocess.run(
+            [ffmpeg, "-loglevel", "error", "-y", "-i", str(source), "-an",
+             "-vf", f"fps={ANALYSIS_FPS:g},scale=-2:'min({ANALYSIS_HEIGHT},ih)'",
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-pix_fmt", "yuv420p", str(target)],
+            capture_output=True, timeout=120)
+        if done.returncode != 0 or not target.exists() or target.stat().st_size == 0:
+            return video_bytes, filename, mime_type, fps
+        return target.read_bytes(), "clip.mp4", "video/mp4", ANALYSIS_FPS
+
+
 async def analyze_valve_clip(sam: SamClient, video_bytes: bytes, filename: str,
                              mime_type: str, *, fps: float | None = None) -> dict[str, Any]:
     """Upload once, track lever and pipe with SAM, and apply policy."""
+    video_bytes, filename, mime_type, fps = normalize_clip(video_bytes, filename, mime_type, fps)
     file_id = await sam.upload_file(video_bytes, filename, mime_type)
     track = await LeverTracker(sam).track_file(file_id)
     policy = evaluate_lever_track(track, fps=fps)

@@ -19,6 +19,8 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PLANT_DIR=/app/plants/waterplant \
     UPLOAD_DIR=/tmp/uploads \
     EDGE_BUFFER_PATH=/tmp/edge_outbox.db
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 RUN useradd --system --create-home --uid 10001 faultglass
 COPY --from=build /opt/venv /opt/venv
 WORKDIR /app/backend

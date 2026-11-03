@@ -191,3 +191,26 @@ def test_recovery_evaluator_requires_sustained_partial_recovery():
     assert out["status"] == "passed" and out["fit_recovery_pct"] == 92.5
     assert evaluate_recovery(nominals=nominals, flag_current={}, series={"FIT-301": [1]},
                              abnormal_states=[])["status"] == "pending"
+
+
+def test_normalize_clip_downsamples_with_ffmpeg(tmp_path):
+    import shutil
+    import subprocess
+    from app.evidence.valve import normalize_clip
+    if shutil.which("ffmpeg") is None:
+        pytest.skip("ffmpeg not installed")
+    source = tmp_path / "in.mp4"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "lavfi", "-i",
+                    "testsrc=duration=2:size=1280x720:rate=60", "-pix_fmt", "yuv420p", str(source)], check=True)
+    data, name, mime, fps = normalize_clip(source.read_bytes(), "in.mp4", "video/mp4", 60.0)
+    assert (name, mime, fps) == ("clip.mp4", "video/mp4", 10.0)
+    probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                            "stream=height,r_frame_rate", "-of", "csv=p=0", "-"], input=data,
+                           capture_output=True).stdout.decode().strip()
+    assert probe == "540,10/1"
+
+
+def test_normalize_clip_passes_through_without_ffmpeg(monkeypatch):
+    from app.evidence import valve
+    monkeypatch.setattr(valve.shutil, "which", lambda _: None)
+    assert valve.normalize_clip(b"raw", "a.mov", "video/quicktime", 30.0) == (b"raw", "a.mov", "video/quicktime", 30.0)
