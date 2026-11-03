@@ -212,6 +212,22 @@ def test_recovery_evaluator_requires_sustained_partial_recovery():
                              abnormal_states=[])["status"] == "pending"
 
 
+def test_recovery_is_measured_from_the_level_before_the_backwash_not_the_early_flag():
+    nominals = {"FIT-301": 2000, "PIT-301": 16, "PIT-302": 180, "JI-301": 9, "AIT-301": 15}
+    recovered = {"FIT-301": [1850] * 10, "PIT-301": [15.8] * 10, "PIT-302": [178] * 10,
+                 "JI-301": [8.5] * 10, "AIT-301": [15.6] * 10}
+    # Spark flagged at the start of the decline (flow 1836); the dip then went to about 1530.
+    early_flag = {"FIT-301": 1836}
+    stuck = evaluate_recovery(nominals=nominals, flag_current=early_flag, series=recovered, abnormal_states=[])
+    assert stuck["status"] == "pending"
+    out = evaluate_recovery(nominals=nominals, flag_current=early_flag, series=recovered,
+                            abnormal_states=[], pre_action={"FIT-301": 1530})
+    assert out["status"] == "passed" and out["fit_recovery_pct"] == 92.5 and out["fit_before_action"] == 1530
+    flat = evaluate_recovery(nominals=nominals, flag_current=early_flag, series=recovered,
+                             abnormal_states=[], pre_action={"FIT-301": 1790})
+    assert flat["status"] == "pending" and "over its level before the backwash" in flat["reasons"][0]
+
+
 def test_normalize_clip_downsamples_with_ffmpeg(tmp_path):
     import shutil
     import subprocess

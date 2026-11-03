@@ -25,6 +25,7 @@ MEASUREMENTS = ("FIT-301", "PIT-301", "PIT-302", "JI-301", "AIT-301")
 MIN_SETTLE_S = 20.0
 TIMEOUT_S = 240.0
 WINDOW_POINTS = 10
+PRE_ACTION_WINDOW_S = 120.0
 
 
 ABNORMAL_STATE = re.compile(r"(^|_)(TRIP|FAULT)($|_)|^(LOW|HIGH)_|^(RAW|PURE)_TANK_(LOW|HIGH)$")
@@ -49,8 +50,14 @@ def evaluate_recovery(
     flag_current: dict[str, float],
     series: dict[str, list[float]],
     abnormal_states: list[str],
+    pre_action: dict[str, float] | None = None,
 ) -> dict[str, Any]:
-    """Pure verdict over recent means. Returns pending/passed/failed + reasons."""
+    """Pure verdict over recent means. Returns pending/passed/failed + reasons.
+
+    `pre_action` is the level each signal held when the action ran. The flag value is only the
+    fallback: Spark flags early in a decline, so flow recovering from the bottom of the dip can
+    sit within a few L/h of the value at flag time.
+    """
     means = {tag: _mean(values[-WINDOW_POINTS:]) for tag, values in series.items()}
     if any(means.get(tag) is None or len(series.get(tag, [])) < 5 for tag in MEASUREMENTS):
         return {"status": "pending", "means": means, "reasons": ["Waiting for a sustained telemetry window."]}
@@ -59,10 +66,11 @@ def evaluate_recovery(
                 "reasons": [f"Abnormal plant states present: {', '.join(abnormal_states)}."]}
 
     fit_base = nominals["FIT-301"]
+    before = (pre_action or {}).get("FIT-301", flag_current.get("FIT-301", means["FIT-301"]))
     checks = {
         "FIT-301 recovered to at least 88% of baseline": means["FIT-301"] >= 0.88 * fit_base,
-        "FIT-301 improved by at least 200 L/h from the flag": (
-            means["FIT-301"] - flag_current.get("FIT-301", means["FIT-301"]) >= 200),
+        "FIT-301 improved by at least 200 L/h over its level before the backwash": (
+            means["FIT-301"] - before >= 200),
         "PIT-301 recovered near baseline": means["PIT-301"] >= nominals["PIT-301"] - 0.6,
         "PIT-302 recovered near baseline": means["PIT-302"] >= nominals["PIT-302"] - 4.0,
         "JI-301 recovered near baseline": means["JI-301"] >= nominals["JI-301"] - 1.0,
@@ -73,6 +81,7 @@ def evaluate_recovery(
         "status": "passed" if not failed else "pending",
         "means": means,
         "fit_recovery_pct": round(means["FIT-301"] / fit_base * 100, 1) if fit_base else None,
+        "fit_before_action": round(before, 1),
         "reasons": failed or ["Sustained recovered telemetry window passed every threshold."],
     }
 
@@ -128,6 +137,11 @@ class IncidentVerifier:
         for row in rows:
             if row["tag"] in MEASUREMENTS and row["value"] is not None and row["quality"] == "good":
                 series.setdefault(row["tag"], []).append(float(row["value"]))
+        earlier = await self._telemetry.run_points(
+            self._config.plant_id, run_id, executed_at - dt.timedelta(seconds=PRE_ACTION_WINDOW_S), executed_at)
+        before_values = [float(r["value"]) for r in earlier
+                         if r["tag"] == "FIT-301" and r["value"] is not None and r["quality"] == "good"]
+        pre_action = {"FIT-301": _mean(before_values[-WINDOW_POINTS:])} if len(before_values) >= 5 else {}
         latest = {r["tag"]: r for r in await self._telemetry.latest(self._config.plant_id)}
         abnormal = []
         for tag, labels in self._labels.items():
@@ -143,7 +157,7 @@ class IncidentVerifier:
         }
         verdict = evaluate_recovery(
             nominals=self._nominals, flag_current=flag_current,
-            series=series, abnormal_states=abnormal)
+            series=series, abnormal_states=abnormal, pre_action=pre_action)
 
         if verdict["status"] == "passed":
             hypotheses = await self._inv.hypotheses(incident_id)
@@ -153,8 +167,9 @@ class IncidentVerifier:
                 else "Likely restriction cleared by verified V-113 backwash")
             resolution = (
                 f"Deterministic verifier: FIT-301 recovered to {verdict['fit_recovery_pct']}% of baseline "
-                "after the staged V-113 backwash. Recovery is partial; replace the line 3 cartridge "
-                "and inspect the sand filter for fines.")
+                "after the staged V-113 backwash. Recovery is partial: a backwash does not clear a loaded "
+                "cartridge, so replace the cartridge elements (SOP-CB-004). "
+                "Inspect the sand filter for fines.")
             if await self._inv.resolve_incident(incident_id, root_cause=root_cause, resolution=resolution):
                 await self._inv.add_trace(
                     incident_id, kind="verification", actor="verifier",

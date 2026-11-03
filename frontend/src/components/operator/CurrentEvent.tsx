@@ -23,6 +23,7 @@ export const CurrentEvent: React.FC = () => {
         </div>
         <h1>{event.title}</h1>
         {event.detail && <p>{event.detail}</p>}
+        {event.followUp && <div className="command-followup" role="status"><span>{event.followUp.label}</span><p>{event.followUp.detail}</p></div>}
       </div>
       <ActionBar />
     </section>

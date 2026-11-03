@@ -16,6 +16,8 @@ export interface CommanderEvent {
   detail?: string;
   tone: 'neutral' | 'accent' | 'warning' | 'ok';
   at?: string | null;
+  /** Work still due after a verified recovery, shown beside the result on the main screen. */
+  followUp?: { label: string; detail: string };
 }
 
 function eventDetail(text: string | null | undefined, fallback?: string): string | undefined {
@@ -74,10 +76,16 @@ export function deriveCommanderEvent(input: CommanderEventInput): CommanderEvent
     if (base.status !== 'open') {
       const percentage = recordedRecoveryPercent(detail);
       const remaining = base.resolution?.split(/(?<=\.)\s+/).find((sentence) => /replace|inspect|recommend|maintenance/i.test(sentence));
+      const replacement = base.closed_by === 'verifier'
+        ? base.resolution?.split(/(?<=\.)\s+/).find((sentence) => /replace/i.test(sentence)) : undefined;
       return {
         title: base.closed_by === 'verifier' ? `Recovery verified${percentage ? ` · ${percentage}% of baseline` : ''}` : 'Incident closed',
         actor: base.closed_by === 'verifier' ? 'Verifier' : 'Command', tone: 'ok',
         detail: eventDetail(remaining || base.resolution), at: base.closed_at,
+        followUp: replacement ? {
+          label: /cartridge/i.test(replacement) ? 'Cartridge replacement due' : 'Maintenance due',
+          detail: replacement.replace(/^Recovery is partial[:;]\s*/i, '').replace(/^./, (ch) => ch.toUpperCase()),
+        } : undefined,
       };
     }
     const failed = detail.action_proposals.find((proposal) => proposal.status === 'failed');

@@ -23,6 +23,9 @@
 .command-event-warning .command-state-dot { background: var(--warning-fill); }
 .command-event h1 { font-family: var(--font-display); font-size: clamp(20px, 1.4vw, 25px); line-height: 1.25; font-weight: 700; letter-spacing: -.6px; margin-top: 4px; color: var(--text); }
 .command-event-content > p { color: var(--text-2); font-size: 12px; line-height: 1.45; margin-top: 4px; max-width: 110ch; }
+.command-followup { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; padding: 6px 10px; border: 1px solid #f0c78f; border-left: 4px solid #d9822b; border-radius: 6px; background: #fff7ec; }
+.command-followup span { flex: none; font: 700 10px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: #a85409; }
+.command-followup p { color: var(--text); font-size: 12px; line-height: 1.4; }
 .command-event-origin { display: inline-flex; align-items: center; gap: 9px; margin-top: 9px; color: #b9ccff; font-size: 11px; text-decoration: none; }
 .command-event-origin:hover { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
 .command-tool { display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 6px 10px; min-height: 32px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-2); font: 500 12px var(--font-sans); cursor: pointer; white-space: nowrap; text-decoration: none; list-style: none; }

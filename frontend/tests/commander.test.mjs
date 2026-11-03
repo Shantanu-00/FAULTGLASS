@@ -164,6 +164,8 @@ test('recovery percentage comes only from a persisted verifier closure and prese
   const verified = deriveCommanderEvent(input({ incident: resolved }));
   assert.match(verified.title, /91\.7% of baseline/);
   assert.match(verified.detail, /partial.*replace.*inspect/i);
+  assert.equal(verified.followUp.label, 'Cartridge replacement due');
+  assert.match(verified.followUp.detail, /^Replace the cartridge/);
 
   for (const changes of [{ status: 'open' }, { closed_by: 'operator' }, { resolution: null }, { resolution: 'Recovered to 91.7.2% of baseline.' }]) {
     assert.equal(recordedRecoveryPercent({ ...resolved, incident: { ...resolved.incident, ...changes } }), null);
@@ -171,6 +173,7 @@ test('recovery percentage comes only from a persisted verifier closure and prese
   const manual = deriveCommanderEvent(input({ incident: { ...resolved, incident: { ...resolved.incident, closed_by: 'operator' } } }));
   assert.equal(manual.title, 'Incident closed');
   assert.doesNotMatch(manual.title, /verified|91\.7/);
+  assert.equal(manual.followUp, undefined);
 });
 
 test('uncertain clips, verification failure and escalation stay unresolved', () => {
