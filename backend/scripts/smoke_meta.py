@@ -67,10 +67,10 @@ async def sam_and_gauges(key: str) -> None:
         data = BANK_PHOTO.read_bytes()
         reply = await sam.segment_image(image_data_url(data), "pressure gauge")
         print(f"sam: model={reply.model} latency_ms={reply.latency_ms} gauges_found={len(reply.detections)}")
-        expected = [i for i in pack.instruments if i.observe == "field_photo" and (i.location_note or "").find("row, line") >= 0]
-        readings = await GaugePipeline(sam, WonderGaugeReader(w)).process(data, expected)
-        for r in readings:
-            print(f"gauge {r.tag}: status={r.status} wonder_psi={r.wonder_psi} needle_psi={r.needle_psi} value={r.value}")
+        inst = next(i for i in pack.instruments if i.tag == "PI-201")
+        r = await GaugePipeline(sam, WonderGaugeReader(w)).read_photo(data, inst)
+        print(f"gauge {r.tag}: status={r.status} value={r.value} mask_applied={r.mask_applied}")
+        print(f"gauge {r.tag}: reasoning={(r.wonder_reasoning or '')[:200]!r}")
     finally:
         await sam.aclose()
         await w.aclose()

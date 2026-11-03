@@ -256,11 +256,11 @@ async def test_two_gauge_photos_complete_the_task_and_record_the_differential(db
 
     monkeypatch.setenv("UPLOAD_DIR", str(tmp_path))
     monkeypatch.setattr(investigator_main, "meta_key", lambda: "test-key")
-    values = {"PI-201": ("agree", 32.0), "PI-202": ("unreadable", None)}
+    values = {"PI-201": ("read", 32.0), "PI-202": ("unreadable", None)}
 
     async def fake_read_photo(self, image_bytes, inst):
         status, value = values[inst.tag]
-        return GaugeReading(tag=inst.tag, status=status, value=value, wonder_psi=value)
+        return GaugeReading(tag=inst.tag, status=status, value=value, mask_applied=True)
 
     monkeypatch.setattr(GaugePipeline, "read_photo", fake_read_photo)
     pool, pack, incident_id = await seed_incident(db_url)
@@ -278,7 +278,7 @@ async def test_two_gauge_photos_complete_the_task_and_record_the_differential(db
             first = (await client.post(url, json={"photos": {"PI-201": photo, "PI-202": photo}})).json()
             assert first["completed"] is False and first["missing"] == ["PI-202"] and first["accepted"] == {"PI-201": 32.0}
 
-            values["PI-202"] = ("agree", 15.0)
+            values["PI-202"] = ("read", 15.0)
             second = (await client.post(url, json={"photos": {"PI-202": photo}})).json()
             assert second["completed"] is True and second["accepted"] == {"PI-201": 32.0, "PI-202": 15.0}
             assert second["differential"]["dp_psi"] == 17.0 and second["differential"]["restricted"] is True

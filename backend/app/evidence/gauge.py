@@ -1,58 +1,112 @@
-"""Gauge pipeline for one photo of one dial: SAM finds the dial -> zoomed crop -> Wonder
-reads the red psi scale -> needle-angle cross-check in code.
+"""Gauge pipeline for one photo of one dial: SAM 3.1 masks the dial -> code cuts out the masked
+segment -> Muse Wonder reads the red psi scale on that segment.
 
 The worker uploads one photo per gauge (cartridge bank inlet, cartridge bank outlet), so each
 photo holds one dial of interest.
 
 Division of labour:
-- SAM 3.1 locates the dial (and the needle). It reads nothing.
-- Python picks the dial that fills the frame, crops and zooms it, and measures the needle angle
-  from the mask.
-- Muse Wonder (vision) reads the red psi scale on the zoomed crop.
-- Python cross-checks the two: disagreement beyond tolerance, a missing needle, or an unreadable
-  dial yields UNCERTAIN or UNREADABLE, never an invented value.
+- SAM 3.1 segments the dial ("pressure gauge"). It reads nothing.
+- Python picks the dial that fills the frame, blanks everything outside the SAM mask to a flat
+  neutral background, crops tight to the dial and upscales the result. Two similar dials in one
+  photo are reported as ambiguous instead of guessing which one the task means.
+- Muse Wonder (vision) reasons over that masked crop and reads the red psi scale. Its reply is
+  parsed strictly; its reasoning is kept for the audit trail.
 
-The pixel mask itself is never sent to a reading model. Models get images (the crop); masks stay
-in code where geometry is measured.
+An unreadable, ambiguous or missing dial never yields a value.
 """
 from __future__ import annotations
 
 import base64
 import io
-import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Protocol
 
-from PIL import Image
+from PIL import Image, ImageFilter, ImageOps
 
 from ..plant.models import Instrument
-from .sam import Detection, SamClient
+from .sam import Detection, SamClient, decode_raster
 
-# Assumed dial geometry for the red psi scale (0-100 psi, ~270 deg sweep).
-# These are calibration constants to confirm against the real dial photo;
-# the needle estimate is a cross-check only, so the cost of error is an
-# UNCERTAIN flag, not a wrong reading.
 DIAL_MAX_PSI = 100.0
-DIAL_START_DEG = 225.0   # math angle (deg, y-up) pointing at 0 psi
-DIAL_SWEEP_DEG = 270.0   # clockwise sweep to full scale
-AGREE_ABS_PSI = 10.0     # the needle estimate from a phone photo is rough: it only has to catch gross misreads
-AGREE_REL = 0.30         # (flipped needle, kg/cm2 scale read as psi), so the tolerance is deliberately wide
+CROP_LONG_SIDE = 768
+CROP_MARGIN = 0.04
+DILATE_FRACTION = 0.02
+NEUTRAL_BACKGROUND = (236, 236, 236)
+AMBIGUOUS_AREA_RATIO = 0.6
+REASONING_CHARS = 600
 
 
-def crop_data_url(image: Image.Image, box: tuple[int, int, int, int], *,
-                  margin: float = 0.18, target_w: int = 640) -> str:
-    """Crop around a SAM box, expand by margin, upscale for the reader model."""
-    w, h = image.size
-    x1, y1, x2, y2 = box
-    mx, my = (x2 - x1) * margin, (y2 - y1) * margin
-    crop = image.crop((max(0, int(x1 - mx)), max(0, int(y1 - my)),
-                       min(w, int(x2 + mx)), min(h, int(y2 + my))))
-    if crop.width < target_w:
-        crop = crop.resize((target_w, max(1, int(crop.height * target_w / crop.width))), Image.LANCZOS)
+def _box_size(box: tuple[int, int, int, int]) -> tuple[int, int]:
+    return max(0, box[2] - box[0]), max(0, box[3] - box[1])
+
+
+def _box_area(det: Detection) -> int:
+    w, h = _box_size(det.box)
+    return w * h
+
+
+def _mask_image(det: Detection, region: tuple[int, int, int, int]) -> Image.Image | None:
+    """The SAM mask as an "L" image the size of `region` (the mask's own box), or None."""
+    raster = decode_raster(det)
+    mask_w, mask_h = det.mask_w, det.mask_h
+    region_w, region_h = _box_size(region)
+    if not raster or mask_w <= 0 or mask_h <= 0 or len(raster) != mask_w * mask_h or not region_w or not region_h:
+        return None
+    if not any(raster):
+        return None
+    table = bytes([0]) + bytes([255]) * 255
+    mask = Image.frombytes("L", (mask_w, mask_h), raster.translate(table))
+    if mask.size != (region_w, region_h):
+        mask = mask.resize((region_w, region_h), Image.BILINEAR).point(lambda v: 255 if v >= 128 else 0)
+    return mask
+
+
+def _odd(n: int) -> int:
+    n = max(3, n)
+    return n if n % 2 else n + 1
+
+
+def masked_crop(image: Image.Image, det: Detection) -> tuple[Image.Image, bool]:
+    """Cut the SAM-masked dial out of the photo.
+
+    The mask is box-local: it covers the detection's own box (`mask_bounds` when set, else `box`),
+    not the whole frame. Pixels outside the mask become a flat neutral background; the mask is
+    dilated a little so the bezel edge and the needle tip are not clipped. The crop is tight to the
+    dial box with a small margin and scaled so its long side is about CROP_LONG_SIDE. Without a
+    usable mask the plain box crop is returned and the flag is False.
+    """
+    image = image.convert("RGB")
+    width, height = image.size
+    region = det.mask_bounds or det.box
+    x1, y1, x2, y2 = det.box
+    box_w, box_h = x2 - x1, y2 - y1
+    mx, my = int(box_w * CROP_MARGIN), int(box_h * CROP_MARGIN)
+    left, top = max(0, x1 - mx), max(0, y1 - my)
+    right, bottom = min(width, x2 + mx), min(height, y2 + my)
+    if right <= left or bottom <= top:
+        left, top, right, bottom = 0, 0, width, height
+    crop = image.crop((left, top, right, bottom))
+    scale = CROP_LONG_SIDE / max(crop.size)
+    out_size = (max(1, round(crop.width * scale)), max(1, round(crop.height * scale)))
+    crop = crop.resize(out_size, Image.LANCZOS)
+
+    mask = _mask_image(det, region)
+    if mask is None:
+        return crop, False
+    scaled = mask.resize((max(1, round(mask.width * scale)), max(1, round(mask.height * scale))), Image.BILINEAR)
+    canvas = Image.new("L", out_size, 0)
+    canvas.paste(scaled, (round((region[0] - left) * scale), round((region[1] - top) * scale)))
+    canvas = canvas.point(lambda v: 255 if v >= 128 else 0)
+    canvas = canvas.filter(ImageFilter.MaxFilter(_odd(round(max(out_size) * DILATE_FRACTION))))
+    background = Image.new("RGB", out_size, NEUTRAL_BACKGROUND)
+    return Image.composite(crop, background, canvas), True
+
+
+def masked_crop_data_url(image: Image.Image, det: Detection) -> tuple[str, bool]:
+    crop, applied = masked_crop(image, det)
     buf = io.BytesIO()
-    crop.convert("RGB").save(buf, format="JPEG", quality=88)
-    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    crop.save(buf, format="JPEG", quality=90)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode(), applied
 
 
 def image_data_url(image_bytes: bytes) -> str:
@@ -63,46 +117,34 @@ def largest_detection(detections: list[Detection]) -> Detection | None:
     """The dial the photo is about: the biggest box, ties broken by SAM confidence."""
     if not detections:
         return None
-    return max(detections, key=lambda d: ((d.box[2] - d.box[0]) * (d.box[3] - d.box[1]), d.confidence or 0.0))
+    return max(detections, key=lambda d: (_box_area(d), d.confidence or 0.0))
 
 
-def needle_psi(det: Detection, raster: bytes | None, needle: Detection | None = None) -> float | None:
-    """Estimate psi from a needle mask raster mapped onto the gauge box.
+def is_ambiguous(detections: list[Detection]) -> bool:
+    """True when a second dial is nearly as large as the largest one."""
+    areas = sorted((_box_area(d) for d in detections), reverse=True)
+    return len(areas) > 1 and areas[0] > 0 and areas[1] >= AMBIGUOUS_AREA_RATIO * areas[0]
 
-    `det` is the dial; `needle` (when given) owns the raster and its dimensions. The needle axis is
-    a principal-axis fit over the mask pixels, pointed at the end of the mask that lies farthest
-    from the dial centre (the tip is longer than the counterweight tail). Returns None when there
-    is not enough visible needle to trust a direction (occlusion, bad mask): absence of a
-    cross-check, not a zero reading.
-    """
-    source = needle or det
-    mask_w, mask_h = source.mask_w, source.mask_h
-    if not raster or mask_w <= 0 or mask_h <= 0:
+
+_PSI_LINE = re.compile(r"^[\s*_>#-]*PSI[\s*_]*:[\s*_]*(UNREADABLE|-?\d+(?:\.\d+)?)", re.IGNORECASE | re.MULTILINE)
+
+
+def parse_psi(text: str) -> float | None:
+    """The value on the last `PSI:` line, or None for UNREADABLE, out of range, or no such line."""
+    matches = _PSI_LINE.findall(text or "")
+    if not matches:
         return None
-    pts = [(i % mask_w, i // mask_w) for i, v in enumerate(raster) if v]
-    if len(pts) < 12:
+    token = matches[-1]
+    if token.upper() == "UNREADABLE":
         return None
-    frame_w, frame_h = det.frame_size if det.frame_size else (0, 0)
-    if frame_w and frame_h:
-        cx = (det.box[0] + det.box[2]) / 2 * mask_w / frame_w
-        cy = (det.box[1] + det.box[3]) / 2 * mask_h / frame_h
-    else:
-        cx, cy = mask_w / 2, mask_h / 2
-    mx = sum(p[0] for p in pts) / len(pts)
-    my = sum(p[1] for p in pts) / len(pts)
-    sxx = sum((p[0] - mx) ** 2 for p in pts)
-    syy = sum((p[1] - my) ** 2 for p in pts)
-    sxy = sum((p[0] - mx) * (p[1] - my) for p in pts)
-    angle = 0.5 * math.atan2(2 * sxy, sxx - syy)
-    dx, dy = math.cos(angle), math.sin(angle)
-    reach = max(((p[0] - cx) * dx + (p[1] - cy) * dy for p in pts), key=abs)
-    if reach < 0:
-        dx, dy = -dx, -dy
-    math_deg = math.degrees(math.atan2(-dy, dx))  # image y grows downward
-    swept = (DIAL_START_DEG - math_deg) % 360.0
-    if swept > DIAL_SWEEP_DEG + 30:  # needle in the dead zone: not credible
-        return None
-    return max(0.0, min(DIAL_MAX_PSI, swept / DIAL_SWEEP_DEG * DIAL_MAX_PSI))
+    value = float(token)
+    return value if 0.0 <= value <= DIAL_MAX_PSI else None
+
+
+@dataclass(frozen=True)
+class WonderRead:
+    value: float | None
+    reasoning: str | None = None
 
 
 @dataclass
@@ -110,51 +152,62 @@ class GaugeReading:
     tag: str
     box: tuple[int, int, int, int] | None = None
     sam_confidence: float | None = None
-    wonder_psi: float | None = None
-    needle_psi: float | None = None
-    status: str = "unreadable"  # agree | uncertain | unreadable | not_found
-    value: float | None = None  # only set when status == agree
+    mask_applied: bool = False
+    value: float | None = None  # only set when status == "read"
+    wonder_reasoning: str | None = None
+    status: str = "unreadable"  # read | unreadable | not_found | ambiguous
 
     def to_json(self) -> dict[str, Any]:
         return {"tag": self.tag, "box": list(self.box) if self.box else None,
-                "sam_confidence": self.sam_confidence, "wonder_psi": self.wonder_psi,
-                "needle_psi": self.needle_psi, "status": self.status, "value": self.value}
+                "sam_confidence": self.sam_confidence, "mask_applied": self.mask_applied,
+                "value": self.value, "wonder_reasoning": self.wonder_reasoning, "status": self.status}
 
 
 class GaugeReader(Protocol):
-    async def read_gauge(self, crop_url: str, tag: str, location_note: str) -> float | None: ...
+    async def read_gauge(self, crop_url: str, tag: str, location_note: str) -> WonderRead: ...
 
 
 class WonderGaugeReader:
-    """Muse Wonder vision reading one zoomed dial crop (red psi scale)."""
+    """Muse Wonder vision reading the red psi scale on one masked dial crop."""
 
     def __init__(self, wonder: Any):
         self._wonder = wonder
 
-    async def read_gauge(self, crop_url: str, tag: str, location_note: str) -> float | None:
+    async def read_gauge(self, crop_url: str, tag: str, location_note: str) -> WonderRead:
+        """One retry when the reply has no text (the reasoning budget can use up the output)."""
+        text = ""
+        for _ in range(2):
+            text = await self._ask(crop_url, tag, location_note)
+            if text:
+                break
+        return WonderRead(value=parse_psi(text), reasoning=text[:REASONING_CHARS] or None)
+
+    async def _ask(self, crop_url: str, tag: str, location_note: str) -> str:
         reply = await self._wonder.create(
             [{
                 "role": "user",
                 "content": [
                     {"type": "input_text", "text": (
-                        f"This is a zoomed crop of analog pressure gauge {tag} ({location_note}). "
-                        "Read the needle on the RED psi scale (0-100 psi), ignoring any black kg/cm2 scale. "
-                        "Reply with exactly one line: the numeric psi value, or UNREADABLE if the needle or "
-                        "scale cannot be seen clearly. Do not estimate a value you cannot see.")},
+                        f"This is a cut-out of analog pressure gauge {tag} ({location_note}); everything "
+                        "outside the dial has been blanked to plain grey. The dial has two scales: an outer "
+                        "black kg/cm2 scale and an inner RED psi scale (0-100 psi, numbers every 20, with minor "
+                        "ticks between). Read the RED psi scale and ignore the black kg/cm2 scale. The needle is "
+                        "black: its thin end is the pointer, the wide paddle on the other side of the hub is the "
+                        "tail and counterweight, not the pointer. Reason briefly about where the pointer tip lies "
+                        "relative to the red numbered marks and the minor ticks, then finish with exactly these "
+                        "three lines:\n"
+                        "SCALE: <which scale you read>\n"
+                        "BETWEEN: <the two red numbered marks the pointer tip lies between>\n"
+                        "PSI: <number>\n"
+                        "If the pointer tip or the red scale cannot be seen clearly, answer PSI: UNREADABLE. "
+                        "Do not guess a value you cannot see.")},
                     {"type": "input_image", "image_url": crop_url},
                 ],
             }],
             [],
-            reasoning_effort="low",
+            reasoning_effort="medium",
         )
-        text = reply.text.strip()
-        if not text or "UNREADABLE" in text.upper():
-            return None
-        m = re.search(r"(\d+(?:\.\d+)?)", text)
-        if not m:
-            return None
-        value = float(m.group(1))
-        return value if 0.0 <= value <= DIAL_MAX_PSI else None
+        return (reply.text or "").strip()
 
 
 @dataclass
@@ -165,38 +218,28 @@ class GaugePipeline:
     async def read_photo(self, image_bytes: bytes, inst: Instrument) -> GaugeReading:
         """Read the one dial in a photo for instrument `inst`."""
         image = Image.open(io.BytesIO(image_bytes))
-        full_url = image_data_url(image_bytes if image.format == "JPEG" else self._as_jpeg(image))
-        reply = await self.sam.segment_image(full_url, "pressure gauge")
+        if image.getexif().get(0x0112, 1) != 1:
+            image = ImageOps.exif_transpose(image)
+            image_bytes = self._as_jpeg(image)
+        elif image.format != "JPEG":
+            image_bytes = self._as_jpeg(image)
+        reply = await self.sam.segment_image(image_data_url(image_bytes), "pressure gauge")
         gauge = largest_detection(reply.detections)
         if gauge is None:
             return GaugeReading(tag=inst.tag, status="not_found")
         reading = GaugeReading(tag=inst.tag, box=gauge.box, sam_confidence=gauge.confidence)
-        crop = crop_data_url(image, gauge.box)
-        reading.wonder_psi = await self.reader.read_gauge(crop, inst.tag, inst.location_note or "")
-        reading.needle_psi = await self._needle(full_url, gauge)
-        if reading.wonder_psi is None:
+        if is_ambiguous(reply.detections):
+            reading.status = "ambiguous"
+            return reading
+        crop_url, reading.mask_applied = masked_crop_data_url(image, gauge)
+        answer = await self.reader.read_gauge(crop_url, inst.tag, inst.location_note or "")
+        reading.wonder_reasoning = answer.reasoning
+        if answer.value is None:
             reading.status = "unreadable"
-        elif reading.needle_psi is None:
-            reading.status = "single_source"  # Wonder only; reported, flagged as unchecked
-            reading.value = reading.wonder_psi
-        elif abs(reading.wonder_psi - reading.needle_psi) <= max(AGREE_ABS_PSI, AGREE_REL * max(reading.wonder_psi, 1.0)):
-            reading.status = "agree"
-            reading.value = reading.wonder_psi
         else:
-            reading.status = "uncertain"  # value deliberately withheld
+            reading.status = "read"
+            reading.value = answer.value
         return reading
-
-    async def _needle(self, image_url: str, gauge: Detection) -> float | None:
-        try:
-            from .sam import decode_raster
-            reply = await self.sam.segment_image(image_url, "gauge needle")
-            if not reply.detections:
-                return None
-            gx, gy = gauge.center
-            needle = min(reply.detections, key=lambda d: abs(d.center[0] - gx) + abs(d.center[1] - gy))
-            return needle_psi(gauge, decode_raster(needle), needle)
-        except Exception:
-            return None
 
     @staticmethod
     def _as_jpeg(image: Image.Image) -> bytes:

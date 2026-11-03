@@ -1,14 +1,15 @@
 """SAM 3.1 segmentation client (Meta Model API, Responses, streaming).
 
-SAM only locates: it returns a box + pixel mask per instance for one short
-concept prompt per request ("pressure gauge", "gauge needle", "valve lever",
-"pipe"). It never reads values and never computes angles; that is done with
-Wonder vision and deterministic code respectively (docs/DEMO.md).
+SAM only locates and masks: it returns a box + pixel mask per instance for one
+short concept prompt per request ("pressure gauge", "yellow valve handle", "hand",
+"pipe"). It
+never reads values. Muse Wonder reads gauges from the masked dial crop; code
+does the lever motion geometry.
 
 Wire format is the documented special-token grammar (docs/meta/sam/
 reading-segmentation.md): one line per frame, `id<|box;...|><|mask;...|>`.
 Boxes/confidence are parsed here; mask rasters are decoded with Meta's
-official `meta_sam_parser` when a raster is needed (needle/lever geometry).
+official `meta_sam_parser` when a raster is needed (dial cut-out, lever geometry).
 """
 from __future__ import annotations
 

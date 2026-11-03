@@ -312,9 +312,9 @@ async def _resume(state, incident_id: str) -> None:
 
 @router.post("/incidents/{incident_id}/tasks/{task_id}/photo")
 async def complete_task_photo(request: Request, incident_id: str, task_id: UUID, body: PhotoTaskIn):
-    """Gauge photos (one per gauge) -> SAM finds the dial -> Wonder reads it -> field telemetry.
+    """Gauge photos (one per gauge) -> SAM masks the dial -> Wonder reads the masked crop -> field telemetry.
 
-    Only cross-checked (agree) or single-source readings are stored. A gauge that cannot be read
+    Only readings with status "read" are stored. A gauge that cannot be read
     is reported and the task stays pending; accepted gauges are kept, so the worker re-shoots only
     the missing one. When every gauge of the task is read, code computes the bank differential.
     """
@@ -355,7 +355,7 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
 
     progress = task["result"] or {}
     gauges = {**(progress.get("gauges_by_tag") or {}), **{r.tag: r.to_json() for r in results}}
-    accepted_now = {r.tag: r.value for r in results if r.value is not None and r.status in ("agree", "single_source")}
+    accepted_now = {r.tag: r.value for r in results if r.value is not None and r.status == "read"}
     accepted = {**(progress.get("accepted") or {}), **accepted_now}
     if accepted_now:
         now = dt.datetime.now(dt.timezone.utc)
@@ -370,7 +370,7 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
         await inv.save_task_progress(task_id, {"accepted": accepted, "gauges_by_tag": gauges})
         return {"completed": False, "readings": list(gauges.values()), "accepted": accepted, "missing": missing,
                 "reason": "Still needed: " + ", ".join(missing)
-                          + ". Re-shoot that gauge closer, square-on, with the needle visible."}
+                          + ". Re-shoot that gauge with the whole dial and the red scale in frame, one dial per photo."}
     voice_payload = None
     if body.audio_base64:
         try:
