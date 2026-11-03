@@ -22,6 +22,12 @@ is checked later by the verifier on plant telemetry, not by video.
 Camera movement is removed by aligning fixed objects between frames (handles
 the hand never touches, or a pipe as fallback) with a translation-only mask
 overlap search. Rotation and zoom of the phone are not modelled.
+
+A concept prompt often misses the operated handle while the fist covers it,
+which can hide a whole movement. Once the operated handle is known, SAM is
+asked again with a box prompt on the frame where that handle is most visible;
+SAM tracks the prompted object forward and backward through the clip, and
+that track replaces the concept detections when it covers more frames.
 """
 from __future__ import annotations
 
@@ -32,7 +38,7 @@ from dataclasses import dataclass, field
 
 from PIL import Image, ImageChops, ImageFilter, ImageStat
 
-from .sam import Detection, SamClient, decode_raster
+from .sam import Detection, SamClient, SamError, decode_raster
 
 LEVER_CONCEPTS = ("yellow valve handle", "valve lever", "valve handle")
 HAND_CONCEPTS = ("hand",)
@@ -57,6 +63,7 @@ MOVE_EXIT = 0.25              # smoothed motion to start leaving MOVING
 MOVE_EXIT_HOLD_S = 0.5        # time below MOVE_EXIT before MOVING ends
 MIN_MOVE_S = 0.3              # shorter moving runs are treated as noise
 AMBIGUOUS_SCORE_RATIO = 0.5   # second handle with this share of moving frames makes the choice ambiguous
+PROMPTED_ID = 900             # object id of the box-prompted lever track
 
 
 @dataclass
@@ -109,6 +116,7 @@ class LeverMotion:
     segments: list[Segment] = field(default_factory=list)
     rest_positions: list[tuple[float, float]] = field(default_factory=list)
     lever_length_px: float = 0.0
+    lever_track: str = "concept"  # concept | box_prompt
 
     @property
     def movements(self) -> list[Segment]:
@@ -124,6 +132,7 @@ class LeverMotion:
     def to_json(self) -> dict:
         return {"operated_ids": self.operated_ids, "reference_ids": self.reference_ids,
                 "camera_reference": self.camera_reference, "ambiguous": self.ambiguous,
+                "lever_track": self.lever_track,
                 "contact_frames": self.contact_frames, "fps": self.fps,
                 "lever_length_px": round(self.lever_length_px, 1),
                 "segments": [s.to_json() for s in self.segments],
@@ -509,10 +518,46 @@ class LeverTracker:
                 return reply.detections
         return []
 
-    async def track_file(self, file_id: str, fps: float) -> LeverMotion:
+    async def track_file(self, file_id: str, fps: float,
+                         size: tuple[int, int] | None = None) -> LeverMotion:
+        """`size` is the uploaded clip's (width, height); without it the box-prompt pass is skipped."""
         handles, hands = await asyncio.gather(
             self._first_match(file_id, LEVER_CONCEPTS), self._first_match(file_id, HAND_CONCEPTS))
         pipes: list[Detection] = []
         if handles and not has_still_handle(handles, hands):
             pipes = await self._first_match(file_id, PIPE_CONCEPTS)
-        return build_lever_motion(handles, hands, pipes, fps)
+        motion = build_lever_motion(handles, hands, pipes, fps)
+        prompt = operated_handle_prompt(motion, handles, size)
+        if prompt is None:
+            return motion
+        try:
+            reply = await self._sam.segment_video_file(file_id, prompt)
+        except SamError:
+            return motion
+        if not reply.detections:
+            return motion
+        operated = set(motion.operated_ids)
+        tracked = [d for d in handles if d.object_id not in operated] + list(reply.detections)
+        refined = build_lever_motion(tracked, hands, pipes, fps)
+        if refined.operated_ids and refined.coverage()["lever_seen"] >= motion.coverage()["lever_seen"]:
+            refined.lever_track = "box_prompt"
+            return refined
+        return motion
+
+
+def operated_handle_prompt(motion: LeverMotion, handles: list[Detection],
+                           size: tuple[int, int] | None) -> str | None:
+    """SAM box prompt for the operated handle on the frame where its box is largest."""
+    if size is None or not motion.operated_ids:
+        return None
+    operated = set(motion.operated_ids)
+    candidates = [d for d in handles if d.object_id in operated]
+    if not candidates:
+        return None
+    best = max(candidates, key=lambda d: d.area)
+    from meta_sam_parser import FramePrompt, ObjectPromptError, PromptBox, PromptObject, build_object_prompt
+    try:
+        return build_object_prompt(size=size, objects=[PromptObject(
+            id=PROMPTED_ID, prompts=[FramePrompt(frame=best.frame, box=PromptBox(*best.box))])])
+    except ObjectPromptError:
+        return None

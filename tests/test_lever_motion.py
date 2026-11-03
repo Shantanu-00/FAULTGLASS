@@ -166,3 +166,47 @@ def test_lever_creeping_through_the_pause_does_not_pass():
     handles, hands, _ = scene(angles)
     _, policy = evaluate(handles, hands)
     assert policy.status != "passed", policy.reasons
+
+
+class PromptingSam:
+    """Concept requests return the given detections; a box prompt returns the full lever track."""
+
+    def __init__(self, handles, hands, prompted):
+        self.handles, self.hands, self.prompted = handles, hands, prompted
+        self.prompts = []
+
+    async def segment_video_file(self, file_id, text):
+        from app.evidence.sam import SamReply
+        if text.startswith("<"):
+            self.prompts.append(text)
+            return SamReply(detections=self.prompted)
+        if text == "yellow valve handle":
+            return SamReply(detections=self.handles)
+        if text == "hand":
+            return SamReply(detections=self.hands)
+        return SamReply(detections=[])
+
+
+async def test_box_prompt_recovers_a_movement_the_concept_search_missed():
+    from dataclasses import replace
+    from app.evidence.lever import PROMPTED_ID, LeverTracker
+    angles = staged()
+    handles, hands, _ = scene(angles)
+    # The concept search misses the gripped lever until after the first movement.
+    concept = [d for d in handles if d.object_id != LEVER_ID or d.frame >= 16]
+    prompted = [replace(d, object_id=PROMPTED_ID) for d in handles if d.object_id == LEVER_ID]
+    alone = evaluate_lever_motion(build_lever_motion(concept, hands, [], FPS), FPS)
+    assert alone.status != "passed"
+    sam = PromptingSam(concept, hands, prompted)
+    motion = await LeverTracker(sam).track_file("file", FPS, SIZE)
+    assert len(sam.prompts) == 1 and f"w={SIZE[0]};h={SIZE[1]}" in sam.prompts[0]
+    assert motion.lever_track == "box_prompt" and motion.operated_ids == [PROMPTED_ID]
+    assert evaluate_lever_motion(motion, FPS).status == "passed"
+
+
+async def test_no_box_prompt_without_the_clip_size():
+    from app.evidence.lever import LeverTracker
+    handles, hands, _ = scene(staged())
+    sam = PromptingSam(handles, hands, [])
+    motion = await LeverTracker(sam).track_file("file", FPS)
+    assert sam.prompts == [] and motion.lever_track == "concept"

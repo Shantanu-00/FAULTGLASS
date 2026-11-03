@@ -157,13 +157,33 @@ def normalize_clip(video_bytes: bytes, filename: str, mime_type: str,
         return target.read_bytes(), "clip.mp4", "video/mp4", ANALYSIS_FPS
 
 
+def media_size(video_bytes: bytes) -> tuple[int, int] | None:
+    """(width, height) of a normalised clip, which carries no rotation, via ffprobe."""
+    ffprobe = shutil.which("ffprobe")
+    if ffprobe is None:
+        return None
+    with tempfile.NamedTemporaryFile(suffix=".mp4") as clip:
+        clip.write(video_bytes)
+        clip.flush()
+        done = subprocess.run(
+            [ffprobe, "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
+             "-of", "csv=p=0", clip.name], capture_output=True, text=True, timeout=30)
+    try:
+        width, height = (int(v) for v in done.stdout.strip().split(",")[:2])
+    except ValueError:
+        return None
+    return (width, height) if width > 0 and height > 0 else None
+
+
 async def analyze_valve_clip(sam: SamClient, video_bytes: bytes, filename: str,
                              mime_type: str, *, fps: float | None = None) -> dict[str, Any]:
     """Upload once, track handles and hand with SAM, and apply the staged policy."""
+    original = video_bytes
     video_bytes, filename, mime_type, fps = normalize_clip(video_bytes, filename, mime_type, fps)
     if not fps or fps <= 0:
         return {"file_id": None, "track": None, "policy": evaluate_lever_motion(None, None).to_json()}
+    size = media_size(video_bytes) if video_bytes is not original else None
     file_id = await sam.upload_file(video_bytes, filename, mime_type)
-    motion = await LeverTracker(sam).track_file(file_id, fps)
+    motion = await LeverTracker(sam).track_file(file_id, fps, size)
     policy = evaluate_lever_motion(motion, fps)
     return {"file_id": file_id, "track": motion.to_json(), "policy": policy.to_json()}

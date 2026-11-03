@@ -56,6 +56,12 @@ masks would be invented, so no angle is measured.
      frames 0.2 s either side, counted only where the hand covers neither
      frame, so a re-grip is not motion; the grip point (fist at the tip).
   4. The handle with the most hand-driven motion is the operated lever.
+     The concept search often misses that handle while the fist covers it
+     (on 19.53.11 it was absent until 4.6 s, hiding the first turn), so SAM
+     is asked once more with a **box prompt** on the frame where the handle
+     is most visible; SAM tracks it forward and backward through the clip
+     and that track replaces the concept detections when it covers more
+     frames (126 of 130 frames instead of 84 on the trimmed clip).
   5. Smoothing and hysteresis give a still/moving timeline.
 - **Policy** ([valve.py](../backend/app/evidence/valve.py)): passed only for
   exactly two hand-driven movements, a still hold of at least 2 s between
@@ -70,6 +76,7 @@ Live check on real clips (2026-11-03):
 
 | Clip | Result | Footage |
 | --- | --- | --- |
+| 19.53.11 trimmed to 0-13 s | **passed**: moves at 4.0-4.8 s and 8.6-9.3 s, hold 3.8 s, three distinct rests | the staged close only, ending at closed |
 | 19.53.11 (14.4 s) | uncertain: 3 movements (still 3.9 s, move, hold 4.0 s, move, still 4.2 s, move) | staged close with a real mid hold, then the operator turns the lever back. Cut before 13 s it passes (hold 3.8 s). |
 | 19.53.07 (2.7 s) | violated: one movement | one turn, then held |
 | 19.53.13 (4.4 s) | uncertain: ends while moving | turn, slow continued rotation, return at the end |
