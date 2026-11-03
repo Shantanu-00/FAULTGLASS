@@ -1,6 +1,6 @@
 import React from 'react';
 import { humanize } from '../../lib/format';
-import type { FieldTaskResult, GaugeResult, ValvePolicy, VoicePayload } from '../../types';
+import type { FieldTaskResult, GaugeResult, ValvePolicy, VoiceComparison, VoicePayload } from '../../types';
 import { Pill, type Tone } from '../common/Pill';
 
 const GAUGE_STATUS: Record<string, { text: string; tone: Tone }> = {
@@ -54,6 +54,33 @@ const COMPARISON_TEXT: Record<string, { text: string; tone: Tone }> = {
   AWAITING_PHOTO: { text: 'Awaiting photo', tone: 'neutral' },
 };
 
+const VoiceReadings: React.FC<{ comparison: VoiceComparison | undefined }> = ({ comparison }) => {
+  const spoken = comparison?.spoken_readings ?? {};
+  const photo = comparison?.photo_readings ?? {};
+  const tags = [...new Set([...Object.keys(spoken), ...Object.keys(photo)])].sort();
+  if (tags.length === 0) return null;
+  return (
+    <table className="mini-table" aria-label="Spoken readings against photo readings">
+      <thead>
+        <tr>
+          <th scope="col">Gauge</th>
+          <th scope="col" className="num">Spoken</th>
+          <th scope="col" className="num">Photo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {tags.map((tag) => (
+          <tr key={tag}>
+            <th scope="row"><code className="tag">{tag}</code></th>
+            <td className="num strong">{fmt(spoken[tag])}</td>
+            <td className="num">{fmt(photo[tag])}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
+
 export const VoiceResult: React.FC<{ voice: VoicePayload }> = ({ voice }) => {
   if (voice.error) return <p className="result-error">{voice.error}</p>;
   const status = voice.comparison ? (COMPARISON_TEXT[voice.comparison.status] ?? { text: humanize(voice.comparison.status), tone: 'neutral' as Tone }) : null;
@@ -66,6 +93,7 @@ export const VoiceResult: React.FC<{ voice: VoicePayload }> = ({ voice }) => {
       </div>
       {voice.transcript && <blockquote>{voice.transcript}</blockquote>}
       {voice.structured?.observation && <p className="small">Structured observation: {voice.structured.observation}</p>}
+      <VoiceReadings comparison={voice.comparison} />
       {voice.comparison?.summary && <p className="small muted">{voice.comparison.summary}</p>}
     </div>
   );
@@ -98,7 +126,7 @@ export const PolicyResult: React.FC<{ policy: ValvePolicy }> = ({ policy }) => {
   );
 };
 
-export const TaskResultView: React.FC<{ result: FieldTaskResult }> = ({ result }) => (
+export const TaskResultView: React.FC<{ result: FieldTaskResult; hideVoice?: boolean }> = ({ result, hideVoice }) => (
   <div className="task-result">
     {result.gauges && result.gauges.length > 0 && <GaugeResults gauges={result.gauges} />}
     {!result.gauges && result.readings && Object.keys(result.readings).length > 0 && (
@@ -111,7 +139,7 @@ export const TaskResultView: React.FC<{ result: FieldTaskResult }> = ({ result }
       </ul>
     )}
     {result.policy && <PolicyResult policy={result.policy} />}
-    {result.voice && <VoiceResult voice={result.voice} />}
+    {result.voice && !hideVoice && <VoiceResult voice={result.voice} />}
     {result.note && <p className="small">Operator note: {result.note}</p>}
   </div>
 );

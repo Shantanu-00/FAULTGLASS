@@ -3,8 +3,8 @@ import { Icon, type IconName } from '../common/Icon';
 
 interface Props {
   kind: 'image' | 'video';
-  label: string;
-  retakeLabel: string;
+  label: React.ReactNode;
+  retakeLabel: React.ReactNode;
   accept: string;
   icon: IconName;
   file: File | null;

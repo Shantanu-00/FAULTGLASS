@@ -15,7 +15,7 @@ export const App: React.FC = () => {
     <PlantProvider wantTelemetry={view !== 'field'} autoStartRun={view !== 'field'}>
       <AppHeader view={view} onNavigate={setView} />
       <main className={`app-main app-main-${view}`}>
-        {view === 'operator' && <OperatorView onNavigate={setView} />}
+        {view === 'operator' && <OperatorView />}
         {view === 'field' && <FieldView />}
         {view === 'twin' && <TwinView />}
       </main>

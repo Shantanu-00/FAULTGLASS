@@ -1,18 +1,36 @@
 import React from 'react';
+import { humanize } from '../../lib/format';
 import type { Focus } from '../../types';
+import { Pill } from '../common/Pill';
 
-export const FocusLedger: React.FC<{ focus: Focus | undefined; model: string | null }> = ({ focus, model }) => {
+const STATUS_TEXT: Record<string, string> = {
+  not_started: 'Not started',
+  investigating: 'Investigating',
+  waiting_field: 'Waiting for field evidence',
+  awaiting_approval: 'Waiting for your approval',
+  concluded: 'Concluded, awaiting verification',
+  escalated: 'Escalated to a human',
+};
+
+interface Props {
+  focus: Focus | undefined;
+  model: string | null;
+  status: string;
+  steps: number;
+}
+
+export const FocusLedger: React.FC<Props> = ({ focus, model, status, steps }) => {
   const has = focus && (focus.goal || focus.blocker || focus.next_step || focus.focus_assets?.length);
   return (
-    <section className="panel" aria-label="Focus ledger">
+    <section className="panel stack-card" aria-label="Focus ledger">
       <div className="panel-head">
-        <h3 className="panel-title">Focus ledger</h3>
-        {model && <span className="attribution">Written by {model}</span>}
+        <h3 className="panel-title">Wonder focus ledger</h3>
+        <Pill tone={status === 'escalated' ? 'alarm' : 'accent'}>{STATUS_TEXT[status] ?? humanize(status)}</Pill>
       </div>
       {!has ? (
-        <p className="muted">The investigator has not recorded a focus yet.</p>
+        <p className="muted">No focus recorded yet.</p>
       ) : (
-        <dl className="kv kv-wide">
+        <dl className="kv">
           <dt>Goal</dt>
           <dd>{focus.goal || '-'}</dd>
           <dt>Blocker</dt>
@@ -35,6 +53,9 @@ export const FocusLedger: React.FC<{ focus: Focus | undefined; model: string | n
           </dd>
         </dl>
       )}
+      <p className="attribution">
+        {model ? `Written by ${model}` : 'Written by the investigator'} - {steps} step{steps === 1 ? '' : 's'} used
+      </p>
     </section>
   );
 };

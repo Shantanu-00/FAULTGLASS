@@ -39,7 +39,9 @@ export function useView(): [View, (view: View) => void] {
   return [view, setView];
 }
 
+export const DEFAULT_CLOCK_SPEED = 10;
+
 export function clockSpeedFromUrl(): number {
   const raw = Number(new URLSearchParams(window.location.search).get('speed'));
-  return Math.min(10, Math.max(1, raw || 1));
+  return Math.min(10, Math.max(1, Math.round(raw) || DEFAULT_CLOCK_SPEED));
 }

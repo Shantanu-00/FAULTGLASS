@@ -12,7 +12,7 @@ interface Props {
 }
 
 export const AppHeader: React.FC<Props> = ({ view, onNavigate }) => {
-  const { plant, connection } = usePlant();
+  const { plant, connection, run } = usePlant();
 
   return (
     <header className="app-header">
@@ -47,6 +47,11 @@ export const AppHeader: React.FC<Props> = ({ view, onNavigate }) => {
 
       <div className="header-status">
         {plant?.simulation && <Pill tone="warning">Simulated</Pill>}
+        {plant?.simulation && run && (
+          <span className="chip" title="Each real second advances the plant simulation by this many simulated seconds">
+            Simulated clock {run.clock_speed}x
+          </span>
+        )}
         <span className={`conn conn-${connection}`}>
           <span className="conn-dot" aria-hidden="true" />
           {connection === 'online' ? 'Connected' : connection === 'offline' ? 'API unreachable' : 'Connecting'}

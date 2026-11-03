@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { api } from '../../api/client';
 import { errorMessage, formatTime, humanize } from '../../lib/format';
 import { usePlant } from '../../state/PlantContext';
@@ -8,70 +8,67 @@ import { TaskResultView, VoiceResult } from '../field/Results';
 
 const PROPOSAL_TEXT: Record<ActionProposal['status'], { text: string; tone: Tone }> = {
   pending: { text: 'Awaiting your decision', tone: 'accent' },
-  approved: { text: 'Approved, field task dispatched', tone: 'ok' },
+  approved: { text: 'Approved, valve task sent to the field', tone: 'ok' },
   rejected: { text: 'Rejected', tone: 'neutral' },
   executed: { text: 'Executed after the staged check passed', tone: 'ok' },
-  failed: { text: 'Failed', tone: 'alarm' },
+  failed: { text: 'Verification failed', tone: 'alarm' },
 };
 
-export const ActionProposals: React.FC<{ incidentId: string; items: ActionProposal[]; model: string | null }> = ({ incidentId, items, model }) => {
+export const ProposalCard: React.FC<{ incidentId: string; proposal: ActionProposal; model: string | null }> = ({ incidentId, proposal: p, model }) => {
   const { refreshIncident, notify } = usePlant();
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const status = PROPOSAL_TEXT[p.status];
+  const card = useRef<HTMLElement | null>(null);
 
-  const decide = async (proposal: ActionProposal, approve: boolean) => {
-    setBusy(proposal.id);
+  useEffect(() => {
+    if (p.status === 'pending') card.current?.scrollIntoView({ block: 'nearest' });
+  }, [p.status]);
+
+  const decide = async (approve: boolean) => {
+    setBusy(true);
     try {
       if (approve) {
-        await api.approveProposal(incidentId, proposal.id);
-        notify('Approved. The valve task is now on the Field view.');
+        await api.approveProposal(incidentId, p.id);
+        notify(`Approved. The ${p.asset_id} task is now on the Field view.`);
       } else {
-        await api.rejectProposal(incidentId, proposal.id);
+        await api.rejectProposal(incidentId, p.id);
         notify('Proposal rejected. The investigator has been told.');
       }
       await refreshIncident();
     } catch (error) {
       notify(errorMessage(error), 'error');
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
   return (
-    <section className="panel" aria-label="Action proposals">
+    <section ref={card} className={`panel stack-card proposal proposal-${p.status}`} aria-label="Action proposal">
       <div className="panel-head">
-        <h3 className="panel-title">Action proposals</h3>
-        {model && <span className="attribution">Proposed by {model}</span>}
+        <h3 className="panel-title">
+          Proposed action: {humanize(p.action)} <code className="tag">{p.asset_id}</code>
+        </h3>
+        <Pill tone={status.tone}>{status.text}</Pill>
       </div>
-      <p className="muted small">The model proposes. Nothing moves until you approve, and code verifies the result.</p>
-      {items.length === 0 ? (
-        <p className="muted">No action proposed.</p>
-      ) : (
-        items.map((p) => {
-          const status = PROPOSAL_TEXT[p.status];
-          return (
-            <article className={`card proposal proposal-${p.status}`} key={p.id}>
-              <div className="card-head">
-                <strong>
-                  {humanize(p.action)} <code className="tag">{p.asset_id}</code>
-                </strong>
-                <Pill tone={status.tone}>{status.text}</Pill>
-              </div>
-              <p>{p.rationale}</p>
-              {p.sop_id && <p className="muted small">Procedure: <code className="tag">{p.sop_id}</code></p>}
-              {p.status === 'pending' && (
-                <div className="btn-row">
-                  <button type="button" className="btn btn-primary" disabled={busy === p.id} onClick={() => void decide(p, true)}>
-                    Approve valve task
-                  </button>
-                  <button type="button" className="btn" disabled={busy === p.id} onClick={() => void decide(p, false)}>
-                    Reject
-                  </button>
-                </div>
-              )}
-            </article>
-          );
-        })
+      <p>{p.rationale}</p>
+      {p.sop_id && (
+        <p className="muted small">
+          Procedure <code className="tag">{p.sop_id}</code>
+        </p>
       )}
+      {p.status === 'pending' && (
+        <div className="btn-row">
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void decide(true)}>
+            Approve {p.action} on {p.asset_id}
+          </button>
+          <button type="button" className="btn" disabled={busy} onClick={() => void decide(false)}>
+            Reject
+          </button>
+        </div>
+      )}
+      <p className="attribution">
+        {model ? `Proposed by ${model}` : 'Proposed by the investigator'}. Nothing moves until you approve, and code verifies the result.
+      </p>
     </section>
   );
 };
@@ -82,53 +79,53 @@ const TASK_TITLE: Record<FieldTask['kind'], string> = {
   observation: 'Field observation',
 };
 
-export const FieldTasksSummary: React.FC<{ tasks: FieldTask[]; onOpenField: () => void }> = ({ tasks, onOpenField }) => (
-  <section className="panel" aria-label="Field tasks">
-    <div className="panel-head">
-      <h3 className="panel-title">Field tasks</h3>
-      {tasks.some((t) => t.status === 'pending') && (
-        <button type="button" className="btn btn-small" onClick={onOpenField}>
-          Open Field view
-        </button>
-      )}
-    </div>
-    {tasks.length === 0 ? (
-      <p className="muted">No physical check requested. The investigator asks for one only when telemetry cannot answer.</p>
-    ) : (
-      tasks.map((t) => (
-        <article className="card" key={t.id}>
-          <div className="card-head">
-            <strong>{TASK_TITLE[t.kind]}</strong>
-            <Pill tone={t.status === 'completed' ? 'ok' : t.status === 'pending' ? 'accent' : 'neutral'}>{humanize(t.status)}</Pill>
-          </div>
-          <p>{t.instruction}</p>
-          <div className="chips">
-            {[...t.asset_ids, ...t.tags].map((code) => (
-              <code className="tag" key={code}>
-                {code}
-              </code>
-            ))}
-          </div>
-          {t.result && <TaskResultView result={t.result} />}
-        </article>
-      ))
-    )}
-  </section>
-);
+function taskStatus(task: FieldTask): { text: string; tone: Tone } {
+  if (task.status === 'cancelled') return { text: 'Cancelled', tone: 'neutral' };
+  if (task.status === 'completed') {
+    if (task.kind === 'gauge_photo') return { text: 'Photo received', tone: 'ok' };
+    if (task.kind === 'valve_action') return { text: 'Clip passed', tone: 'ok' };
+    return { text: 'Submitted', tone: 'ok' };
+  }
+  return { text: task.kind === 'valve_action' ? 'Waiting for lever clip' : 'Waiting for worker', tone: 'accent' };
+}
 
-export const VoiceObservations: React.FC<{ items: VoiceObservation[] }> = ({ items }) => {
+export const FieldTaskCard: React.FC<{ task: FieldTask }> = ({ task }) => {
+  const status = taskStatus(task);
+  return (
+    <section className={`panel stack-card task-${task.status}`} aria-label={TASK_TITLE[task.kind]}>
+      <div className="panel-head">
+        <h3 className="panel-title">Field task: {TASK_TITLE[task.kind].toLowerCase()}</h3>
+        <Pill tone={status.tone}>{status.text}</Pill>
+      </div>
+      <p>{task.instruction}</p>
+      <div className="chips">
+        {[...task.asset_ids, ...task.tags].map((code) => (
+          <code className="tag" key={code}>
+            {code}
+          </code>
+        ))}
+      </div>
+      {task.result ? (
+        <TaskResultView result={task.result} hideVoice />
+      ) : (
+        task.status === 'pending' && <p className="muted small">Sent to the Field view at {formatTime(task.created_at)}. The investigation is paused until the worker submits.</p>
+      )}
+    </section>
+  );
+};
+
+export const VoiceCard: React.FC<{ items: VoiceObservation[] }> = ({ items }) => {
   if (items.length === 0) return null;
   return (
-    <section className="panel" aria-label="Voice observations">
+    <section className="panel stack-card" aria-label="Voice note">
       <div className="panel-head">
-        <h3 className="panel-title">Voice observations</h3>
+        <h3 className="panel-title">Voice note</h3>
         <span className="count">{items.length}</span>
       </div>
       {items.map((v) => (
-        <article className="card" key={v.id}>
-          <p className="muted small">{formatTime(v.created_at)}</p>
+        <div className="voice-item" key={v.id}>
           <VoiceResult voice={{ transcript: v.transcript, comparison: v.comparison ?? undefined, structured: v.structured ?? undefined, model: v.model }} />
-        </article>
+        </div>
       ))}
     </section>
   );

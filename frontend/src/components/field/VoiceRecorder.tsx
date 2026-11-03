@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Bi } from '../common/Bi';
 import { Icon } from '../common/Icon';
 
 interface Props {
@@ -68,18 +69,18 @@ export const VoiceRecorder: React.FC<Props> = ({ blob, onChange, disabled }) => 
           recording ? (
             <button type="button" className="btn btn-xl btn-recording" onClick={stop}>
               <Icon name="stop" size={22} />
-              Stop recording ({seconds}s)
+              <Bi stack en={`Stop recording (${seconds} s)`} mr="थांबवा" />
             </button>
           ) : (
             <button type="button" className="btn btn-xl" onClick={() => void start()} disabled={disabled}>
               <Icon name="mic" size={22} />
-              {blob ? 'Record again' : 'Record voice note'}
+              {blob ? 'Record again' : <Bi stack en="Record voice note" mr="आवाज नोंदवा" />}
             </button>
           )
         ) : (
           <label className="btn btn-xl file-btn">
             <Icon name="mic" size={22} />
-            {blob ? 'Replace voice note' : 'Record voice note'}
+            {blob ? 'Replace voice note' : <Bi stack en="Record voice note" mr="आवाज नोंदवा" />}
             <input
               type="file"
               accept="audio/*"

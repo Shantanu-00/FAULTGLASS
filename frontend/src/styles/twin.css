@@ -17,11 +17,17 @@
   grid-template-columns: minmax(0, 1fr) 320px;
 }
 
-.twin-canvas {
+.twin-stage-main {
   position: relative;
+  min-height: 320px;
+  overflow: hidden;
+}
+
+.twin-canvas {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   background: #eef0f2;
-  min-height: 320px;
 }
 
 .twin-error {
@@ -35,6 +41,56 @@
   border-radius: var(--radius);
   color: var(--alarm);
   font-weight: 600;
+}
+
+.twin-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 3;
+  max-width: calc(100% - 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  pointer-events: none;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.legend-label {
+  font-weight: 650;
+}
+
+.legend-empty {
+  color: var(--text-3);
+  max-width: 300px;
+  line-height: 1.35;
+}
+
+.ring-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+}
+
+.ring-focus {
+  border-style: dashed;
+}
+
+.ring-warning {
+  border-color: var(--warning-fill);
 }
 
 .twin-panel {
@@ -94,7 +150,7 @@
     flex-direction: column;
   }
 
-  .twin-canvas {
+  .twin-stage-main {
     height: 58vh;
     flex: none;
   }
@@ -103,4 +159,25 @@
     border-left: 0;
     border-top: 1px solid var(--border);
   }
+}
+
+/* Embedded twin: tags stay short; the full name appears on hover and the API note only in the
+   observability overlay. */
+.twin-frame .pl-label.is-focus .pl-name,
+.twin-frame .pl-label.is-alarm .pl-name,
+.twin-card-frame .pl-label.is-focus .pl-name,
+.twin-card-frame .pl-label.is-alarm .pl-name {
+  display: none;
+}
+
+.twin-frame .pl-label:hover .pl-name,
+.twin-card-frame .pl-label:hover .pl-name {
+  display: inline;
+}
+
+.twin-frame .pl-chip.is-unread em,
+.twin-frame .pl-chip b,
+.twin-card-frame .pl-chip.is-unread em,
+.twin-card-frame .pl-chip b {
+  display: none;
 }

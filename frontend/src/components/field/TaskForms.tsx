@@ -4,6 +4,7 @@ import { errorMessage } from '../../lib/format';
 import { encodeWavBase64, fileToBase64, prepareImage, videoDuration } from '../../lib/media';
 import { usePlant } from '../../state/PlantContext';
 import type { FieldTask, PhotoResponse, VideoResponse } from '../../types';
+import { Bi } from '../common/Bi';
 import { Icon } from '../common/Icon';
 import { FileCapture } from './FileCapture';
 import { GaugeResults, PolicyResult, VoiceResult } from './Results';
@@ -46,15 +47,17 @@ export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
   return (
     <div className="task-form">
       <p className="hint-text">Stand square-on to the cartridge bank so every requested dial face and needle is visible, then take one photo.</p>
-      <FileCapture kind="image" label="Take gauge photo" retakeLabel="Retake photo" accept="image/*" icon="camera" file={photo} onChange={setPhoto} disabled={busy} />
+      <FileCapture kind="image" label={<Bi stack en="Take gauge photo" mr="गेजचा फोटो घ्या" />} retakeLabel="Retake photo" accept="image/*" icon="camera" file={photo} onChange={setPhoto} disabled={busy} />
       <VoiceRecorder blob={voice} onChange={setVoice} disabled={busy} />
       <label className="form-field">
-        <span>Note (optional)</span>
+        <span>
+          <Bi en="Note (optional)" mr="टीप" />
+        </span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000} disabled={busy} />
       </label>
       <button type="button" className="btn btn-xl btn-primary" disabled={!photo || busy} onClick={() => void submit()}>
         <Icon name="send" size={20} />
-        {busy ? 'Analysing, please wait' : 'Send for reading'}
+        {busy ? 'Analysing, please wait' : <Bi stack en="Send for reading" mr="फोटो पाठवा" />}
       </button>
       {busy && <p className="muted" role="status">The photo is being analysed on the server. This can take up to a minute.</p>}
       {error && <p className="result-error" role="alert">{error}</p>}
@@ -72,7 +75,7 @@ export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
 
 const STAGES = [
   { angle: '0 degrees', name: 'Open', hint: 'Lever parallel to the pipe. Hold 1 s.' },
-  { angle: '45 degrees', name: 'Half', hint: 'Hold for at least 2 s.' },
+  { angle: '45 degrees', name: 'Half', hint: 'Hold for at least 2 s.', mr: 'किमान 2 sec' },
   { angle: '90 degrees', name: 'Closed', hint: 'Lever perpendicular to the pipe.' },
 ];
 
@@ -114,11 +117,14 @@ export const ValveForm: React.FC<FormProps> = ({ incidentId, task }) => {
             <strong>{s.angle}</strong>
             <span>{s.name}</span>
             <small>{s.hint}</small>
+            {s.mr && (
+              <small lang="mr">{s.mr}</small>
+            )}
           </li>
         ))}
       </ol>
       <p className="hint-text">Record one continuous take. Keep the lever and a straight run of pipe in frame the whole time.</p>
-      <FileCapture kind="video" label="Record lever clip" retakeLabel="Record again" accept="video/mp4,video/quicktime" icon="video" file={clip} onChange={setClip} disabled={busy} />
+      <FileCapture kind="video" label={<Bi stack en="Record lever clip" mr="लीव्हर क्लिप" />} retakeLabel="Record again" accept="video/mp4,video/quicktime" icon="video" file={clip} onChange={setClip} disabled={busy} />
       {unsupported && (
         <p className="result-error" role="alert">
           This clip is {clip?.type || 'an unknown format'}. Only MP4 or MOV is accepted. Record again with the phone's own camera.
@@ -129,12 +135,14 @@ export const ValveForm: React.FC<FormProps> = ({ incidentId, task }) => {
         <input type="number" inputMode="numeric" min={1} max={240} value={fps} onChange={(e) => setFps(e.target.value)} disabled={busy} />
       </label>
       <label className="form-field">
-        <span>Note (optional)</span>
+        <span>
+          <Bi en="Note (optional)" mr="टीप" />
+        </span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={1000} disabled={busy} />
       </label>
       <button type="button" className="btn btn-xl btn-primary" disabled={!clip || Boolean(unsupported) || busy} onClick={() => void submit()}>
         <Icon name="send" size={20} />
-        {busy ? 'Analysing, please wait' : 'Send clip'}
+        {busy ? 'Analysing, please wait' : <Bi stack en="Send clip" mr="क्लिप पाठवा" />}
       </button>
       {busy && <p className="muted" role="status">The clip is being uploaded and tracked on the server. This can take a few minutes.</p>}
       {error && <p className="result-error" role="alert">{error}</p>}
@@ -197,13 +205,15 @@ export const ObservationForm: React.FC<FormProps> = ({ incidentId, task }) => {
         </label>
       ))}
       <label className="form-field">
-        <span>What did you see?</span>
+        <span>
+          <Bi en="What did you see?" mr="तुम्हाला काय दिसले?" />
+        </span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={1000} disabled={busy} />
       </label>
       <VoiceRecorder blob={voice} onChange={setVoice} disabled={busy} />
       {voice && (
         <button type="button" className="btn btn-xl" disabled={busy} onClick={() => void sendVoice()}>
-          Send voice note only
+          <Bi stack en="Send voice note only" mr="फक्त आवाज पाठवा" />
         </button>
       )}
       {voiceResult && <VoiceResult voice={voiceResult} />}

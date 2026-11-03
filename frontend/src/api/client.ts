@@ -57,6 +57,7 @@ export const api = {
     request<{ tag: string; points: HistoryPoint[] }>('GET', `/v1/telemetry/history?tag=${enc(tag)}&seconds=${seconds}&limit=600`),
   currentRun: () => request<{ run: RunDiagnostics | null }>('GET', '/v1/sim/runs/current'),
   startRun: (clockSpeed: number) => request<RunDiagnostics>('POST', '/v1/sim/runs', { clock_speed: clockSpeed }),
+  resetRun: (clockSpeed: number) => request<RunDiagnostics>('POST', '/v1/sim/reset', { clock_speed: clockSpeed }),
   stopRun: (id: string) => request<void>('POST', `/v1/sim/runs/${id}/stop`),
   heartbeat: (id: string) => request<void>('POST', `/v1/sim/runs/${id}/heartbeat`),
   sendEvent: (id: string, kind: 'scenario' | 'valve_action', payload: Record<string, unknown>) =>

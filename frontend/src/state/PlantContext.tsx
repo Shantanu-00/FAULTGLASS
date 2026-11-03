@@ -17,7 +17,14 @@ export type Connection = 'connecting' | 'online' | 'offline';
 export type FeedMode = 'idle' | 'stream' | 'polling';
 
 const WINDOW_MS = 5 * 60 * 1000;
+const BASELINE_SIM_S = 120;
+const MIN_LEARNED_POINTS = 3;
 const FLUSH_MS = 250;
+
+export interface Baseline {
+  value: number;
+  source: 'learned' | 'nominal';
+}
 
 export interface Toast {
   id: number;
@@ -43,9 +50,11 @@ interface PlantContextValue {
   selectIncident: (id: string) => void;
   incident: IncidentDetail | null;
   refreshIncident: () => Promise<void>;
-  injectDecline: () => Promise<void>;
-  restartRun: () => Promise<void>;
+  baselines: Record<string, Baseline>;
+  injectBlockage: () => Promise<void>;
+  resetRun: () => Promise<void>;
   recordBackwash: () => Promise<void>;
+  busy: { inject: boolean; reset: boolean };
   toast: Toast | null;
   notify: (message: string, tone?: Toast['tone']) => void;
 }
@@ -56,6 +65,17 @@ export function usePlant(): PlantContextValue {
   const value = useContext(PlantContext);
   if (!value) throw new Error('usePlant must be used inside PlantProvider');
   return value;
+}
+
+function learnedMeans(learn: Record<string, Map<number, number>>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [tag, points] of Object.entries(learn)) {
+    if (points.size < MIN_LEARNED_POINTS) continue;
+    let sum = 0;
+    for (const v of points.values()) sum += v;
+    out[tag] = sum / points.size;
+  }
+  return out;
 }
 
 interface ProviderProps {
@@ -81,7 +101,13 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
   const [pickedId, setPickedId] = useState<string | null>(null);
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [busy, setBusy] = useState({ inject: false, reset: false });
+  const [learned, setLearned] = useState<Record<string, number>>({});
 
+  const learnRef = useRef<Record<string, Map<number, number>>>({});
+  const learnEndRef = useRef(Infinity);
+  const runIdRef = useRef<string | null>(null);
+  const runJsonRef = useRef('');
   const readingsRef = useRef<Record<string, Reading>>({});
   const seriesRef = useRef<Record<string, SeriesPoint[]>>({});
   const flushTimer = useRef<number | null>(null);
@@ -126,11 +152,44 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
   }, [loadPlant]);
 
   // ---- run -----------------------------------------------------------------
+  const adoptRun = useCallback((next: RunDiagnostics | null) => {
+    const previous = runIdRef.current;
+    runIdRef.current = next?.id ?? null;
+    runStartRef.current = next ? Date.parse(next.started_at) : 0;
+    learnEndRef.current = next
+      ? next.baseline_ready_at
+        ? Date.parse(next.baseline_ready_at)
+        : runStartRef.current + (BASELINE_SIM_S * 1000) / Math.max(next.clock_speed, 1)
+      : Infinity;
+    if (next && previous !== next.id) {
+      if (previous) {
+        // A replaced run starts a new curve: nothing from the old one may stay on screen.
+        readingsRef.current = {};
+        seriesRef.current = {};
+        learnRef.current = {};
+        setLearned({});
+        setSnapshot({ readings: {}, series: {} });
+      } else {
+        for (const [tag, reading] of Object.entries(readingsRef.current)) {
+          if (reading.run_id && reading.run_id !== next.id) delete readingsRef.current[tag];
+        }
+        for (const [tag, points] of Object.entries(seriesRef.current)) {
+          seriesRef.current[tag] = points.filter((p) => p.t >= runStartRef.current);
+        }
+      }
+    }
+    const json = JSON.stringify(next);
+    if (json !== runJsonRef.current) {
+      runJsonRef.current = json;
+      setRun(next);
+    }
+  }, []);
+
   const refreshRun = useCallback(async () => {
     try {
       const { run: current } = await api.currentRun();
       failures.current = 0;
-      setRun(current);
+      adoptRun(current);
       setRunLoaded(true);
       setConnection('online');
       setConnectionError(null);
@@ -143,7 +202,7 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
       }
       return undefined;
     }
-  }, []);
+  }, [adoptRun]);
 
   useEffect(() => {
     if (!plant) return;
@@ -154,11 +213,11 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
 
   const beginRun = useCallback(async () => {
     try {
-      await api.startRun(clockSpeedFromUrl());
+      adoptRun(await api.startRun(clockSpeedFromUrl()));
     } catch (error) {
       if (!(error instanceof ApiError && error.status === 409)) throw error;
     }
-  }, []);
+  }, [adoptRun]);
 
   useEffect(() => {
     if (!autoStartRun || !plant?.simulation || !runLoaded || run || starting.current || connection !== 'online') return;
@@ -172,48 +231,59 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
   }, [autoStartRun, plant, runLoaded, run, connection, beginRun, refreshRun, notify]);
 
   const runId = run?.id;
-  const runStartedAt = run?.started_at;
+  const baselineReadyAt = run?.baseline_ready_at;
   useEffect(() => {
-    // A new run starts a new curve: keep the sparklines to the active run only.
-    runStartRef.current = runStartedAt ? Date.parse(runStartedAt) : 0;
-    for (const [tag, points] of Object.entries(seriesRef.current)) {
-      seriesRef.current[tag] = points.filter((p) => p.t >= runStartRef.current);
-    }
-  }, [runStartedAt]);
+    if (baselineReadyAt) learnEndRef.current = Date.parse(baselineReadyAt);
+  }, [baselineReadyAt]);
+
   useEffect(() => {
     if (!runId) return;
-    const timer = window.setInterval(() => api.heartbeat(runId).catch(() => undefined), 10000);
+    const timer = window.setInterval(() => {
+      // A run replaced from another tab answers 404 here; adopt whatever run is current.
+      api.heartbeat(runId).catch(() => void refreshRun());
+    }, 10000);
     return () => window.clearInterval(timer);
-  }, [runId]);
+  }, [runId, refreshRun]);
 
-  const act = useCallback(
-    async (fn: () => Promise<unknown>) => {
-      try {
-        await fn();
-        await refreshRun();
-      } catch (error) {
-        notify(errorMessage(error), 'error');
-      }
-    },
-    [refreshRun, notify],
-  );
+  const injectBlockage = useCallback(async () => {
+    if (!run) return;
+    setBusy((b) => ({ ...b, inject: true }));
+    try {
+      await api.sendEvent(run.id, 'scenario', { name: 'production_decline' });
+    } catch (error) {
+      notify(error instanceof ApiError && error.status === 409 ? 'The baseline is still being learned, or a scenario is already active.' : errorMessage(error), 'error');
+    } finally {
+      await refreshRun();
+      setBusy((b) => ({ ...b, inject: false }));
+    }
+  }, [run, notify, refreshRun]);
 
-  const injectDecline = useCallback(
-    () => act(async () => run && api.sendEvent(run.id, 'scenario', { name: 'production_decline' })),
-    [act, run],
-  );
-  const recordBackwash = useCallback(
-    () => act(async () => run && api.sendEvent(run.id, 'valve_action', { action: 'backwash_completed' })),
-    [act, run],
-  );
-  const restartRun = useCallback(
-    () =>
-      act(async () => {
-        if (run) await api.stopRun(run.id);
-        await beginRun();
-      }),
-    [act, run, beginRun],
-  );
+  const recordBackwash = useCallback(async () => {
+    if (!run) return;
+    try {
+      await api.sendEvent(run.id, 'valve_action', { action: 'backwash_completed' });
+    } catch (error) {
+      notify(errorMessage(error), 'error');
+    }
+    await refreshRun();
+  }, [run, notify, refreshRun]);
+
+  const resetRun = useCallback(async () => {
+    setBusy((b) => ({ ...b, reset: true }));
+    try {
+      adoptRun(await api.resetRun(clockSpeedFromUrl()));
+      setPickedId(null);
+      setIncident(null);
+      setIncidents([]);
+      setAllFlags([]);
+      notify('Run reset. The plant is learning its baseline again.');
+    } catch (error) {
+      notify(errorMessage(error), 'error');
+    } finally {
+      await refreshRun();
+      setBusy((b) => ({ ...b, reset: false }));
+    }
+  }, [adoptRun, notify, refreshRun]);
 
   // ---- flags and incidents -------------------------------------------------
   useEffect(() => {
@@ -266,6 +336,19 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
   }, [plant, selectedIncidentId, refreshIncident]);
 
   const flags = useMemo(() => (run ? allFlags.filter((f) => f.run_id === run.id) : allFlags), [allFlags, run]);
+
+  const baselines = useMemo(() => {
+    const out: Record<string, Baseline> = {};
+    for (const signal of plant?.signals ?? []) {
+      if (signal.type !== 'measurement') continue;
+      if (learned[signal.tag] !== undefined) out[signal.tag] = { value: learned[signal.tag], source: 'learned' };
+      else if (signal.limits.nominal !== undefined) out[signal.tag] = { value: signal.limits.nominal, source: 'nominal' };
+    }
+    for (const [tag, evidence] of Object.entries(incident?.flag?.evidence?.signals ?? {})) {
+      if (typeof evidence.baseline === 'number') out[tag] = { value: evidence.baseline, source: 'learned' };
+    }
+    return out;
+  }, [plant, learned, incident]);
   const hiddenFlagCount = allFlags.length - flags.length;
 
   // ---- telemetry -----------------------------------------------------------
@@ -278,8 +361,14 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
     let source: EventSource | null = null;
     let pollTimer: number | null = null;
 
+    const learn = (tag: string, t: number, v: number) => {
+      if (t > learnEndRef.current) return;
+      (learnRef.current[tag] ??= new Map()).set(t, v);
+    };
+
     const flush = () => {
       flushTimer.current = null;
+      setLearned(learnedMeans(learnRef.current));
       setSnapshot({
         readings: { ...readingsRef.current },
         series: Object.fromEntries(Object.entries(seriesRef.current).map(([tag, pts]) => [tag, pts.slice()])),
@@ -291,6 +380,7 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
 
     const applyRows = (rows: TelemetryRow[]) => {
       for (const row of rows) {
+        if (runIdRef.current && row.run_id && row.run_id !== runIdRef.current) continue;
         const previous = readingsRef.current[row.tag];
         if (previous && previous.observed_at > row.observed_at) continue;
         readingsRef.current[row.tag] = {
@@ -302,6 +392,7 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
         if (row.value === null) continue;
         const t = Date.parse(row.observed_at);
         if (t < runStartRef.current) continue;
+        learn(row.tag, t, row.value);
         const line = (seriesRef.current[row.tag] ??= []);
         if (!line.length || line[line.length - 1].t < t) line.push({ t, v: row.value });
         const cutoff = t - WINDOW_MS;
@@ -332,6 +423,7 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
                 .filter((p) => p.value !== null)
                 .map((p) => ({ t: Date.parse(p.observed_at), v: p.value as number }))
                 .filter((p) => p.t >= runStartRef.current);
+              for (const p of merged) learn(s.tag, p.t, p.v);
               const live = seriesRef.current[s.tag] ?? [];
               const lastHistory = merged.length ? merged[merged.length - 1].t : -Infinity;
               seriesRef.current[s.tag] = [...merged, ...live.filter((p) => p.t > lastHistory)];
@@ -385,16 +477,18 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
       selectIncident: setPickedId,
       incident,
       refreshIncident,
-      injectDecline,
-      restartRun,
+      baselines,
+      injectBlockage,
+      resetRun,
       recordBackwash,
+      busy,
       toast,
       notify,
     }),
     [
       connection, connectionError, retry, plant, feed, lastUpdate, snapshot, run, runLoaded, flags,
-      hiddenFlagCount, incidents, selectedIncidentId, incident, refreshIncident, injectDecline,
-      restartRun, recordBackwash, toast, notify,
+      hiddenFlagCount, incidents, selectedIncidentId, incident, refreshIncident, baselines,
+      injectBlockage, resetRun, recordBackwash, busy, toast, notify,
     ],
   );
 

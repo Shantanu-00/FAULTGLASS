@@ -282,3 +282,73 @@
 .completed .card {
   margin-top: 8px;
 }
+
+.twin-card.panel {
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.twin-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.twin-card-head .panel-title {
+  margin: 0;
+  font-size: 16px;
+}
+
+.twin-card .btn-small {
+  min-height: 40px;
+  font-size: 15px;
+  padding: 4px 14px;
+}
+
+.twin-card-frame {
+  position: relative;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.twin-card .twin-legend {
+  position: static;
+  border: 0;
+  padding: 2px 0 0;
+  font-size: 15px;
+}
+
+.twin-card .tag {
+  font-size: 14px;
+}
+
+.task-card > header h2 {
+  font-size: 18px;
+}
+
+.field .stage-guide small[lang='mr'] {
+  color: var(--text-2);
+}
+
+.field .eyebrow {
+  font-size: 14px;
+}
+
+.field .btn-xl .bi-mr {
+  font-size: 15px;
+}
+
+.task-card h2 .bi-stack {
+  align-items: flex-start;
+}
+
+.twin-card-frame .pl-label:not(.is-focus),
+.twin-card-frame .pl-chip,
+.twin-card-frame.labels-many .pl-label {
+  display: none !important;
+}
