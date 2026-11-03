@@ -29,13 +29,14 @@ interface Props {
   observability?: boolean;
   autoFly?: boolean;
   labels?: boolean;
+  compactFraming?: boolean;
   className?: string;
   onSelect?: (code: string) => void;
   onReady?: (ready: boolean) => void;
 }
 
 export const PlantTwin = forwardRef<PlantTwinHandle, Props>(function PlantTwin(
-  { targets, warningAssets = [], alarmAssets = [], feedValues = true, observability = false, autoFly = true, labels = true, className, onSelect, onReady },
+  { targets, warningAssets = [], alarmAssets = [], feedValues = true, observability = false, autoFly = true, labels = true, compactFraming = false, className, onSelect, onReady },
   ref,
 ) {
   const { plant, readings: latest, run } = usePlant();
@@ -55,7 +56,7 @@ export const PlantTwin = forwardRef<PlantTwinHandle, Props>(function PlantTwin(
     loadPlantPack(plantId)
       .then((model) => {
         if (disposed) return;
-        const scene: Scene = createPlantScene(host, model, { labels });
+        const scene: Scene = createPlantScene(host, model, { labels, compactFraming });
         scene.on('select', ({ assetId, tag }) => onSelectRef.current?.(tag ?? assetId ?? ''));
         sceneRef.current = scene;
         setReady(true);
@@ -70,7 +71,7 @@ export const PlantTwin = forwardRef<PlantTwinHandle, Props>(function PlantTwin(
       onReady?.(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plantId, labels]);
+  }, [plantId, labels, compactFraming]);
 
   useImperativeHandle(
     ref,

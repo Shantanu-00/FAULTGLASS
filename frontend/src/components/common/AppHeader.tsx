@@ -2,7 +2,6 @@ import React from 'react';
 import { usePlant } from '../../state/PlantContext';
 import { VIEWS, type View } from '../../state/route';
 import { Icon } from './Icon';
-import { Pill } from './Pill';
 
 const VIEW_ICON = { operator: 'operator', field: 'field', twin: 'twin' } as const;
 
@@ -17,13 +16,9 @@ export const AppHeader: React.FC<Props> = ({ view, onNavigate }) => {
   return (
     <header className="app-header">
       <div className="brand">
-        <svg className="brand-mark" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-          <rect width="26" height="26" rx="6" fill="var(--accent)" />
-          <path d="M8 7h10M8 7v12M8 13h7" stroke="#fff" strokeWidth="2.4" strokeLinecap="square" fill="none" />
-        </svg>
         <div className="brand-text">
-          <span className="brand-name">FAULTGLASS</span>
-          {plant && <span className="brand-plant">{plant.name}</span>}
+          <span className="brand-name">Faultglass<span className="brand-period">.</span></span>
+          <span className="brand-plant">Plant incident command</span>
         </div>
       </div>
 
@@ -46,10 +41,10 @@ export const AppHeader: React.FC<Props> = ({ view, onNavigate }) => {
       </nav>
 
       <div className="header-status">
-        {plant?.simulation && <Pill tone="warning">Simulated</Pill>}
-        {plant?.simulation && run && (
-          <span className="chip" title="Each real second advances the plant simulation by this many simulated seconds">
-            Simulated clock {run.clock_speed}x
+        {plant?.simulation && (
+          <span className="simulation-label" title="Plant telemetry is simulated. Field evidence is collected separately.">
+            <span className="simulation-dot" aria-hidden="true" />
+            Simulated{run ? <span className="simulation-speed"> · {run.clock_speed}× clock</span> : ''}
           </span>
         )}
         <span className={`conn conn-${connection}`}>

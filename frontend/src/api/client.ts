@@ -53,8 +53,8 @@ export const api = {
   healthz: () => request<{ status: string }>('GET', '/v1/healthz'),
   plant: () => request<PlantInfo>('GET', '/v1/plant'),
   latest: () => request<{ readings: TelemetryRow[]; run: RunDiagnostics | null }>('GET', '/v1/telemetry/latest'),
-  history: (tag: string, seconds = 300) =>
-    request<{ tag: string; points: HistoryPoint[] }>('GET', `/v1/telemetry/history?tag=${enc(tag)}&seconds=${seconds}&limit=600`),
+  history: (tag: string, seconds = 300, limit = 600) =>
+    request<{ tag: string; points: HistoryPoint[] }>('GET', `/v1/telemetry/history?tag=${enc(tag)}&seconds=${seconds}&limit=${limit}`),
   currentRun: () => request<{ run: RunDiagnostics | null }>('GET', '/v1/sim/runs/current'),
   startRun: (clockSpeed: number) => request<RunDiagnostics>('POST', '/v1/sim/runs', { clock_speed: clockSpeed }),
   resetRun: (clockSpeed: number) => request<RunDiagnostics>('POST', '/v1/sim/reset', { clock_speed: clockSpeed }),

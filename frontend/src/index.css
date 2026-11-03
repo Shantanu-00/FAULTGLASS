@@ -1,20 +1,20 @@
 /* Design tokens. Neutral surfaces carry the interface; colour is reserved for state
    (ok, warning, alarm) and a single accent marks selection, focus and primary actions. */
 :root {
-  --bg: #f1f3f5;
+  --bg: #f1f4f2;
   --surface: #ffffff;
-  --surface-2: #f7f8fa;
-  --surface-3: #eceff2;
-  --border: #d6dbe1;
-  --border-strong: #aab3bd;
+  --surface-2: #f6f8f6;
+  --surface-3: #eaf0ec;
+  --border: #dce4e0;
+  --border-strong: #acbcb4;
 
-  --text: #1a2028;
-  --text-2: #3f4a56;
-  --text-3: #5b6672;
+  --text: #1b302e;
+  --text-2: #425653;
+  --text-3: #64736f;
 
-  --accent: #0866ff;
-  --accent-strong: #0a53d1;
-  --accent-soft: #e8f0ff;
+  --accent: #25625b;
+  --accent-strong: #164d46;
+  --accent-soft: #e8f1ed;
 
   --ok: #1b7f3b;
   --ok-soft: #e8f5ec;
@@ -25,11 +25,12 @@
   --alarm-soft: #fdecec;
 
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Devanagari', 'Mukta', sans-serif;
+  --font-display: 'Manrope', var(--font-sans);
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
 
   --radius: 8px;
   --radius-sm: 6px;
-  --header-h: 56px;
+  --header-h: 72px;
   --tabs-h: 60px;
 }
 
@@ -44,7 +45,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
@@ -142,8 +143,8 @@ a {
   height: var(--header-h);
   display: flex;
   align-items: center;
-  gap: 28px;
-  padding: 0 24px;
+  gap: 48px;
+  padding: 0 28px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
@@ -163,10 +164,13 @@ a {
 }
 
 .brand-name {
+  font-family: var(--font-display);
   font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.02em;
+  font-size: 24px;
+  letter-spacing: -1.1px;
 }
+
+.brand-period { color: var(--accent); }
 
 .brand-plant {
   font-size: 12px;
@@ -179,26 +183,28 @@ a {
 
 .view-nav {
   display: flex;
-  gap: 4px;
+  align-self: stretch;
+  gap: 22px;
 }
 
 .view-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  border-radius: var(--radius-sm);
+  padding: 0 2px;
+  border-bottom: 2px solid transparent;
   color: var(--text-2);
-  font-weight: 550;
+  font-size: 14px;
+  font-weight: 500;
   text-decoration: none;
 }
 
 .view-link:hover {
-  background: var(--surface-3);
+  color: var(--accent-strong);
 }
 
 .view-link.is-current {
-  background: var(--accent-soft);
+  border-bottom-color: var(--accent);
   color: var(--accent-strong);
 }
 
@@ -208,6 +214,9 @@ a {
   align-items: center;
   gap: 14px;
 }
+
+.simulation-label { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-3); white-space: nowrap; }
+.simulation-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--warning-fill); }
 
 .chip {
   display: inline-flex;
@@ -438,7 +447,7 @@ a {
 }
 
 .btn-accent:hover:not(:disabled) {
-  background: #d6e5ff;
+  background: var(--accent-soft);
 }
 
 .btn-small {
@@ -500,7 +509,7 @@ a {
 
 .pill-accent {
   background: var(--accent-soft);
-  border-color: #b6cffb;
+  border-color: #b5cfc3;
   color: var(--accent-strong);
 }
 
@@ -636,7 +645,8 @@ textarea {
   }
 
   .brand-plant,
-  .header-status .chip {
+  .header-status .chip,
+  .simulation-speed {
     display: none;
   }
 

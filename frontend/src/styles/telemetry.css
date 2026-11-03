@@ -1,0 +1,104 @@
+.commander .production-trend { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 17px 20px 12px; min-width: 0; }
+.commander .production-heading, .commander .production-summary, .commander .production-footnote { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.commander .production-heading { align-items: flex-start; margin-bottom: 9px; }
+.commander .production-heading h2 { margin-top: 1px; font-size: 20px; }
+.commander .production-measurements { min-height: 32px; padding: 7px 10px; gap: 8px; font-size: 13px; }
+.commander .production-summary { flex-wrap: wrap; margin-bottom: 8px; }
+.commander .production-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px; }
+.commander .production-value > strong { color: var(--text); font-size: 36px; line-height: 1.15; letter-spacing: -.04em; font-weight: 650; }
+.commander .production-value > span { color: var(--text-3); font-size: 14px; }
+.commander .production-value .production-percent { color: var(--accent-strong); margin-left: 6px; font-size: 14px; font-weight: 600; }
+.commander .measurement-status { display: inline-flex; align-items: center; gap: 5px; color: var(--text-2); font-size: 13px; }
+.commander .measurement-status > i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+.commander .measurement-status.is-muted { color: var(--text-3); }
+.commander .measurement-status.is-muted > i { background: var(--text-3); }
+.commander .trend-plot { min-width: 0; }
+.commander .trend-legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--text-3); font-size: 12px; margin: 2px 0 3px; }
+.commander .trend-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.commander .trend-key-line, .commander .trend-key-baseline { display: inline-block; width: 15px; border-top: 2px solid var(--accent); }
+.commander .trend-key-baseline { border-top: 1px dashed var(--text-3); }
+.commander .trend-canvas { width: 100%; min-width: 0; }
+.commander .trend-canvas > svg { display: block; overflow: visible; }
+.commander .trend-tick { fill: var(--text-3); font-size: 12px; font-family: var(--font-mono); }
+.commander .trend-axis-title { fill: var(--text-3); font-size: 12px; }
+.commander .trend-grid-line { stroke: var(--border); stroke-width: .6; }
+.commander .trend-axis-tick { stroke: var(--border-strong); stroke-width: .7; }
+.commander .trend-baseline { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 4 5; opacity: .65; }
+.commander .trend-measurement { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.commander .trend-last-point { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.commander .trend-isolated-point { fill: var(--accent); }
+.commander .tone-warning .trend-measurement { stroke: var(--warning); }
+.commander .tone-alarm .trend-measurement { stroke: var(--alarm); }
+.commander .tone-stale .trend-measurement, .commander .tone-stale .trend-last-point { opacity: .55; }
+.commander .trend-event-line { stroke: var(--accent); stroke-dasharray: 2 4; stroke-width: 1; opacity: .6; }
+.commander .trend-event-line.event-warning { stroke: var(--warning); }
+.commander .trend-event-line.event-ok { stroke: var(--ok); }
+.commander .trend-event-marker circle { fill: var(--surface); stroke: var(--accent); stroke-width: 1; }
+.commander .trend-event-marker text { fill: var(--accent-strong); font-size: 12px; font-weight: 700; }
+.commander .trend-event-marker.event-warning circle { stroke: var(--warning); }
+.commander .trend-event-marker.event-warning text { fill: var(--warning); }
+.commander .trend-event-marker.event-ok circle { stroke: var(--ok); }
+.commander .trend-event-marker.event-ok text { fill: var(--ok); }
+.commander .trend-events { display: flex; flex-wrap: wrap; gap: 5px 13px; margin: 0 0 6px; color: var(--text-2); font-size: 12px; }
+.commander .trend-events > span { display: inline-flex; align-items: center; gap: 4px; }
+.commander .trend-events b { display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent-strong); font-size: 12px; font-weight: 600; }
+.commander .trend-events b.event-warning { color: var(--warning); border-color: var(--warning); }
+.commander .trend-events b.event-ok { color: var(--ok); border-color: var(--ok); }
+.commander .trend-events time { color: var(--text-3); font-family: var(--font-mono); }
+.commander .trend-empty { display: grid; place-items: center; color: var(--text-3); font-size: 12px; text-align: center; padding: 24px; background: var(--surface-2); border-radius: 5px; }
+.commander .production-footnote { color: var(--text-3); font-size: 12px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--border); }
+.commander .measurements-panel { padding: 0 1px 8px; min-width: 0; }
+.commander .measurements-panel .plc-strip { display: flex; gap: 9px; align-items: flex-start; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.commander .plc-strip strong { font-size: 14px; font-weight: 600; display: block; color: var(--text); }
+.commander .plc-strip.is-active strong { color: var(--alarm); }
+.commander .plc-strip .plc-sub { display: block; margin-top: 2px; color: var(--text-3); font-size: 12px; }
+.commander .plc-strip.is-clear > .icon { color: var(--ok); }
+.commander .plc-strip.is-unknown > .icon { color: var(--text-3); }
+.commander .plc-strip.is-active > .icon { color: var(--alarm); }
+.commander .measurements-intro { margin: 13px 0 12px; color: var(--text-3); font-size: 14px; }
+.commander .measurement-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 17px; }
+.commander .measurement-option { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); text-align: left; color: var(--text); font: inherit; cursor: pointer; }
+.commander .measurement-option:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.commander .measurement-option.is-selected { background: var(--accent-soft); border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.commander .measurement-option-name { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 14px; font-weight: 600; }
+.commander .measurement-option-detail { display: flex; align-items: baseline; justify-content: space-between; gap: 5px; }
+.commander .measurement-option-detail > code { color: var(--text-3); font-size: 12px; }
+.commander .measurement-option-detail > strong { font-size: 16px; font-weight: 600; }
+.commander .measurement-option-detail small { margin-left: 4px; color: var(--text-3); font-size: 12px; font-weight: 400; }
+.commander .measurement-option-status { color: var(--text-3); font-size: 12px; }
+.commander .measurement-option.state-alarm .measurement-option-detail > strong { color: var(--alarm); }
+.commander .measurement-option.state-warning .measurement-option-detail > strong { color: var(--warning); }
+.commander .measurement-flag { font-size: 12px; font-weight: 500; color: var(--warning); background: var(--warning-soft); border-radius: 3px; padding: 1px 4px; }
+.commander .selected-measurement { padding: 14px 0 15px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.commander .selected-measurement-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.commander .selected-measurement-heading h3 { font-size: 16px; line-height: 1.4; font-weight: 600; }
+.commander .selected-measurement-heading code { color: var(--text-3); font-size: 12px; }
+.commander .selected-measurement-value { display: flex; align-items: baseline; gap: 5px; }
+.commander .selected-measurement-value strong { font-size: 24px; font-weight: 600; }
+.commander .selected-measurement-value span { color: var(--text-3); font-size: 14px; }
+.commander .selected-measurement-status { color: var(--text-3); font-size: 13px; margin: 5px 0 11px; }
+.commander .measurement-chart-note, .commander .measurement-limits { color: var(--text-3); font-size: 12px; margin-top: 7px; }
+.commander .equipment-states { padding-top: 16px; }
+.commander .equipment-states-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.commander .equipment-states-heading h3 { font-size: 15px; font-weight: 600; }
+.commander .equipment-states-heading > span { color: var(--text-3); font-size: 12px; }
+.commander .equipment-state-list { display: grid; grid-template-columns: 1fr; }
+.commander .equipment-state { display: flex; gap: 8px; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.commander .equipment-state > div { display: flex; flex-direction: column; min-width: 0; }
+.commander .equipment-state strong { font-size: 14px; font-weight: 500; }
+.commander .equipment-state code { color: var(--text-3); font-size: 12px; }
+.commander .equipment-state > span { font-size: 13px; text-align: right; color: var(--text-2); }
+.commander .equipment-state.state-alarm > span { color: var(--alarm); }
+.commander .equipment-state.state-stale > span { color: var(--text-3); }
+@media (max-width: 720px) {
+  .commander .production-trend { padding: 14px 12px 11px; }
+  .commander .production-heading { gap: 8px; }
+  .commander .production-measurements { padding: 5px 7px; font-size: 12px; }
+  .commander .production-value > strong { font-size: 32px; }
+  .commander .production-value .production-percent { margin-left: 0; }
+  .commander .production-footnote { gap: 3px 10px; }
+}
+@media (max-width: 400px) {
+  .commander .measurement-options { grid-template-columns: 1fr; }
+  .commander .production-heading h2 { font-size: 18px; }
+}

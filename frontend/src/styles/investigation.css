@@ -1,0 +1,190 @@
+.commander .investigation-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.commander .investigation-card {
+  min-width: 0;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.commander .investigation-card h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.025em;
+}
+
+.commander .investigation-card p { margin: 0; color: var(--text-2); }
+.commander .investigation-card-head,
+.commander .investigation-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.commander .investigation-card-head { flex-wrap: wrap; }
+.commander .investigation-eyebrow {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: .025em;
+  color: var(--accent-strong);
+}
+
+.commander .investigation-card-foot,
+.commander .investigation-meta,
+.commander .investigation-meta-list,
+.commander .investigation-meta-label {
+  color: var(--text-3);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.commander .investigation-meta-label { display: block; font-weight: 600; margin-bottom: 5px; }
+.commander .investigation-card-foot { padding-top: 4px; font-size: 13px; }
+.commander .investigation-card-foot time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.commander .investigation-card code { font-size: 13px; font-weight: 500; color: var(--text-3); }
+.commander .investigation-tags { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.commander .investigation-tags > span { font-size: 14px; }
+.commander .investigation-tags code { font-size: 13px; }
+.commander .investigation-card .pill { font-size: 12px; border-radius: 5px; padding: 2px 8px; }
+
+.commander .investigation-waiting { padding: 36px 28px; align-items: flex-start; min-height: 260px; }
+.commander .investigation-waiting p { max-width: 42ch; }
+.commander .investigation-symbol { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 29px; line-height: 1; margin-bottom: 10px; }
+.commander .investigation-symbol.is-pending { font-size: 45px; }
+.commander .investigation-handoff { border-left: 2px solid var(--border-strong); padding: 5px 0 5px 16px; color: var(--text-2); margin: 2px 4px; }
+.commander .investigation-handoff .investigation-eyebrow { margin-bottom: 6px; }
+.commander .investigation-notice,
+.commander .investigation-blocker { background: var(--warning-soft); border-radius: 7px; padding: 12px 14px; color: var(--warning); font-size: 14px; }
+.commander .investigation-attention { border-color: #dfc69b; background: #fffaf0; }
+.commander .investigation-attention .investigation-eyebrow { color: var(--warning); }
+.commander .investigation-blocker strong { display: block; }
+.commander .investigation-error { padding: 10px 12px; background: var(--alarm-soft); color: var(--alarm) !important; border-radius: 6px; font-size: 14px; }
+
+.commander .detection-card { border-top: 3px solid #bd853a; }
+.commander .detection-summary { font-size: 16px; }
+.commander .detection-signals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
+.commander .detection-signal { display: flex; flex-direction: column; gap: 5px; padding: 12px 0; border-top: 1px solid var(--border); min-width: 0; }
+.commander .detection-signal > div:first-child { display: flex; flex-direction: column; gap: 1px; }
+.commander .detection-signal-name { font-size: 14px; font-weight: 500; color: var(--text-2); }
+.commander .detection-values { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.commander .detection-values strong { font-size: 25px; line-height: 1.25; font-weight: 600; color: var(--text); letter-spacing: -.035em; }
+.commander .detection-values small { font-size: 12px; font-weight: 400; letter-spacing: normal; color: var(--text-3); }
+.commander .detection-change { color: var(--warning); font-size: 13px; font-weight: 600; }
+.commander .detection-baseline { color: var(--text-3); font-size: 12px; }
+
+.commander .investigation-disclosure { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.commander .investigation-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; list-style: none; padding: 17px 20px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--text-2); }
+.commander .investigation-disclosure > summary::-webkit-details-marker { display: none; }
+.commander .investigation-disclosure > summary:hover { color: var(--accent-strong); }
+.commander .investigation-summary-detail { display: inline-block; font-size: 13px; color: var(--text-3); font-weight: 400; margin-left: 7px; }
+.commander .disclosure-plus { font-size: 21px; font-weight: 400; line-height: 1; color: var(--text-3); }
+.commander .investigation-disclosure[open] > summary .disclosure-plus { transform: rotate(45deg); }
+.commander .investigation-disclosure-body { padding: 0 12px 12px; }
+.commander .investigation-disclosure-body .investigation-card { padding: 18px; background: var(--surface-2); }
+.commander .investigation-record-id { padding: 0 6px; color: var(--text-3); font-size: 12px; overflow-wrap: anywhere; }
+.commander .investigation-inline-details { min-width: 0; }
+.commander .investigation-inline-details > summary { cursor: pointer; color: var(--text-3); font-size: 13px; font-weight: 500; padding: 3px 0; }
+.commander .investigation-inline-details[open] > summary { margin-bottom: 8px; color: var(--accent-strong); }
+.commander .investigation-meta-list { margin: 7px 0 0; padding-left: 18px; }
+
+.commander .finding-list { display: flex; flex-direction: column; gap: 22px; padding: 0; margin: 0; list-style: none; }
+.commander .finding { display: flex; flex-direction: column; gap: 12px; }
+.commander .finding + .finding { padding-top: 20px; border-top: 1px solid var(--border); }
+.commander .finding-status { display: flex; align-items: center; gap: 10px; }
+.commander .finding-evidence { font-size: 15px; color: var(--text-2); }
+.commander .finding-evidence ul { padding-left: 18px; margin: 0; }
+.commander .finding-evidence li + li { margin-top: 5px; }
+.commander .finding-rejected h3 { color: var(--text-3); font-size: 18px; }
+.commander .investigation-finding { white-space: pre-wrap; }
+
+.commander .command-proposal-pending { background: var(--accent-soft); border-color: #adc9bd; }
+.commander .proposal-asset { font-family: var(--font-mono); font-size: .8em; color: var(--accent-strong); margin-left: 7px; }
+.commander .proposal-approval-note { font-size: 14px; color: var(--text-2); }
+.commander .proposal-actions { display: flex; gap: 10px; margin-top: 3px; }
+.commander .proposal-actions .btn-primary { flex: 1; min-height: 44px; font-size: 16px; }
+.commander .proposal-reject { min-width: 80px; background: transparent; border-color: #b7cbc1; }
+.commander .command-field-task.task-pending { border-left: 3px solid var(--accent); }
+.commander .field-workspace-link { display: inline-flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--accent-strong); font-size: 14px; font-weight: 600; text-decoration: none; align-self: flex-start; padding: 4px 0; }
+.commander .field-workspace-link:hover { text-decoration: underline; }
+.commander .gauge-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.commander .gauge-pair > div { display: flex; flex-direction: column; gap: 2px; }
+.commander .gauge-pair > div > span { font-size: 14px; color: var(--text-2); }
+.commander .gauge-pair strong { font-size: 29px; font-weight: 600; letter-spacing: -.04em; line-height: 1.4; }
+.commander .gauge-pair small,
+.commander .gauge-differential small { font-size: 14px; font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+.commander .gauge-differential { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 14px; }
+.commander .gauge-differential > div { display: flex; flex-direction: column; }
+.commander .gauge-differential > div > span { font-size: 13px; color: var(--text-3); }
+.commander .gauge-differential strong { font-size: 29px; line-height: 1.4; font-weight: 600; letter-spacing: -.035em; }
+.commander .gauge-differential.is-restricted strong { color: var(--warning); }
+.commander .gauge-differential > p { width: 100%; font-size: 13px; color: var(--text-3); }
+.commander .task-result { min-width: 0; }
+.commander .task-result .table-wrap { overflow-x: auto; }
+.commander .results-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.commander .results-table th,
+.commander .results-table td { border-bottom: 1px solid var(--border); padding: 8px 5px; text-align: left; }
+.commander .results-table th { font-size: 12px; font-weight: 500; color: var(--text-3); }
+.commander .task-result .small,
+.commander .voice-result .small { font-size: 13px; line-height: 1.5; }
+.commander .task-result .small { margin-top: 8px; }
+
+.commander .recovery-result { background: #f0f6f2; border-color: #bfd4c6; }
+.commander .recovery-hero { padding: 7px 0 12px; }
+.commander .recovery-hero > strong { color: var(--accent-strong); display: block; font-size: clamp(42px, 4vw, 64px); line-height: 1.1; font-weight: 500; letter-spacing: -.065em; }
+.commander .recovery-hero > strong > span { font-size: .55em; margin-left: 3px; }
+.commander .recovery-hero > p { font-size: 14px; margin-top: 7px; }
+.commander .recovery-verdict { font-size: 15px; }
+.commander .recovery-followup { padding: 15px 17px; background: #fff9ef; border: 1px solid #e7d7b6; border-radius: 8px; }
+.commander .recovery-followup .investigation-meta-label { color: var(--warning); }
+.commander .recovery-followup > p { font-size: 15px; color: #66502d; }
+.commander .recovery-current { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 10px; }
+.commander .recovery-current dt { font-size: 13px; color: var(--text-3); }
+.commander .recovery-current dd { font-size: 21px; font-weight: 500; }
+.commander .recovery-current small { font-size: 13px; color: var(--text-3); }
+.commander .investigation-source-list { list-style: none; padding: 0; }
+.commander .investigation-source-list li { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-top: 1px solid var(--border); font-size: 14px; }
+.commander .investigation-activity { list-style: none; padding: 0; margin: 0; }
+.commander .investigation-activity > li { padding: 12px 0; border-top: 1px solid var(--border); }
+.commander .activity-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; }
+.commander .activity-heading strong { font-weight: 600; }
+.commander .activity-heading time { color: var(--text-3); font-size: 12px; white-space: nowrap; }
+.commander .investigation-activity details > summary { font-size: 14px; color: var(--text-3); padding-top: 4px; cursor: pointer; }
+.commander .activity-content { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.55; margin: 8px 0 !important; }
+.commander .voice-item + .voice-item { border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px; }
+.commander .voice-result blockquote { margin: 10px 0; padding-left: 12px; border-left: 2px solid var(--border-strong); }
+
+@media (max-width: 1440px) {
+  .commander .investigation-card { padding: 18px; }
+  .commander .investigation-card h3 { font-size: 19px; }
+  .commander .detection-values strong { font-size: 23px; }
+}
+
+@media (max-width: 560px) {
+  .commander .investigation-card { padding: 18px; }
+  .commander .investigation-waiting { min-height: 220px; }
+  .commander .investigation-disclosure > summary { padding: 15px 16px; }
+  .commander .investigation-summary-detail { display: block; margin-left: 0; }
+  .commander .detection-signals { gap: 0 12px; }
+  .commander .detection-values { gap: 4px; }
+  .commander .proposal-actions { flex-wrap: wrap; }
+  .commander .proposal-actions .btn-primary { min-width: 180px; }
+}

@@ -1,0 +1,96 @@
+{
+  "started_at_utc": "2026-11-03T13:29:52.008222+00:00",
+  "completed_at_utc": "2026-11-03T13:30:14.309993+00:00",
+  "provider": "Baseten",
+  "model": "meta-models/muse-spark-open-1026",
+  "endpoint": "https://inference.baseten.co/v1/chat/completions",
+  "reasoning_effort": "low",
+  "max_tokens": 1024,
+  "method": "Sequential requests through one httpx client; no retries or excluded warmup. Client wall time from before POST to complete HTTP response; includes network, provider processing and generation. Not time to first token or end-to-end detection latency.",
+  "inputs": "Synthetic telemetry cards; no factory telemetry or database writes.",
+  "cards": {
+    "healthy": "Plant waterplant telemetry summary card (values computed by code, not by a model).\nMeasurements (current = recent mean, baseline = learning-window mean):\n- AIT-301 RO permeate TDS: now 15.05 ppm, baseline 15.00 ppm, delta +0.05 (+0.3%), distance +0.1 sigma, spread 0.500\n- PIT-301 HP pump suction pressure: now 16.05 psi, baseline 16.00 psi, delta +0.05 (+0.3%), distance +0.2 sigma, spread 0.300\n- PIT-302 HP pump discharge pressure: now 180.10 psi, baseline 180.00 psi, delta +0.10 (+0.1%), distance +0.1 sigma, spread 1.800\n- JI-301 HP pump motor current: now 9.05 A, baseline 9.00 A, delta +0.05 (+0.6%), distance +0.6 sigma, spread 0.090\n- FIT-301 RO permeate flow: now 2000.00 L/h, baseline 1999.50 L/h, delta +0.50 (+0.0%), distance +0.0 sigma, spread 19.995\nStates:\n- YS-101 Feed pump P-101 run feedback: RUNNING\n- YS-301 HP pump P-301 run feedback: RUNNING\n- LSL-101 Raw tank low-level switch: LEVEL_OK\n- FC-RO RO fault code: NONE",
+    "production decline": "Plant waterplant telemetry summary card (values computed by code, not by a model).\nMeasurements (current = recent mean, baseline = learning-window mean):\n- AIT-301 RO permeate TDS: now 16.95 ppm, baseline 15.00 ppm, delta +1.95 (+13.0%), distance +3.9 sigma, spread 0.500\n- PIT-301 HP pump suction pressure: now 15.15 psi, baseline 16.00 psi, delta -0.85 (-5.3%), distance -2.8 sigma, spread 0.300\n- PIT-302 HP pump discharge pressure: now 174.25 psi, baseline 180.00 psi, delta -5.75 (-3.2%), distance -3.2 sigma, spread 1.800\n- JI-301 HP pump motor current: now 7.25 A, baseline 9.00 A, delta -1.75 (-19.4%), distance -19.4 sigma, spread 0.090\n- FIT-301 RO permeate flow: now 1500.00 L/h, baseline 1999.50 L/h, delta -499.50 (-25.0%), distance -25.0 sigma, spread 19.995\nStates:\n- YS-101 Feed pump P-101 run feedback: RUNNING\n- YS-301 HP pump P-301 run feedback: RUNNING\n- LSL-101 Raw tank low-level switch: LEVEL_OK\n- FC-RO RO fault code: NONE"
+  },
+  "sample_count": 6,
+  "latency_ms": {
+    "min": 1961,
+    "median": 3117.0,
+    "mean": 3716.3,
+    "max": 8451
+  },
+  "samples": [
+    {
+      "case": "healthy",
+      "repetition": 1,
+      "verdict": "NORMAL",
+      "validated_tags": [],
+      "severity": null,
+      "latency_ms": 8451,
+      "summary": "All measurements remain near baseline with negligible drift across tags."
+    },
+    {
+      "case": "production decline",
+      "repetition": 1,
+      "verdict": "FLAG",
+      "validated_tags": [
+        "AIT-301",
+        "PIT-301",
+        "PIT-302",
+        "JI-301",
+        "FIT-301"
+      ],
+      "severity": "critical",
+      "latency_ms": 3122,
+      "summary": "FIT-301 permeate flow fell 25%, JI-301 current and PIT-302 discharge dropped, PIT-301 suction low, AIT-301 TDS elevated."
+    },
+    {
+      "case": "healthy",
+      "repetition": 2,
+      "verdict": "NORMAL",
+      "validated_tags": [],
+      "severity": null,
+      "latency_ms": 3112,
+      "summary": "All measurements remain close to baseline with no notable drift."
+    },
+    {
+      "case": "production decline",
+      "repetition": 2,
+      "verdict": "FLAG",
+      "validated_tags": [
+        "AIT-301",
+        "PIT-301",
+        "PIT-302",
+        "JI-301",
+        "FIT-301"
+      ],
+      "severity": "critical",
+      "latency_ms": 2027,
+      "summary": "FIT-301 flow and JI-301 current dropped sharply while AIT-301 TDS rose and PIT-301/PIT-302 pressures fell."
+    },
+    {
+      "case": "healthy",
+      "repetition": 3,
+      "verdict": "NORMAL",
+      "validated_tags": [],
+      "severity": null,
+      "latency_ms": 3625,
+      "summary": "No measurements show meaningful drift; all values remain close to baseline."
+    },
+    {
+      "case": "production decline",
+      "repetition": 3,
+      "verdict": "FLAG",
+      "validated_tags": [
+        "AIT-301",
+        "PIT-301",
+        "PIT-302",
+        "JI-301",
+        "FIT-301"
+      ],
+      "severity": "critical",
+      "latency_ms": 1961,
+      "summary": "FIT-301 flow dropped 25% with JI-301 current down 19%, PIT-302 discharge down and AIT-301 TDS up."
+    }
+  ]
+}

@@ -17,6 +17,7 @@ export type Connection = 'connecting' | 'online' | 'offline';
 export type FeedMode = 'idle' | 'stream' | 'polling';
 
 const WINDOW_MS = 5 * 60 * 1000;
+const PRODUCTION_WINDOW_MS = 60 * 60 * 1000;
 const BASELINE_SIM_S = 120;
 const MIN_LEARNED_POINTS = 3;
 const FLUSH_MS = 250;
@@ -389,13 +390,14 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
           observed_at: row.observed_at,
           run_id: row.run_id ?? null,
         };
-        if (row.value === null) continue;
+        if (row.value === null || !Number.isFinite(row.value) || row.quality !== 'good') continue;
         const t = Date.parse(row.observed_at);
         if (t < runStartRef.current) continue;
         learn(row.tag, t, row.value);
         const line = (seriesRef.current[row.tag] ??= []);
         if (!line.length || line[line.length - 1].t < t) line.push({ t, v: row.value });
-        const cutoff = t - WINDOW_MS;
+        // Keep the production decline and recovery together while field work takes place.
+        const cutoff = t - (row.tag === 'FIT-301' ? PRODUCTION_WINDOW_MS : WINDOW_MS);
         while (line.length && line[0].t < cutoff) line.shift();
       }
       setLastUpdate(Date.now());
@@ -417,10 +419,12 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
           plant.signals
             .filter((s) => s.type === 'measurement')
             .map(async (s) => {
-              const { points } = await api.history(s.tag);
+              const { points } = s.tag === 'FIT-301'
+                ? await api.history(s.tag, 3600, 3600)
+                : await api.history(s.tag);
               if (cancelled) return;
               const merged = points
-                .filter((p) => p.value !== null)
+                .filter((p) => p.value !== null && Number.isFinite(p.value) && p.quality === 'good')
                 .map((p) => ({ t: Date.parse(p.observed_at), v: p.value as number }))
                 .filter((p) => p.t >= runStartRef.current);
               for (const p of merged) learn(s.tag, p.t, p.v);

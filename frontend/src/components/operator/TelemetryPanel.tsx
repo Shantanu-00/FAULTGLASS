@@ -1,200 +1,97 @@
-import React, { useMemo } from 'react';
-import { humanize } from '../../lib/format';
+import React, { useMemo, useState } from 'react';
+import { formatTime, humanize } from '../../lib/format';
 import { plcStatus } from '../../lib/plc';
-import { decimals, groupSignals, labelFor, signalState, type SignalState } from '../../lib/signals';
+import { decimals, labelFor, signalState } from '../../lib/signals';
 import { useNow } from '../../lib/useNow';
-import { type Baseline, usePlant } from '../../state/PlantContext';
+import { usePlant } from '../../state/PlantContext';
 import type { Reading, SeriesPoint, Signal } from '../../types';
 import { Icon } from '../common/Icon';
-import { Sparkline } from './Sparkline';
+import { TrendPlot } from './TrendPlot';
+import '../../styles/telemetry.css';
 
-// A reading this far from its baseline is shown as drifting. It is a display aid, not an alarm.
-const DRIFT_PCT = 2;
 const EMPTY: SeriesPoint[] = [];
-
-const STATE_TEXT: Record<SignalState, string> = { ok: '', warning: 'Warning', alarm: 'Alarm', stale: 'No data' };
-
-function limitNote(signal: Signal): string | null {
-  const l = signal.limits;
-  const parts: string[] = [];
-  if (l.low_trip !== undefined) parts.push(`low trip ${l.low_trip}`);
-  if (l.low_alarm !== undefined) parts.push(`low alarm ${l.low_alarm}`);
-  if (l.high_alarm !== undefined) parts.push(`high alarm ${l.high_alarm}`);
-  if (l.high_trip !== undefined) parts.push(`high trip ${l.high_trip}`);
-  return parts.length ? `PLC ${parts.join(', ')} ${signal.unit}` : null;
-}
-
-const Delta: React.FC<{ signal: Signal; value: number; baseline: Baseline; learning: boolean }> = ({ signal, value, baseline, learning }) => {
-  if (learning) return <span className="delta delta-quiet">Learning</span>;
-  const pct = baseline.value ? ((value - baseline.value) / baseline.value) * 100 : 0;
-  const drifting = Math.abs(pct) >= DRIFT_PCT;
-  const arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '';
-  const text = `${pct > 0 ? '+' : pct < 0 ? '−' : ''}${Math.abs(pct).toFixed(1)}%`;
-  return (
-    <span
-      className={`delta${drifting ? ' is-drift' : ''}`}
-      title={`${baseline.source === 'learned' ? 'Learned baseline' : 'Nominal value from the plant pack'} ${baseline.value.toFixed(decimals(signal))} ${signal.unit}`}
-    >
-      {drifting && (
-        <span className="delta-arrow" aria-hidden="true">
-          {arrow}
-        </span>
-      )}
-      {text}
-      <span className="visually-hidden">{drifting ? (pct > 0 ? ' above baseline' : ' below baseline') : ' of baseline'}</span>
-    </span>
-  );
-};
-
-interface MeasurementProps {
-  signal: Signal;
-  reading: Reading | undefined;
-  points: SeriesPoint[];
-  baseline: Baseline | undefined;
-  now: number;
-  flagged: string | null;
-  learning: boolean;
-  markAt: number | null;
-}
-
-const MeasurementRow: React.FC<MeasurementProps> = React.memo(({ signal, reading, points, baseline, now, flagged, learning, markAt }) => {
-  const state = signalState(signal, reading, now);
-  const value = reading?.value ?? null;
-  const spread = Math.max((signal.range[1] - signal.range[0]) * 0.01, Math.abs(baseline?.value ?? 0) * 0.03);
-  const limits = limitNote(signal);
-  const pct = value !== null && baseline?.value ? ((value - baseline.value) / baseline.value) * 100 : 0;
-  const drifting = !learning && Math.abs(pct) >= DRIFT_PCT;
-
-  return (
-    <div className={`m-row state-${state}${flagged ? ' is-flagged' : ''}${drifting ? ' is-drifting' : ''}`} data-tag={signal.tag} title={limits ?? undefined}>
-      <div className="m-id">
-        <code className="tag">{signal.tag}</code>
-        {value !== null && baseline ? <Delta signal={signal} value={value} baseline={baseline} learning={learning} /> : <span className="delta delta-quiet">No baseline</span>}
-        {state !== 'ok' && <span className={`m-state note-${state}`}>{STATE_TEXT[state]}</span>}
-      </div>
-      <div className="m-val">
-        <span className="m-num">{value === null ? '-' : value.toFixed(decimals(signal))}</span>
-        <span className="m-unit">{signal.unit}</span>
-      </div>
-      <div className="m-sub">
-        <span className="m-name">{signal.name}</span>
-        {baseline && <span className="delta-base">{baseline.source === 'learned' ? 'base' : 'nominal'} {baseline.value.toFixed(decimals(signal))}</span>}
-      </div>
-      <div className="m-spark">
-        <Sparkline
-          points={points}
-          baseline={baseline?.value}
-          spread={spread}
-          markAt={markAt}
-          label={`${signal.tag} last five minutes`}
-          tone={state === 'alarm' ? 'alarm' : state === 'warning' || drifting || flagged ? 'warning' : state === 'stale' ? 'stale' : 'normal'}
-        />
-      </div>
-    </div>
-  );
-});
-
-const StateCell: React.FC<{ signal: Signal; reading: Reading | undefined; now: number; flagged: string | null }> = ({ signal, reading, now, flagged }) => {
-  const state = signalState(signal, reading, now);
-  const label = reading && reading.value !== null ? labelFor(signal, reading.value) : undefined;
-  const text = reading?.value === null || !reading ? 'No data' : label ? humanize(label) : String(reading.value);
-  return (
-    <div className={`s-cell state-${state}${flagged ? ' is-flagged' : ''}`} title={signal.name} data-tag={signal.tag}>
-      <code className="tag">{signal.tag}</code>
-      <span className="s-text">{text}</span>
-    </div>
-  );
-};
+const NAMES: Record<string, string> = { 'FIT-301': 'Water production', 'PIT-301': 'Pump inlet pressure', 'PIT-302': 'Pump outlet pressure', 'JI-301': 'Pump motor current', 'AIT-301': 'Product water quality' };
+const nameFor = (signal: Signal) => NAMES[signal.tag] ?? signal.name;
 
 export const PlcStrip: React.FC = () => {
-  const { plant, readings } = usePlant();
+  const { plant, readings, connection } = usePlant();
   const now = useNow(1000);
-  const status = useMemo(() => (plant ? plcStatus(plant.signals, readings, now) : null), [plant, readings, now]);
-  if (!status) return null;
-  const none = status.active.length === 0;
-  return (
-    <div className={`plc-strip ${none ? 'is-clear' : 'is-active'}`} role="status">
-      <span className="plc-icon" aria-hidden="true">
-        <Icon name={none ? 'check' : 'alert'} size={18} />
-      </span>
-      <div>
-        <strong>{none ? 'PLC alarms: none' : `PLC alarms: ${status.active.map((a) => a.tag).join(', ')}`}</strong>
-        <span className="plc-sub">
-          {status.watched} alarm conditions watched
-          {status.unknown > 0 ? `, ${status.unknown} without current data` : ''}
-        </span>
-      </div>
-    </div>
-  );
+  const status = useMemo(() => {
+    if (!plant) return null;
+    const certainReadings = Object.fromEntries(Object.entries(readings).filter(([, reading]) => reading.quality !== 'uncertain'));
+    return plcStatus(plant.signals, certainReadings, now);
+  }, [plant, readings, now]);
+  if (!status) return <div className="plc-strip is-unknown" role="status">Loading controller status…</div>;
+  const unknown = connection !== 'online' ? status.watched : status.unknown;
+  const active = connection === 'online' && status.active.length > 0;
+  const text = active ? `${status.active.length} controller alarm${status.active.length === 1 ? '' : 's'} active` : unknown ? 'Controller alarm status incomplete' : status.watched ? 'No controller alarms active' : 'No controller alarm conditions configured';
+  return <div className={`plc-strip ${active ? 'is-active' : unknown ? 'is-unknown' : 'is-clear'}`} role="status">
+    <Icon name={active || unknown ? 'alert' : 'check'} size={18} />
+    <div><strong>{text}</strong><span className="plc-sub">{active ? `${status.active.map((item) => item.tag).join(', ')} · ` : ''}{unknown ? `${unknown} of ${status.watched} alarm conditions lack current readings` : `${status.watched} alarm conditions checked`}</span></div>
+  </div>;
+};
+
+const StateCell: React.FC<{ signal: Signal; reading: Reading | undefined; now: number; offline: boolean }> = ({ signal, reading, now, offline }) => {
+  const state = offline ? 'stale' : signalState(signal, reading, now);
+  const label = reading?.value !== null && reading?.value !== undefined ? labelFor(signal, reading.value) : undefined;
+  const missing = !reading || reading.value === null;
+  const text = missing ? 'No reading' : label ? humanize(label) : String(reading.value);
+  return <div className={`equipment-state state-${state}`} data-tag={signal.tag}>
+    <div><strong>{signal.name}</strong><code>{signal.tag}</code></div>
+    <span>{text}{!missing && state === 'stale' ? ' · stale' : reading?.quality === 'uncertain' ? ' · uncertain' : ''}</span>
+  </div>;
 };
 
 export const TelemetryPanel: React.FC = () => {
-  const { plant, readings, series, flags, connection, run, baselines } = usePlant();
+  const { plant, readings, series, flags, connection, run, runLoaded, baselines } = usePlant();
+  const [selectedTag, setSelectedTag] = useState('FIT-301');
   const now = useNow(1000);
-  const groups = useMemo(() => (plant ? groupSignals(plant.signals) : []), [plant]);
+  const measurements = plant?.signals.filter((signal) => signal.type === 'measurement') ?? [];
+  const discrete = plant?.signals.filter((signal) => signal.type !== 'measurement') ?? [];
+  const selected = measurements.find((signal) => signal.tag === selectedTag) ?? measurements[0];
+  const flagged = new Set(flags.filter((flag) => flag.status !== 'resolved' && flag.status !== 'dismissed').flatMap((flag) => flag.tags));
+  const reading = selected ? readings[selected.tag] : undefined;
+  const state = selected ? signalState(selected, reading, now) : 'stale';
+  const baseline = selected ? baselines[selected.tag] : undefined;
+  const value = reading?.value ?? null;
+  const offline = connection !== 'online';
+  const stale = offline || state === 'stale';
+  const points = selected ? (series[selected.tag] ?? EMPTY).filter((point) => !run || point.t >= Date.parse(run.started_at)) : EMPTY;
+  const chartDomain = useMemo<[number, number]>(() => {
+    if (!selected) return [0, 100];
+    const values = points.map((point) => point.v).filter(Number.isFinite);
+    if (baseline && Number.isFinite(baseline.value)) values.push(baseline.value);
+    if (value !== null && Number.isFinite(value)) values.push(value);
+    if (!values.length) return selected.range;
+    const low = Math.min(...values);
+    const high = Math.max(...values);
+    const padding = Math.max((high - low) * .18, Math.abs(baseline?.value ?? high) * .025, (selected.range[1] - selected.range[0]) * .002);
+    return [low >= selected.range[0] ? Math.max(selected.range[0], low - padding) : low - padding, high + padding];
+  }, [selected, points, baseline, value]);
+  const limits = selected ? Object.entries(selected.limits).filter(([name]) => name !== 'nominal').map(([name, threshold]) => `${humanize(name)} ${threshold} ${selected.unit}`) : [];
 
-  const flaggedBy = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const flag of flags) {
-      if (flag.status === 'resolved' || flag.status === 'dismissed') continue;
-      for (const tag of flag.tags) map.set(tag, flag.model ?? 'signal flag');
-    }
-    return map;
-  }, [flags]);
-
-  if (!plant) return null;
-  const stale = connection === 'offline';
-  const learning = !run || run.status === 'starting' || run.status === 'learning';
-  const markAt = run?.scenario_started_at ? Date.parse(run.scenario_started_at) : null;
-  const measurements = plant.signals.filter((s) => s.type === 'measurement');
-  const discrete = groups.flatMap((g) => g.signals.filter((sig) => sig.type !== 'measurement'));
-  const drifting = measurements.filter((s) => {
-    const value = readings[s.tag]?.value;
-    const base = baselines[s.tag];
-    return !learning && value !== null && value !== undefined && base && base.value && Math.abs(((value - base.value) / base.value) * 100) >= DRIFT_PCT;
-  });
-
-  return (
-    <div className={`telemetry${stale ? ' is-stale' : ''}`}>
-      <PlcStrip />
-      <p className="drift-line" role="status">
-        {learning
-          ? 'Learning the baseline for each streamed measurement.'
-          : drifting.length === 0
-            ? `All ${measurements.length} streamed measurements are within ${DRIFT_PCT}% of baseline.`
-            : `${drifting.length} of ${measurements.length} streamed measurements are off baseline: ${drifting.map((s) => s.tag).join(', ')}.`}
-      </p>
-      {groups.map(
-        (group) =>
-          group.signals.some((sig) => sig.type === 'measurement') && (
-            <section className="t-group" key={group.title} aria-label={group.title}>
-              <h3 className="t-title">{group.title}</h3>
-              {group.signals
-                .filter((sig) => sig.type === 'measurement')
-                .map((signal) => (
-                  <MeasurementRow
-                    key={signal.tag}
-                    signal={signal}
-                    reading={readings[signal.tag]}
-                    points={series[signal.tag] ?? EMPTY}
-                    baseline={baselines[signal.tag]}
-                    now={now}
-                    flagged={flaggedBy.get(signal.tag) ?? null}
-                    learning={learning}
-                    markAt={markAt}
-                  />
-                ))}
-            </section>
-          ),
-      )}
-      <section className="t-group" aria-label="PLC switches and equipment states">
-        <h3 className="t-title">PLC switches and equipment states</h3>
-        <div className="s-grid">
-          {discrete.map((signal) => (
-            <StateCell key={signal.tag} signal={signal} reading={readings[signal.tag]} now={now} flagged={flaggedBy.get(signal.tag) ?? null} />
-          ))}
-        </div>
-      </section>
+  if (!plant) return <div className="measurements-panel" role="status">Loading plant measurements…</div>;
+  return <div className="measurements-panel">
+    <PlcStrip />
+    <p className="measurements-intro">Select a measurement to see its trend.</p>
+    <div className="measurement-options" aria-label="Choose a measurement">
+      {measurements.map((signal) => {
+        const latest = readings[signal.tag];
+        const currentState = offline ? 'stale' : signalState(signal, latest, now);
+        return <button key={signal.tag} type="button" className={`measurement-option${selected?.tag === signal.tag ? ' is-selected' : ''} state-${currentState}`} aria-pressed={selected?.tag === signal.tag} onClick={() => setSelectedTag(signal.tag)}>
+          <span className="measurement-option-name">{nameFor(signal)}{flagged.has(signal.tag) && <span className="measurement-flag">Flagged</span>}</span>
+          <span className="measurement-option-detail"><code>{signal.tag}</code><strong>{latest?.value === null || latest?.value === undefined ? '—' : latest.value.toFixed(decimals(signal))}<small>{signal.unit}</small></strong></span>
+          {currentState === 'stale' && <span className="measurement-option-status">{latest ? 'Last reading · stale' : 'Waiting for reading'}</span>}
+        </button>;
+      })}
     </div>
-  );
+    {selected && <section className="selected-measurement" aria-label={`${nameFor(selected)} details`}>
+      <div className="selected-measurement-heading"><div><h3>{nameFor(selected)}</h3><code>{selected.tag}</code></div><div className="selected-measurement-value"><strong>{value === null ? '—' : value.toFixed(decimals(selected))}</strong><span>{selected.unit}</span></div></div>
+      <p className={`selected-measurement-status${stale ? ' is-muted' : ''}`} role="status">{value === null ? 'Waiting for a reading' : stale ? `Last known reading · ${formatTime(reading?.observed_at)}` : reading?.quality === 'uncertain' ? 'Reading quality is uncertain' : `Latest sample ${formatTime(reading?.observed_at)}`}{!stale && state !== 'ok' ? ` · ${humanize(state)}` : ''}</p>
+      <TrendPlot points={points} label={`${nameFor(selected)} over time`} unit={selected.unit} domain={chartDomain} baseline={baseline?.value} baselineLabel={baseline?.source === 'learned' ? 'Learned baseline' : 'Nominal reference'} height={225} gapThresholdMs={Math.max((selected.freshness_s ?? 5) * 3000, 10_000)} tone={stale ? 'stale' : state === 'alarm' ? 'alarm' : state === 'warning' ? 'warning' : 'normal'} emptyMessage={!runLoaded ? 'Loading measurement history…' : 'No history received for this measurement yet.'} />
+      <p className="measurement-chart-note">{baseline ? `${baseline.source === 'learned' ? 'Learned baseline' : 'Plant nominal'}: ${baseline.value.toFixed(decimals(selected))} ${selected.unit}. ` : 'No baseline available. '}{run?.status === 'learning' || run?.status === 'starting' ? 'Learning in progress.' : 'Axis fitted to the received readings.'}</p>
+      {limits.length > 0 && <p className="measurement-limits">Controller limits: {limits.join(' · ')}</p>}
+    </section>}
+    <section className="equipment-states" aria-labelledby="equipment-states-title"><div className="equipment-states-heading"><h3 id="equipment-states-title">Equipment and controller states</h3><span>{discrete.length} signals</span></div><div className="equipment-state-list">{discrete.map((signal) => <StateCell key={signal.tag} signal={signal} reading={readings[signal.tag]} now={now} offline={offline} />)}</div></section>
+  </div>;
 };

@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from 'react';
 export type View = 'operator' | 'field' | 'twin';
 
 export const VIEWS: Array<{ id: View; label: string }> = [
-  { id: 'operator', label: 'Operator' },
+  { id: 'operator', label: 'Commander' },
   { id: 'field', label: 'Field' },
-  { id: 'twin', label: 'Twin' },
+  { id: 'twin', label: 'Plant' },
 ];
 
 function parse(): View {

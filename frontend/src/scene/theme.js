@@ -20,14 +20,14 @@ export const COLORS = {
   gasket: 0xa6342b,
   frame: 0x9aa1a8,
   label: 0xffffff,
-  accent: 0x0866ff,
+  accent: 0x25625b,
   alarm: 0xc62828,
   warning: 0xe08600,
   ok: 0x1b7f3b,
 };
 
 export const CSS = {
-  accent: '#0866ff',
+  accent: '#25625b',
   alarm: '#c62828',
   warning: '#e08600',
   ok: '#1b7f3b',

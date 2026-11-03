@@ -4,70 +4,28 @@ import { formatTime, humanize } from '../../lib/format';
 import { usePlant } from '../../state/PlantContext';
 import type { Flag, IncidentDetail } from '../../types';
 import { Pill, type Tone } from '../common/Pill';
-
 const SEVERITY_TONE: Record<string, Tone> = { info: 'neutral', warning: 'warning', critical: 'alarm' };
 
-interface Props {
-  flag: Flag | NonNullable<IncidentDetail['flag']>;
-}
-
-export const FlagCard: React.FC<Props> = ({ flag }) => {
+export const FlagCard: React.FC<{ flag: Flag | NonNullable<IncidentDetail['flag']> }> = ({ flag }) => {
   const { plant } = usePlant();
   const evidence = 'evidence' in flag ? flag.evidence?.signals : undefined;
-  const decimalsFor = (tag: string) => {
-    const signal = plant?.signals.find((s) => s.tag === tag);
-    return signal ? decimals(signal) : 1;
-  };
-
-  return (
-    <section className="panel stack-card flag-card" aria-label="Spark watcher flag">
-      <div className="panel-head">
-        <h3 className="panel-title">Spark watcher flag</h3>
-        <span className="head-meta">
-          <Pill tone={SEVERITY_TONE[flag.severity] ?? 'neutral'}>{humanize(flag.severity)}</Pill>
-          <time>{formatTime(flag.raised_at)}</time>
-        </span>
-      </div>
-      <p className="flag-summary">{flag.summary}</p>
-      <div className="chips">
-        {flag.tags.map((tag) => (
-          <code className="tag" key={tag}>
-            {tag}
-          </code>
-        ))}
-      </div>
-      {evidence && Object.keys(evidence).length > 0 && (
-        <table className="mini-table" aria-label="Evidence behind the flag">
-          <thead>
-            <tr>
-              <th scope="col">Signal</th>
-              <th scope="col" className="num">Now</th>
-              <th scope="col" className="num">Baseline</th>
-              <th scope="col" className="num">Change</th>
-              <th scope="col" className="num">Sigma</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(evidence).map(([tag, s]) => (
-              <tr key={tag}>
-                <th scope="row">
-                  <code className="tag">{tag}</code>
-                </th>
-                <td className="num strong">{Number(s.current).toFixed(decimalsFor(tag))}</td>
-                <td className="num">{Number(s.baseline).toFixed(decimalsFor(tag))}</td>
-                <td className="num">
-                  {s.pct > 0 ? '+' : s.pct < 0 ? '−' : ''}
-                  {Math.abs(s.pct).toFixed(1)}%
-                </td>
-                <td className="num">{Number(s.sigma).toFixed(1)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-      <p className="attribution">
-        {flag.model ? `Raised by ${flag.model}` : 'Raised by the watcher'}. Baseline, spread and distance are computed in code; the model only answers NORMAL, WATCH or FLAG.
-      </p>
-    </section>
-  );
+  const values = Object.entries(evidence ?? {});
+  const signalFor = (tag: string) => plant?.signals.find((signal) => signal.tag === tag);
+  const formatValue = (tag: string, value: number) => Number.isFinite(value) ? value.toFixed(signalFor(tag) ? decimals(signalFor(tag)!) : 1) : '—';
+  return <section className="investigation-card detection-card" aria-label="Spark detection">
+    <div className="investigation-card-head"><span className="investigation-eyebrow">Spark · drift detection</span><Pill tone={SEVERITY_TONE[flag.severity] ?? 'neutral'}>{humanize(flag.severity)}</Pill></div>
+    <h3>Abnormal drift detected</h3><p className="detection-summary">{flag.summary}</p>
+    {values.length > 0 ? <div className="detection-signals">
+      {values.map(([tag, reading]) => <div className="detection-signal" key={tag}>
+        <div><span className="detection-signal-name">{signalFor(tag)?.name ?? tag}</span><code>{tag}</code></div>
+        <div className="detection-values"><strong>{formatValue(tag, Number(reading.current))}<small> {reading.unit || signalFor(tag)?.unit}</small></strong><span className="detection-change">{reading.pct > 0 ? '+' : reading.pct < 0 ? '−' : ''}{Math.abs(reading.pct).toFixed(1)}%</span></div>
+        <span className="detection-baseline">Baseline {formatValue(tag, Number(reading.baseline))} {reading.unit || signalFor(tag)?.unit}</span>
+      </div>)}
+    </div> : <div className="investigation-tags">{flag.tags.map((tag) => <span key={tag}>{signalFor(tag)?.name ?? tag} <code>{tag}</code></span>)}</div>}
+    <div className="investigation-card-foot"><span>Detected by Spark</span><time dateTime={flag.raised_at}>{formatTime(flag.raised_at)}</time></div>
+    {values.length > 0 && <details className="investigation-inline-details">
+      <summary>Detection details</summary><p className="investigation-meta">Baseline comparison is calculated from the readings; Spark classifies the drift.{flag.model ? ` Model: ${flag.model}.` : ''}</p>
+      <ul className="investigation-meta-list">{values.map(([tag, reading]) => <li key={tag}>{tag}: {Number(reading.sigma).toFixed(1)} standard deviations from baseline</li>)}</ul>
+    </details>}
+  </section>;
 };

@@ -2,10 +2,9 @@ import React from 'react';
 import type { TwinTargets } from '../../lib/twinTargets';
 
 export const TwinLegend: React.FC<{ targets: TwinTargets; hasFlag: boolean }> = ({ targets, hasFlag }) => (
+  targets.groups.length === 0 && !hasFlag ? null :
   <div className="twin-legend" aria-label="Highlight legend">
-    {targets.groups.length === 0 ? (
-      <p className="legend-empty">Nothing highlighted yet.</p>
-    ) : (
+    {targets.groups.length > 0 && (
       targets.groups.map((group) => (
         <div className="legend-row" key={group.role}>
           <span className={`ring-swatch ring-${group.role === 'focus' ? 'focus' : 'task'}`} aria-hidden="true" />

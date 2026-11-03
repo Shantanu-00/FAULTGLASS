@@ -5,12 +5,17 @@ matching docs/DEMO.md, asks Baseten Muse Spark Open to judge each, and prints
 only the parsed verdicts (never the API key, never reasoning_content).
 
 Usage:  cd backend && uv run python scripts/smoke_spark.py
+        uv run python scripts/smoke_spark.py --repeat 3 --output ../docs/benchmarks/spark.json
 Key:    BASETEN_API_KEY (or BASETEN_API) in the environment or repo-root .env
 """
 from __future__ import annotations
 
 import asyncio
+import argparse
+import json
+import statistics
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -30,22 +35,59 @@ DECLINE = {"FIT-301": [1505.0, 1495.0], "PIT-301": [15.1, 15.2], "PIT-302": [174
 STATES = {"YS-101": "RUNNING", "YS-301": "RUNNING", "LSL-101": "LEVEL_OK", "FC-RO": "NONE"}
 
 
-async def main() -> int:
+async def main(repeat: int = 1, output: Path | None = None) -> int:
     load_repo_env()
     pack = load_pack(PACK_DIR)
     client = BasetenSparkClient(baseten_key())
+    cases = (("healthy", HEALTHY), ("production decline", DECLINE))
+    samples = []
+    cards = {}
+    started_at = datetime.now(timezone.utc).isoformat()
     try:
-        for name, recent in (("healthy", HEALTHY), ("production decline", DECLINE)):
-            card = build_card(pack.manifest.id, None, pack.instruments, BASELINE, recent, STATES)
-            reply = await client.classify(card.text())
-            verdict = parse_verdict(reply.content, card)
-            validated, severity = check_against_card(verdict, card)
-            print(f"{name}: verdict={verdict.verdict} validated={validated} severity={severity} "
-                  f"latency_ms={reply.latency_ms} summary={verdict.summary!r}")
+        for repetition in range(1, repeat + 1):
+            for name, recent in cases:
+                card = build_card(pack.manifest.id, None, pack.instruments, BASELINE, recent, STATES)
+                cards[name] = card.text()
+                reply = await client.classify(card.text())
+                verdict = parse_verdict(reply.content, card)
+                validated, severity = check_against_card(verdict, card)
+                samples.append({"case": name, "repetition": repetition, "verdict": verdict.verdict,
+                                "validated_tags": validated, "severity": severity,
+                                "latency_ms": reply.latency_ms, "summary": verdict.summary})
+                print(f"{name} [{repetition}/{repeat}]: verdict={verdict.verdict} "
+                      f"validated={validated} severity={severity} "
+                      f"latency_ms={reply.latency_ms} summary={verdict.summary!r}", flush=True)
     finally:
         await client.aclose()
+    if output is not None:
+        timings = [sample["latency_ms"] for sample in samples]
+        report = {
+            "started_at_utc": started_at,
+            "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+            "provider": "Baseten", "model": client.model,
+            "endpoint": "https://inference.baseten.co/v1/chat/completions",
+            "reasoning_effort": "low", "max_tokens": 1024,
+            "method": "Sequential requests through one httpx client; no retries or excluded warmup. "
+                      "Client wall time from before POST to complete HTTP response; includes network, "
+                      "provider processing and generation. Not time to first token or end-to-end detection latency.",
+            "inputs": "Synthetic telemetry cards; no factory telemetry or database writes.",
+            "cards": cards,
+            "sample_count": len(samples),
+            "latency_ms": {"min": min(timings), "median": statistics.median(timings),
+                           "mean": round(statistics.mean(timings), 1), "max": max(timings)},
+            "samples": samples,
+        }
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(f"Saved {len(samples)} requests to {output}")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(asyncio.run(main()))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repeat", type=int, default=1, help="Requests per case (default: 1)")
+    parser.add_argument("--output", type=Path, help="Write a JSON timing report")
+    args = parser.parse_args()
+    if args.repeat < 1:
+        parser.error("--repeat must be at least 1")
+    raise SystemExit(asyncio.run(main(args.repeat, args.output)))

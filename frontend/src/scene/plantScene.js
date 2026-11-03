@@ -34,7 +34,7 @@ const PRESETS = {
   backwash: { ids: ['MGF-101', 'V-113', 'V-114'], dir: [1, 0.42, 0.3], pad: 0.95 },
 };
 
-export function createPlantScene(container, model, { labels = true } = {}) {
+export function createPlantScene(container, model, { labels = true, compactFraming = false } = {}) {
   const byId = new Map(model.assets.map((a) => [a.id, a]));
   const place = model.layout.placements;
   const events = { select: [] };
@@ -217,6 +217,7 @@ export function createPlantScene(container, model, { labels = true } = {}) {
   const labelEls = new Map();
   const chipEls = new Map();
   const groupLabels = [];
+  const contextLabelIds = new Set();
   if (labels) {
     // kinds with many identical units (the cartridge bank) get one group label; each unit's own
     // label appears when the camera is close or the unit is highlighted
@@ -227,6 +228,10 @@ export function createPlantScene(container, model, { labels = true } = {}) {
       const el = document.createElement('div');
       el.className = `pl-label${onDemand ? ' pl-on-demand' : ''}`;
       el.innerHTML = `<span class="pl-tag">${id}</span><span class="pl-name">${n.asset.name}</span>`;
+      if (compactFraming) {
+        el.title = `${id}: ${n.asset.name}`;
+        el.querySelector('.pl-name').style.display = 'none';
+      }
       el.addEventListener('pointerdown', (ev) => { ev.stopPropagation(); emit('select', { assetId: id }); });
       const obj = new CSS2DObject(el);
       obj.position.set(0, n.built.height + (onDemand ? 0.05 : 0.12), 0);
@@ -238,6 +243,12 @@ export function createPlantScene(container, model, { labels = true } = {}) {
       const k = n.asset.kind;
       if (k === 'tee' || k === 'header' || k === 'drain') continue;
       addLabel(id, n, k === 'valve' || grouped(k));
+    }
+    if (compactFraming) {
+      for (const kind of ['media_vessel', 'ro_vessel_bank']) {
+        const representative = [...nodes.values()].find((node) => node.asset.kind === kind);
+        if (representative) contextLabelIds.add(representative.asset.id);
+      }
     }
     for (const kind of Object.keys(kindCount).filter(grouped)) {
       const members = [...nodes.values()].filter((n) => n.asset.kind === kind);
@@ -254,13 +265,18 @@ export function createPlantScene(container, model, { labels = true } = {}) {
       obj.position.set(c.x, box.max.y + 0.2, c.z);
       obj.center.set(0.5, 1);
       scene.add(obj);
-      groupLabels.push({ el, obj, ids });
+      groupLabels.push({ el, obj, ids, kind });
     }
     for (const [tag, it] of instruments) {
       const el = document.createElement('div');
       const api = it.instr.observe === 'telemetry';
       el.className = `pl-chip ${api ? 'is-api' : 'is-noapi'}`;
       el.innerHTML = `<span>${tag}</span><em>${api ? '' : 'not observed'}</em><b>${api ? 'API' : 'NO API'}</b>`;
+      if (compactFraming) {
+        el.style.fontSize = '12px';
+        el.querySelector('b').style.display = 'none';
+        el.title = `${tag}: ${it.instr.name}`;
+      }
       if (!api) el.classList.add('is-unread');
       const obj = new CSS2DObject(el);
       obj.position.copy(it.widget.group.position).add(new THREE.Vector3(0, 0.13, 0));
@@ -270,6 +286,7 @@ export function createPlantScene(container, model, { labels = true } = {}) {
     }
     // equipment that carries an instrument chip on top keeps its own label at its base
     for (const it of instruments.values()) {
+      if (compactFraming) continue;
       const l = labelEls.get(it.host);
       if (!l || it.widget.group.position.y < it.node.built.height - 0.6) continue;
       l.obj.position.set(0, 0.12, 0.2);
@@ -365,10 +382,25 @@ export function createPlantScene(container, model, { labels = true } = {}) {
 
   // ---------------- camera framing ----------------
   let fly = null;
-  function frame(ids, dir, pad, lift = 0) {
+  let lastFraming = null;
+  function frame(ids, dir, pad, lift = 0, { overview = false, instrumentFocus = false } = {}) {
+    lastFraming = { ids, dir, pad, lift, overview, instrumentFocus };
+    scene.updateMatrixWorld(true);
     const box = new THREE.Box3();
     for (const id of ids) if (nodes.has(id)) box.expandByObject(nodes.get(id).group);
     if (box.isEmpty()) return;
+    if (compactFraming) {
+      const groups = instrumentFocus
+        ? [...instruments.values()].filter((instrument) => ids.includes(instrument.host) && instrument.instr.observe === 'field_photo' && instrument.instr.quantity.includes('pressure')).map((instrument) => instrument.widget.group)
+        : ids.filter((id) => nodes.has(id)).map((id) => nodes.get(id).group);
+      const boxes = groups.map((group) => new THREE.Box3().setFromObject(group)).filter((bounds) => !bounds.isEmpty());
+      const compactDir = overview && camera.aspect > 2.2 ? [0.62, 0.34, 1] : dir;
+      const fitted = fitPerspectiveBounds(boxes, compactDir, camera.fov, camera.aspect, { pad, lift, width: container.clientWidth, height: container.clientHeight });
+      if (!fitted) return;
+      controls.maxDistance = Math.max(60, fitted.distance * 2);
+      fly = { t: 0, fromPos: camera.position.clone(), fromTarget: controls.target.clone(), toPos: fitted.position, toTarget: fitted.center };
+      return;
+    }
     const center = box.getCenter(new THREE.Vector3());
     center.y += (box.max.y - center.y) * lift;
     const radius = box.getBoundingSphere(new THREE.Sphere()).radius;
@@ -388,7 +420,7 @@ export function createPlantScene(container, model, { labels = true } = {}) {
     } else {
       ids = [].concat(what);
     }
-    frame(ids, dir, pad, lift);
+    frame(ids, dir, pad, lift, { overview: what === 'overview', instrumentFocus: what === 'gauges' });
     if (instant && fly) { camera.position.copy(fly.toPos); controls.target.copy(fly.toTarget); fly = null; }
   }
 
@@ -396,7 +428,23 @@ export function createPlantScene(container, model, { labels = true } = {}) {
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   let downAt = null;
-  labelRenderer.domElement.addEventListener('pointerdown', (ev) => { downAt = [ev.clientX, ev.clientY]; });
+  let hoverCandidate = null;
+  let lastHoverCheck = 0;
+  labelRenderer.domElement.addEventListener('pointerdown', (ev) => { downAt = [ev.clientX, ev.clientY]; hoverCandidate = null; });
+  if (compactFraming) {
+    labelRenderer.domElement.addEventListener('pointermove', (ev) => {
+      if (ev.buttons || performance.now() - lastHoverCheck < 70) return;
+      lastHoverCheck = performance.now();
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.set(((ev.clientX - rect.left) / rect.width) * 2 - 1, -((ev.clientY - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(scene.children, true).find((item) => item.object.userData.assetId);
+      const assetId = hit?.object.userData.assetId ?? null;
+      const tag = hit?.object.userData.tag ?? null;
+      if (assetId !== hoverCandidate?.assetId || tag !== hoverCandidate?.tag) hoverCandidate = assetId ? { assetId, tag, since: performance.now() } : null;
+    });
+    labelRenderer.domElement.addEventListener('pointerleave', () => { hoverCandidate = null; });
+  }
   labelRenderer.domElement.addEventListener('pointerup', (ev) => {
     if (!downAt || Math.hypot(ev.clientX - downAt[0], ev.clientY - downAt[1]) > 4) return;
     const rect = renderer.domElement.getBoundingClientRect();
@@ -415,6 +463,11 @@ export function createPlantScene(container, model, { labels = true } = {}) {
     labelRenderer.setSize(w, h);
     camera.aspect = w / Math.max(h, 1);
     camera.updateProjectionMatrix();
+    if (compactFraming && lastFraming && w > 0 && h > 0) {
+      const { ids, dir, pad, lift, overview, instrumentFocus } = lastFraming;
+      frame(ids, dir, pad, lift, { overview, instrumentFocus });
+      if (fly) { camera.position.copy(fly.toPos); controls.target.copy(fly.toTarget); fly = null; }
+    }
   };
   const ro = new ResizeObserver(resize);
   ro.observe(container);
@@ -440,10 +493,15 @@ export function createPlantScene(container, model, { labels = true } = {}) {
     controls.update();
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
+    if (compactFraming) arrangeCompactLabels();
   });
 
   const wp = new THREE.Vector3();
   function revealNearLabels() {
+    if (compactFraming) {
+      revealCompactLabels();
+      return;
+    }
     for (const { el, obj, onDemand } of labelEls.values()) {
       if (!onDemand) continue;
       obj.getWorldPosition(wp);
@@ -455,6 +513,73 @@ export function createPlantScene(container, model, { labels = true } = {}) {
         return l && (l.el.classList.contains('is-near') || l.el.classList.contains('is-shown'));
       });
       g.el.classList.toggle('is-hidden', memberShown);
+    }
+  }
+
+  function revealCompactLabels() {
+    const hover = hoverCandidate && performance.now() - hoverCandidate.since > 180 ? hoverCandidate : null;
+    const hasTargets = Object.values(highlighted).some((ids) => ids.size > 0);
+    const explicitTags = new Set([...Object.values(highlighted)].flatMap((ids) => [...ids]).filter((id) => instruments.has(id)));
+    const taggedHosts = new Set([...explicitTags].map((tag) => instruments.get(tag).host));
+    for (const [id, label] of labelEls) {
+      const selected = Object.values(highlighted).some((ids) => ids.has(id));
+      const hovered = hover?.assetId === id && !hover.tag;
+      label.priority = hovered ? 5 : selected ? 3 : 1;
+      label.obj.visible = hovered || (selected && !taggedHosts.has(id)) || (!hasTargets && contextLabelIds.has(id));
+      label.el.classList.toggle('is-near', label.obj.visible);
+      label.el.querySelector('.pl-name').style.display = hovered ? 'inline' : 'none';
+    }
+    for (const [tag, chip] of chipEls) {
+      const hovered = hover?.tag === tag;
+      chip.priority = hovered ? 5 : 4;
+      chip.obj.visible = explicitTags.has(tag) || hovered || container.classList.contains('pl-observability');
+      chip.el.classList.toggle('is-shown', chip.obj.visible);
+      chip.el.querySelector('em').style.display = chip.el.classList.contains('is-unread') ? 'none' : '';
+    }
+    for (const group of groupLabels) {
+      group.priority = 1;
+      group.obj.visible = !hasTargets && group.kind === 'cartridge_housing';
+      group.el.classList.toggle('is-hidden', !group.obj.visible);
+    }
+  }
+
+  function arrangeCompactLabels() {
+    const origin = container.getBoundingClientRect();
+    const placed = [];
+    const candidates = [...labelEls.values(), ...chipEls.values(), ...groupLabels]
+      .filter((label) => label.obj.visible && label.el.style.display !== 'none')
+      .sort((a, b) => b.priority - a.priority);
+    const overlaps = (rect) => placed.some((other) => rect.x < other.x + other.w + 5 && rect.x + rect.w + 5 > other.x && rect.y < other.y + other.h + 4 && rect.y + rect.h + 4 > other.y);
+    for (const label of candidates) {
+      const { el } = label;
+      el.style.translate = '0px 0px';
+      el.style.visibility = 'visible';
+      const measured = el.getBoundingClientRect();
+      if (!measured.width || !measured.height) continue;
+      const baseX = measured.left - origin.left, baseY = measured.top - origin.top;
+      if (baseX > origin.width || baseX + measured.width < 0 || baseY > origin.height || baseY + measured.height < 0) {
+        el.style.visibility = 'hidden';
+        continue;
+      }
+      const x = Math.max(5, Math.min(origin.width - measured.width - 5, baseX));
+      const clampY = (value) => Math.max(5, Math.min(origin.height - measured.height - 5, value));
+      let chosen = null;
+      for (const offset of [0, -26, -52, -78, -104, 26, 52, 78]) {
+        const candidate = { x, y: clampY(baseY + offset), w: measured.width, h: measured.height };
+        if (!overlaps(candidate)) { chosen = candidate; break; }
+      }
+      if (!chosen && label.priority >= 3) {
+        for (let y = 5; y < origin.height - measured.height && !chosen; y += measured.height + 5) {
+          for (let x = 5; x < origin.width - measured.width; x += measured.width + 6) {
+            const candidate = { x, y, w: measured.width, h: measured.height };
+            if (!overlaps(candidate)) { chosen = candidate; break; }
+          }
+        }
+      }
+      if (!chosen && label.priority < 3) { el.style.visibility = 'hidden'; continue; }
+      chosen ??= { x, y: clampY(baseY), w: measured.width, h: measured.height };
+      el.style.translate = `${chosen.x - baseX}px ${chosen.y - baseY}px`;
+      placed.push(chosen);
     }
   }
 
@@ -506,6 +631,46 @@ export function createPlantScene(container, model, { labels = true } = {}) {
       container.replaceChildren();
     },
   };
+}
+
+// Fit actual selected bounds in camera space. A wide viewport has a larger
+// horizontal field of view; a bounding sphere cannot take advantage of it.
+// Pads below one request a tight safe fit instead of clipping the target.
+export function fitPerspectiveBounds(boxes, direction, verticalFov, aspect, { pad = 1, lift = 0, width = 800, height = 400 } = {}) {
+  const union = new THREE.Box3();
+  const corners = [];
+  for (const box of boxes) {
+    if (box.isEmpty()) continue;
+    union.union(box);
+    for (const x of [box.min.x, box.max.x]) {
+      for (const y of [box.min.y, box.max.y]) {
+        for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
+      }
+    }
+  }
+  if (!corners.length) return null;
+  const center = union.getCenter(new THREE.Vector3());
+  center.y += (union.max.y - center.y) * lift;
+  const backward = new THREE.Vector3(...direction).normalize();
+  const right = new THREE.Vector3(0, 1, 0).cross(backward).normalize();
+  const up = backward.clone().cross(right).normalize();
+  const horizontal = corners.map((point) => point.clone().sub(center).dot(right));
+  const vertical = corners.map((point) => point.clone().sub(center).dot(up));
+  center.addScaledVector(right, (Math.min(...horizontal) + Math.max(...horizontal)) / 2);
+  if (!lift) center.addScaledVector(up, (Math.min(...vertical) + Math.max(...vertical)) / 2);
+  const tanVertical = Math.tan(THREE.MathUtils.degToRad(verticalFov / 2));
+  const fillX = Math.max(0.5, 1 - 28 / Math.max(width, 1));
+  const fillY = Math.max(0.5, 1 - 36 / Math.max(height, 1));
+  const padding = Math.max(1, pad);
+  let distance = 0.2;
+  for (const point of corners) {
+    const relative = point.clone().sub(center);
+    const towardCamera = relative.dot(backward);
+    distance = Math.max(distance, towardCamera + 0.2,
+      towardCamera + Math.abs(relative.dot(right)) * padding / (tanVertical * Math.max(aspect, 0.01) * fillX),
+      towardCamera + Math.abs(relative.dot(up)) * padding / (tanVertical * fillY));
+  }
+  return { center, distance, position: center.clone().addScaledVector(backward, distance), corners };
 }
 
 // ---------------- geometry helpers ----------------
