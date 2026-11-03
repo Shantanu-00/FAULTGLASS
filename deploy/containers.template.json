@@ -21,7 +21,7 @@
       "MODBUS_BIND": "127.0.0.1",
       "MODBUS_PORT": "5020",
       "SIM_BASELINE_S": "${SIM_BASELINE_S}",
-      "SIM_HEARTBEAT_TIMEOUT_S": "30"
+      "SIM_HEARTBEAT_TIMEOUT_S": "180"
     }
   },
   "edge": {

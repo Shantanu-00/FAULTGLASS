@@ -24,7 +24,7 @@ async def main() -> None:
     config = SimulatorConfig(
         plant_id=pack.manifest.id,
         baseline_s=float(optional("SIM_BASELINE_S", "120")),
-        heartbeat_timeout_s=float(optional("SIM_HEARTBEAT_TIMEOUT_S", "30")),
+        heartbeat_timeout_s=float(optional("SIM_HEARTBEAT_TIMEOUT_S", "180")),
     )
     pool = create_pool(require("DATABASE_URL"))
     await pool.open()

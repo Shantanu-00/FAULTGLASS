@@ -239,11 +239,20 @@ export const PlantProvider: React.FC<ProviderProps> = ({ children, wantTelemetry
 
   useEffect(() => {
     if (!runId) return;
-    const timer = window.setInterval(() => {
-      // A run replaced from another tab answers 404 here; adopt whatever run is current.
-      api.heartbeat(runId).catch(() => void refreshRun());
-    }, 10000);
-    return () => window.clearInterval(timer);
+    // A run replaced from another tab answers 404 here; adopt whatever run is current.
+    const beat = () => void api.heartbeat(runId).catch(() => void refreshRun());
+    const timer = window.setInterval(beat, 10000);
+    // Hidden tabs and a phone browser behind the camera app pause timers; beat as soon as the page is back.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') beat();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, [runId, refreshRun]);
 
   const injectBlockage = useCallback(async () => {

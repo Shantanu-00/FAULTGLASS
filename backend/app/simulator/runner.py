@@ -26,7 +26,7 @@ class SimulatorConfig:
     plant_id: str
     baseline_s: float = 120.0
     tick_s: float = 0.5
-    heartbeat_timeout_s: float = 30.0
+    heartbeat_timeout_s: float = 180.0
 
 
 @dataclass

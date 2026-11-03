@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime as dt
+import logging
 import secrets
 from uuid import UUID
 
@@ -15,6 +17,8 @@ from .schemas import CompleteTaskIn, CreateRun, EventIn, PhotoTaskIn, VideoTaskI
 from .sse import telemetry_events
 
 router = APIRouter(prefix="/v1")
+log = logging.getLogger(__name__)
+KEEPALIVE_S = 10.0
 
 
 def require_simulation(request: Request) -> None:
@@ -89,6 +93,35 @@ async def _process_voice(state, incident_id: str, task: dict, audio_bytes: bytes
         content=f"Voice ({analyzed['comparison']['status']}): {transcript.text[:400]}",
         evidence=list(task["tags"]))
     return payload
+
+
+@contextlib.asynccontextmanager
+async def run_kept_alive(state):
+    """Keep the active run's heartbeat fresh while a field submission is analysed.
+
+    The run otherwise lives only on browser heartbeats, and a phone browser pauses its timers
+    while the camera app records the clip; without this the simulator stops the run mid-analysis.
+    """
+    run = await state.runs.active(state.plant_id)
+    if run is None:
+        yield
+        return
+
+    async def beat():
+        while True:
+            try:
+                await state.runs.heartbeat(run.id)
+            except Exception:
+                log.warning("keep-alive heartbeat for run %s failed", run.id, exc_info=True)
+            await asyncio.sleep(KEEPALIVE_S)
+
+    task = asyncio.create_task(beat())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 async def run_isolated(make_coroutine):
@@ -349,7 +382,8 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
             await wonder.aclose()
 
     try:
-        results = await run_isolated(read_gauges)
+        async with run_kept_alive(state):
+            results = await run_isolated(read_gauges)
     except SamError as exc:
         raise HTTPException(502, f"segmentation failed: {exc}")
 
@@ -495,7 +529,8 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
             await sam.aclose()
 
     try:
-        analysis = await run_isolated(track_lever)
+        async with run_kept_alive(state):
+            analysis = await run_isolated(track_lever)
     except Exception as exc:
         raise HTTPException(502, f"lever segmentation failed: {exc.__class__.__name__}: {exc}")
     policy = analysis["policy"]
