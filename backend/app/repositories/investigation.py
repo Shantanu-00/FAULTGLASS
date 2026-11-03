@@ -232,7 +232,7 @@ class InvestigationRepository:
     async def voice_observations(self, incident_id: str) -> list[dict[str, Any]]:
         async with self._pool.connection() as conn:
             cur = await conn.execute(
-                "select id, incident_id, task_id, transcript, language_bias, structured, comparison, created_at "
+                "select id, incident_id, task_id, transcript, language_bias, structured, comparison, model, created_at "
                 "from voice_observations where incident_id = %s order by created_at",
                 (incident_id,),
             )

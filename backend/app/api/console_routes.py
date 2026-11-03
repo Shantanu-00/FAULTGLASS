@@ -237,8 +237,9 @@ async def incident_detail(request: Request, incident_id: str):
         "voice_observations": await inv.voice_observations(incident_id),
         "trace": await inv.trace(incident_id),
         "investigation": (
-            {"status": checkpoint["status"], "steps_used": checkpoint["steps_used"], "focus": checkpoint["focus"]}
-            if checkpoint else {"status": "not_started", "steps_used": 0, "focus": {}}
+            {"status": checkpoint["status"], "steps_used": checkpoint["steps_used"], "focus": checkpoint["focus"],
+             "model": checkpoint["model"]}
+            if checkpoint else {"status": "not_started", "steps_used": 0, "focus": {}, "model": None}
         ),
     })
 
