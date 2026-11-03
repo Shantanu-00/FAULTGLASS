@@ -1,7 +1,9 @@
 import React from 'react';
 import { humanize } from '../../lib/format';
+import { resultGauges, resultReadings, resultSource, validatedDifferential } from '../../lib/evidence';
 import type { Differential, FieldTaskResult, GaugeResult, ValvePolicy, VoiceComparison, VoicePayload } from '../../types';
 import { Pill, type Tone } from '../common/Pill';
+import '../../styles/evidence.css';
 
 const GAUGE_STATUS: Record<string, { text: string; tone: Tone }> = {
   read: { text: 'Read', tone: 'ok' },
@@ -15,7 +17,7 @@ const between = (reasoning: string | null | undefined) => {
   return m ? m[1].trim() : '-';
 };
 
-const fmt = (n: number | null | undefined) => (n === null || n === undefined ? '-' : n.toFixed(1));
+const fmt = (n: number | null | undefined) => (typeof n !== 'number' || !Number.isFinite(n) ? '—' : n.toFixed(1));
 
 export const GaugeResults: React.FC<{ gauges: GaugeResult[] }> = ({ gauges }) => (
   <div className="table-wrap">
@@ -135,7 +137,7 @@ export const PolicyResult: React.FC<{ policy: ValvePolicy }> = ({ policy }) => {
         Movements by hand: {policy.movements ?? 0}
         {policy.hold_s !== null && policy.hold_s !== undefined && <> · hold between them {policy.hold_s.toFixed(1)} s</>}
       </p>
-      {policy.reasons.length > 0 && (
+      {(policy.reasons ?? []).length > 0 && (
         <ul className="small plain-list">
           {policy.reasons.map((r, i) => (
             <li key={i}>{r}</li>
@@ -147,20 +149,29 @@ export const PolicyResult: React.FC<{ policy: ValvePolicy }> = ({ policy }) => {
   );
 };
 
-export const TaskResultView: React.FC<{ result: FieldTaskResult; hideVoice?: boolean }> = ({ result, hideVoice }) => (
-  <div className="task-result">
-    {result.gauges && result.gauges.length > 0 && <GaugeResults gauges={result.gauges} />}
-    {!result.gauges && result.readings && Object.keys(result.readings).length > 0 && (
-      <ul className="plain-list">
-        {Object.entries(result.readings).map(([tag, value]) => (
-          <li key={tag}>
-            <code className="tag">{tag}</code> <span className="num strong">{value.toFixed(1)}</span> psi (typed by the operator)
-          </li>
-        ))}
-      </ul>
-    )}
+export const TaskResultView: React.FC<{ result: FieldTaskResult; hideVoice?: boolean }> = ({ result, hideVoice }) => {
+  const gauges = resultGauges(result);
+  const readings = resultReadings(result);
+  const differential = validatedDifferential(result);
+  const source = resultSource(result);
+  const hasContent = gauges.length > 0 || readings.length > 0 || differential || result.policy
+    || (result.voice && !hideVoice) || result.note || result.error || result.reason || result.simulator_action;
+  return <div className="task-result">
+    {gauges.length > 0 && <GaugeResults gauges={gauges} />}
+    {gauges.length === 0 && readings.length > 0 && <ul className="plain-list result-summary">
+      {readings.map(([tag, value]) => <li key={tag}><code className="tag">{tag}</code>{' '}
+        <span className="num strong">{value.toFixed(1)}</span> psi</li>)}
+    </ul>}
+    {differential && <DifferentialResult differential={differential} />}
     {result.policy && <PolicyResult policy={result.policy} />}
     {result.voice && !hideVoice && <VoiceResult voice={result.voice} />}
-    {result.note && <p className="small">Operator note: {result.note}</p>}
-  </div>
-);
+    {result.note && <p className="small"><strong>Worker note</strong> · {result.note}</p>}
+    {result.error && <p className="result-error" role="status">{result.error}</p>}
+    {result.reason && <p className="small">{result.reason}</p>}
+    {result.simulator_action && <p className="small">Verified action: {humanize(result.simulator_action)}. Production recovery is checked separately.</p>}
+    {!hasContent && <p className="small muted">{result.voice && hideVoice
+      ? 'Voice evidence recorded. See Worker observations for the transcript.'
+      : 'Submission saved. No analysis result has been recorded yet.'}</p>}
+    {source && <p className="result-source">{source}</p>}
+  </div>;
+};

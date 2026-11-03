@@ -58,7 +58,6 @@ export const OperatorView: React.FC = () => {
               <PlantReadings onOpenMeasurements={openMeasurements} />
             </div>
             <ProductionTrend onOpenMeasurements={openMeasurements} />
-            {incident && incident.incident.incident_id === selectedIncidentId && <div id="investigation-thread"><InvestigationJourney detail={incident} /></div>}
           </div>
           {measurementsOpen && (
             <section className="command-measurements" id="plant-measurements" role="dialog" aria-modal="false" aria-labelledby="plant-measurements-title">
@@ -78,6 +77,10 @@ export const OperatorView: React.FC = () => {
           <div className="command-investigation-scroll"><InvestigationStack /></div>
         </section>
       </div>
+      {incident && incident.incident.incident_id === selectedIncidentId && <>
+        <section className="command-thread-section" id="investigation-thread" aria-label="Investigation activity"><InvestigationJourney detail={incident} /></section>
+        <InvestigationStack area="records" />
+      </>}
     </div>
   );
 };

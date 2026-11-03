@@ -21,6 +21,7 @@ interface Props {
   emptyMessage?: string;
   gapThresholdMs?: number;
   tone?: 'normal' | 'warning' | 'alarm' | 'stale';
+  compact?: boolean;
 }
 
 const timeLabel = (at: number) => new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
@@ -45,7 +46,7 @@ export function useRetainedRunSeries(points: SeriesPoint[], runKey: string, star
   return merged;
 }
 
-export const TrendPlot: React.FC<Props> = ({ points, label, unit, domain, yTickValues, baseline, baselineLabel = 'Baseline', events = [], height = 210, emptyMessage = 'Waiting for measurement history.', gapThresholdMs = 15_000, tone = 'normal' }) => {
+export const TrendPlot: React.FC<Props> = ({ points, label, unit, domain, yTickValues, baseline, baselineLabel = 'Baseline', events = [], height = 210, emptyMessage = 'Waiting for measurement history.', gapThresholdMs = 15_000, tone = 'normal', compact = false }) => {
   const container = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(640);
   const id = useId();
@@ -62,10 +63,10 @@ export const TrendPlot: React.FC<Props> = ({ points, label, unit, domain, yTickV
   const data = useMemo(() => mergePoints([], points, -Infinity), [points]);
   const first = data[0];
   const last = data[data.length - 1];
-  const left = 62;
+  const left = compact ? 50 : 62;
   const right = 16;
-  const top = 27;
-  const bottom = height - 49;
+  const top = compact ? 22 : 27;
+  const bottom = height - (compact ? 34 : 49);
   const plotWidth = Math.max(1, width - left - right);
   const plotHeight = bottom - top;
   const yMin = domain[0];

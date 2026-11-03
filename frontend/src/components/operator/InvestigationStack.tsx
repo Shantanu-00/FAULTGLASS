@@ -8,6 +8,7 @@ import { Hypotheses } from './Hypotheses';
 import { MemoryRecalled } from './MemoryAndTrace';
 import { FieldTaskCard, GaugeEvidence, ProposalCard, VoiceCard } from './ProposalsAndTasks';
 import '../../styles/investigation.css';
+import '../../styles/hypothesis.css';
 
 const Waiting: React.FC<{ title: string; children: React.ReactNode; loading?: boolean }> = ({ title, children, loading }) => (
   <section className="investigation-card investigation-waiting" aria-busy={loading || undefined}>
@@ -15,12 +16,13 @@ const Waiting: React.FC<{ title: string; children: React.ReactNode; loading?: bo
   </section>
 );
 
-export const InvestigationStack: React.FC = () => {
+export const InvestigationStack: React.FC<{ area?: 'active' | 'records' }> = ({ area = 'active' }) => {
   const { plant, run, flags, incident, selectedIncidentId, connection, refreshIncident } = usePlant();
   if (!plant) return null;
   const live = [...flags].filter((flag) => flag.status !== 'dismissed' && flag.status !== 'resolved')
     .sort((a, b) => Date.parse(b.raised_at) - Date.parse(a.raised_at));
   const detail = incident?.incident.incident_id === selectedIncidentId ? incident : null;
+  if (area === 'records' && !detail) return null;
 
   if (!selectedIncidentId) return <div className="investigation-stack">
     {live[0] ? <FlagCard flag={live[0]} /> : <Waiting title={connection === 'offline' ? 'Live updates paused' : run?.status === 'stopped' ? 'Monitoring is paused' : run?.status === 'starting' || run?.status === 'learning' ? 'Learning the plant' : 'Watching for drift'} loading={connection !== 'offline' && (run?.status === 'starting' || run?.status === 'learning')}>
@@ -52,11 +54,39 @@ export const InvestigationStack: React.FC = () => {
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
   const completedTasks = detail.field_tasks.filter((task) => task.status !== 'pending')
     .sort((a, b) => Date.parse(b.completed_at ?? b.created_at) - Date.parse(a.completed_at ?? a.created_at));
+  const evidenceTasks = detail.field_tasks.filter((task) => task.status !== 'pending' || !!task.media?.length || !!task.result)
+    .sort((a, b) => Date.parse(b.completed_at ?? b.created_at) - Date.parse(a.completed_at ?? a.created_at));
   const gauge = completedTasks.find((task) => task.kind === 'gauge_photo' && task.status === 'completed' && task.result);
   const failed = detail.action_proposals.some((proposal) => proposal.status === 'failed');
   const verification = latestTrace(detail, (entry) => entry.kind === 'verification');
   const waitingVerification = !closed && detail.action_proposals.some((proposal) => proposal.status === 'executed');
   const hasNextAction = pendingProposals.length > 0 || pendingTasks.length > 0;
+
+  if (area === 'records') return <div className="command-record-grid" aria-label="Incident evidence and records">
+    <section className="command-record-group" aria-labelledby="field-evidence-title">
+      <div className="command-record-heading"><span className="command-eyebrow">Photos · audio · recordings</span><h2 id="field-evidence-title">Field evidence</h2></div>
+      {gauge?.result && <GaugeEvidence result={gauge.result} completedAt={gauge.completed_at} />}
+      <VoiceCard items={detail.voice_observations} />
+      {evidenceTasks.map((task) => <FieldTaskCard key={task.id} task={task} />)}
+      {!evidenceTasks.length && !detail.voice_observations.length && <div className="investigation-card record-empty"><p>No field evidence has been submitted yet. Photos, voice notes and valve clips will appear here with their results.</p></div>}
+    </section>
+    <section className="command-record-group" aria-labelledby="incident-record-title">
+      <div className="command-record-heading"><span className="command-eyebrow">Detection · sources · decisions</span><h2 id="incident-record-title">Incident record</h2></div>
+      {flag && <details className="investigation-disclosure initial-detection">
+        <summary><span>Initial detection <span className="investigation-summary-detail">Spark</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
+        <div className="investigation-disclosure-body"><FlagCard flag={flag} /></div>
+      </details>}
+      <details className="investigation-disclosure investigation-history">
+        <summary><span>Evidence archive <span className="investigation-summary-detail">Sources & action records</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
+        <div className="investigation-disclosure-body investigation-stack">
+          <p className="investigation-record-id">Incident {base.incident_id}</p>
+          <FocusLedger focus={inv.focus} model={model} status={inv.status} steps={inv.steps_used} />
+          {previousProposals.map((proposal) => <ProposalCard key={proposal.id} incidentId={base.incident_id} proposal={proposal} model={model} />)}
+          <MemoryRecalled trace={detail.trace} model={model} />
+        </div>
+      </details>
+    </section>
+  </div>;
 
   return <div className="investigation-stack">
     {connection === 'offline' && <div className="investigation-notice" role="status">Updates are paused. These are the last received findings; approval is unavailable while disconnected.</div>}
@@ -71,31 +101,15 @@ export const InvestigationStack: React.FC = () => {
         <span className="investigation-eyebrow">Wonder investigation</span>
         <p>{inv.status === 'not_started' ? 'Ready to investigate the detected drift.' : 'Reviewing the plant history and telemetry. Findings will appear when evidence is recorded.'}</p>
       </div>}
-      <Hypotheses items={detail.hypotheses} model={model} />
       {pendingProposals.map((proposal) => <ProposalCard key={proposal.id} incidentId={base.incident_id} proposal={proposal} model={model} />)}
       {pendingTasks.map((task) => <FieldTaskCard key={task.id} task={task} />)}
       {waitingVerification && <section className="investigation-card investigation-verifying" role="status">
         <span className="investigation-eyebrow">Verification in progress</span><h3>Watching the plant recover</h3>
         <p>The staged valve movement passed. The verifier is checking live telemetry before confirming the outcome.</p>
       </section>}
+      <Hypotheses items={detail.hypotheses} model={model} detail={detail} />
     </>}
-    {closed && <Hypotheses items={detail.hypotheses} model={model} />}
-    {gauge?.result && <GaugeEvidence result={gauge.result} completedAt={gauge.completed_at} />}
+    {closed && <Hypotheses items={detail.hypotheses} model={model} detail={detail} />}
     {!closed && progressed && !hasNextAction && !waitingVerification && inv.status !== 'escalated' && !failed && <FocusLedger focus={inv.focus} model={model} status={inv.status} steps={inv.steps_used} />}
-    {(progressed || closed) && flag && <details className="investigation-disclosure initial-detection">
-      <summary><span>Initial detection <span className="investigation-summary-detail">Spark</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
-      <div className="investigation-disclosure-body"><FlagCard flag={flag} /></div>
-    </details>}
-    <details className="investigation-disclosure investigation-history">
-      <summary><span>Evidence archive <span className="investigation-summary-detail">Field records & sources</span></span><span className="disclosure-plus" aria-hidden="true">+</span></summary>
-      <div className="investigation-disclosure-body investigation-stack">
-        <p className="investigation-record-id">Incident {base.incident_id}</p>
-        <FocusLedger focus={inv.focus} model={model} status={inv.status} steps={inv.steps_used} />
-        {completedTasks.map((task) => <FieldTaskCard key={task.id} task={task} />)}
-        <VoiceCard items={detail.voice_observations} />
-        {previousProposals.map((proposal) => <ProposalCard key={proposal.id} incidentId={base.incident_id} proposal={proposal} model={model} />)}
-        <MemoryRecalled trace={detail.trace} model={model} />
-      </div>
-    </details>
   </div>;
 };

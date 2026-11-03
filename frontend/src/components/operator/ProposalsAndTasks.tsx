@@ -5,6 +5,7 @@ import { usePlant } from '../../state/PlantContext';
 import type { ActionProposal, Differential, FieldTask, FieldTaskResult, VoiceObservation } from '../../types';
 import { Pill, type Tone } from '../common/Pill';
 import { TaskResultView, VoiceResult } from '../field/Results';
+import { EvidenceMedia } from '../common/EvidenceMedia';
 
 const PROPOSAL_TEXT: Record<ActionProposal['status'], { text: string; tone: Tone }> = {
   pending: { text: 'Your decision', tone: 'accent' },
@@ -19,12 +20,14 @@ export const ProposalCard: React.FC<{ incidentId: string; proposal: ActionPropos
   const [busy, setBusy] = useState<'approve' | 'reject' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [decision, setDecision] = useState<'approved' | 'rejected' | null>(null);
+  const [syncWarning, setSyncWarning] = useState<string | null>(null);
   const effectiveStatus = proposal.status === 'pending' && decision ? decision : proposal.status;
   const status = PROPOSAL_TEXT[effectiveStatus];
   const decide = async (approve: boolean) => {
     if (busy || decision || connection !== 'online') return;
     setBusy(approve ? 'approve' : 'reject');
     setError(null);
+    setSyncWarning(null);
     try {
       if (approve) {
         await api.approveProposal(incidentId, proposal.id);
@@ -34,7 +37,7 @@ export const ProposalCard: React.FC<{ incidentId: string; proposal: ActionPropos
         notify('Proposal rejected. Wonder will continue investigating.');
       }
       setDecision(approve ? 'approved' : 'rejected');
-      await refreshIncident();
+      try { await refreshIncident(); } catch { setSyncWarning('Your decision was saved. Live updates are delayed; refresh the incident to see the latest task.'); }
     } catch (reason) {
       const message = errorMessage(reason);
       setError(message);
@@ -50,12 +53,14 @@ export const ProposalCard: React.FC<{ incidentId: string; proposal: ActionPropos
     {effectiveStatus === 'pending' && <>
       <p className="proposal-approval-note">Approval sends the staged valve task to the worker. The submitted clip must pass verification.</p>
       <div className="proposal-actions">
-        <button type="button" className="btn btn-primary" disabled={busy !== null || connection !== 'online'} onClick={() => void decide(true)}>{busy === 'approve' ? 'Approving…' : `Approve ${proposal.action}`}</button>
+        <button type="button" className="btn proposal-approve" disabled={busy !== null || connection !== 'online'} onClick={() => void decide(true)}>{busy === 'approve' ? <><span className="control-spinner" aria-hidden="true" />Saving approval…</> : `Approve ${proposal.action}`}</button>
         <button type="button" className="btn proposal-reject" disabled={busy !== null || connection !== 'online'} onClick={() => void decide(false)}>{busy === 'reject' ? 'Rejecting…' : 'Reject'}</button>
       </div>
       {connection !== 'online' && <p className="investigation-meta">Reconnect to approve or reject this proposal.</p>}
     </>}
     {error && <p className="investigation-error" role="alert">{error}</p>}
+    {syncWarning && <p className="proposal-sync-warning" role="status">{syncWarning}</p>}
+    {effectiveStatus === 'approved' && <a className="btn proposal-approved-link" href="?view=field">Open worker task <span aria-hidden="true">↗</span></a>}
     {effectiveStatus !== 'pending' && <p className="investigation-meta" role="status">{effectiveStatus === 'approved' ? 'The worker task has been dispatched.' : effectiveStatus === 'executed' ? 'The staged movement passed; recovery is checked separately.' : effectiveStatus === 'rejected' ? 'The decision was returned to the investigator.' : 'Review the verification record in Activity.'}</p>}
     {proposal.status === 'pending' && decision && !busy && <button type="button" className="btn btn-small" onClick={() => void refreshIncident()}>Refresh current task</button>}
     <details className="investigation-inline-details"><summary>Proposal source</summary><p className="investigation-meta">{model || 'Wonder'} · {formatTime(proposal.created_at)}</p></details>
@@ -100,7 +105,7 @@ export const FieldTaskCard: React.FC<{ task: FieldTask }> = ({ task }) => {
     <h3>{TASK_TITLE[task.kind]}</h3><p>{task.instruction}</p>
     <div className="investigation-tags">{[...new Set([...task.asset_ids, ...task.tags])].map((code) => <code key={code}>{code}</code>)}</div>
     {task.status === 'pending' && <a className="field-workspace-link" href="?view=field">Open Field workspace <span aria-hidden="true">↗</span></a>}
-    {task.result && <details className="investigation-inline-details"><summary>Submitted evidence</summary><TaskResultView result={task.result} hideVoice /></details>}
+    {(task.result || task.media?.length) && <details className="investigation-inline-details" open={task.status === 'completed'}><summary>Submitted evidence</summary><EvidenceMedia media={task.media} />{task.result ? <TaskResultView result={task.result} /> : <p className="investigation-meta">Media received. Analysis has not produced a result yet.</p>}</details>}
     <div className="investigation-card-foot"><span>{task.status === 'pending' ? 'Requested' : task.status === 'completed' ? 'Completed' : 'Requested'}</span><time dateTime={task.completed_at ?? task.created_at}>{formatTime(task.completed_at ?? task.created_at)}</time></div>
   </section>;
 };
@@ -108,6 +113,6 @@ export const FieldTaskCard: React.FC<{ task: FieldTask }> = ({ task }) => {
 export const VoiceCard: React.FC<{ items: VoiceObservation[] }> = ({ items }) => items.length === 0 ? null : (
   <section className="investigation-card" aria-label="Worker observations">
     <div className="investigation-card-head"><h3>Worker observations</h3><span className="investigation-meta">{items.length} recorded</span></div>
-    {items.map((voice) => <div className="voice-item" key={voice.id}><VoiceResult voice={{ transcript: voice.transcript, comparison: voice.comparison ?? undefined, structured: voice.structured ?? undefined, model: voice.model }} /></div>)}
+    {items.map((voice) => <div className="voice-item" key={voice.id}><EvidenceMedia media={voice.media} compact /><VoiceResult voice={{ transcript: voice.transcript, comparison: voice.comparison ?? undefined, structured: voice.structured ?? undefined, model: voice.model }} /></div>)}
   </section>
 );

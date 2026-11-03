@@ -161,11 +161,24 @@ export interface FieldTaskResult {
   note?: string;
   source?: string;
   gauges?: GaugeResult[];
+  gauges_by_tag?: Record<string, GaugeResult>;
   accepted?: Record<string, number>;
   differential?: Differential | null;
   voice?: VoicePayload | null;
   policy?: ValvePolicy;
   simulator_action?: string;
+  error?: string;
+  reason?: string;
+}
+
+export interface EvidenceAttachment {
+  id: string;
+  kind: 'image' | 'audio' | 'video';
+  label: string;
+  mime_type?: string;
+  submitted_at?: string | null;
+  available: boolean;
+  url: string | null;
 }
 
 export interface FieldTask {
@@ -176,6 +189,7 @@ export interface FieldTask {
   asset_ids: string[];
   tags: string[];
   result: FieldTaskResult | null;
+  media?: EvidenceAttachment[];
   created_at: string;
   completed_at: string | null;
 }
@@ -200,6 +214,7 @@ export interface VoiceObservation {
   comparison: VoiceComparison | null;
   model?: string;
   created_at: string;
+  media?: EvidenceAttachment[];
 }
 
 export interface TraceEvent {

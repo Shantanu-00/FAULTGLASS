@@ -10,7 +10,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 const require = createRequire(import.meta.url);
 function component(relative) {
   const result = buildSync({ entryPoints: [fileURLToPath(new URL(relative, import.meta.url))], bundle: true,
-    write: false, format: 'cjs', platform: 'node', external: ['react'], target: 'es2022' });
+    write: false, format: 'cjs', platform: 'node', external: ['react', 'react-dom'], target: 'es2022' });
   const module = { exports: {} };
   runInNewContext(result.outputFiles[0].text, { module, exports: module.exports, require });
   return module.exports;

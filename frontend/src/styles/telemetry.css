@@ -1,5 +1,5 @@
 .commander .plant-readings { display: grid; grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr)); min-width: 0; border: 1px solid var(--border-strong); border-radius: 3px; overflow: hidden; background: var(--surface); }
-.commander .plant-instrument { display: flex; flex-direction: column; align-items: stretch; min-width: 0; padding: 12px 15px 10px; color: var(--text); background: var(--surface); border: 0; border-right: 1px solid var(--border); text-align: left; font: inherit; cursor: pointer; transition: background .15s ease; }
+.commander .plant-instrument { display: flex; flex-direction: column; align-items: stretch; min-width: 0; padding: 9px 13px 8px; color: var(--text); background: var(--surface); border: 0; border-right: 1px solid var(--border); text-align: left; font: inherit; cursor: pointer; transition: background .15s ease; }
 .commander .plant-instrument:last-child { border-right: 0; }
 .commander .plant-instrument:hover { background: var(--surface-2); }
 .commander .plant-instrument:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; position: relative; z-index: 1; }
@@ -9,10 +9,10 @@
 .commander .plant-instrument-heading > span { font-size: 13px; font-weight: 600; line-height: 1.35; }
 .commander .plant-instrument-heading > code { color: var(--text-3); font-size: 10px; line-height: 1.35; letter-spacing: .02em; }
 .commander .plant-instrument-reading { display: flex; align-items: baseline; gap: 6px; margin-top: 5px; font-variant-numeric: tabular-nums; }
-.commander .plant-instrument-reading strong { font-size: 30px; font-weight: 650; letter-spacing: -.045em; line-height: 1.08; }
+.commander .plant-instrument-reading strong { font-size: 27px; font-weight: 650; letter-spacing: -.045em; line-height: 1.08; }
 .commander .plant-instrument-reading > span { color: var(--text-3); font-size: 12px; }
 .commander .plant-instrument-comparison { margin-top: 4px; color: var(--text-2); font-size: 12px; line-height: 1.3; font-variant-numeric: tabular-nums; }
-.commander .plant-instrument-meta { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 1px 6px; margin-top: 7px; color: var(--text-3); font-size: 10px; line-height: 1.3; }
+.commander .plant-instrument-meta { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 1px 6px; margin-top: 4px; color: var(--text-3); font-size: 10px; line-height: 1.3; }
 .commander .plant-instrument-meta > span { display: inline-flex; align-items: center; gap: 4px; }
 .commander .plant-instrument-meta i { width: 4px; height: 4px; border-radius: 50%; background: var(--ok); }
 .commander .plant-instrument-meta time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }

@@ -257,7 +257,7 @@ class InvestigationRepository:
     async def voice_observations(self, incident_id: str) -> list[dict[str, Any]]:
         async with self._pool.connection() as conn:
             cur = await conn.execute(
-                "select id, incident_id, task_id, transcript, language_bias, structured, comparison, model, created_at "
+                "select id, incident_id, task_id, transcript, language_bias, structured, comparison, model, created_at, audio_path, audio_sha256 "
                 "from voice_observations where incident_id = %s order by created_at",
                 (incident_id,),
             )
@@ -307,7 +307,8 @@ class InvestigationRepository:
     async def complete_field_task(self, task_id: UUID, result: dict[str, Any]) -> bool:
         async with self._pool.connection() as conn:
             cur = await conn.execute(
-                "update field_tasks set status = 'completed', result = %s::jsonb, completed_at = now() "
+                "update field_tasks set status = 'completed', result = %s::jsonb || "
+                "jsonb_build_object('_media', coalesce(result->'_media', '[]'::jsonb)), completed_at = now() "
                 "where id = %s and status = 'pending'",
                 (json.dumps(result), task_id),
             )
@@ -317,10 +318,21 @@ class InvestigationRepository:
         """Keep partial evidence on a task that is still pending (for example one of two gauges read)."""
         async with self._pool.connection() as conn:
             cur = await conn.execute(
-                "update field_tasks set result = %s::jsonb where id = %s and status = 'pending'",
+                "update field_tasks set result = %s::jsonb || "
+                "jsonb_build_object('_media', coalesce(result->'_media', '[]'::jsonb)) "
+                "where id = %s and status = 'pending'",
                 (json.dumps(result), task_id),
             )
             return cur.rowcount == 1
+
+    async def append_task_media(self, task_id: UUID, records: list[dict[str, Any]]) -> None:
+        """Retain submitted files before analysis, including unsuccessful or partial attempts."""
+        async with self._pool.connection() as conn:
+            await conn.execute(
+                "update field_tasks set result = jsonb_set(coalesce(result, '{}'::jsonb), '{_media}', "
+                "coalesce(result->'_media', '[]'::jsonb) || %s::jsonb) where id = %s",
+                (json.dumps(records), task_id),
+            )
 
     async def mark_consumed(self, task_id: UUID) -> None:
         async with self._pool.connection() as conn:

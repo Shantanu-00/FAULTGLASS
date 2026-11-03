@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { formatTime } from '../../lib/format';
 import { signalState } from '../../lib/signals';
 import { useNow } from '../../lib/useNow';
+import { productionChartScale } from '../../lib/productionChart';
 import { usePlant } from '../../state/PlantContext';
 import type { SeriesPoint } from '../../types';
 import { TrendPlot, useRetainedRunSeries, type TrendEvent } from './TrendPlot';
@@ -41,10 +42,12 @@ export const ProductionTrend: React.FC<{ onOpenMeasurements: () => void }> = ({ 
   }, [run, flags, incident, runStart]);
   const unit = signal?.unit ?? 'L/h';
   const baselineLabel = baseline?.source === 'learned' ? 'Learned baseline' : 'Nominal reference';
+  const scale = useMemo(() => productionChartScale(points, reference ? 100 : undefined,
+    value === null ? null : reference ? value / reference * 100 : value), [points, reference, value]);
 
   return <section className="production-trend" aria-labelledby="production-trend-title">
     <div className="production-heading"><div><h2 id="production-trend-title">Production trend</h2><span className={`measurement-status${stale || uncertain ? ' is-muted' : ''}`}><i aria-hidden="true" />{status}</span></div><button className="btn production-measurements" type="button" aria-controls="plant-measurements" onClick={onOpenMeasurements}>Inspect signals <span aria-hidden="true">↗</span></button></div>
-    <TrendPlot points={points} label="Water production over time" unit={reference ? `% of ${baseline?.source === 'learned' ? 'baseline' : 'nominal'}` : unit} domain={reference ? [0, 110] : signal?.range ?? [0, 5000]} yTickValues={reference ? [0, 25, 50, 75, 100] : undefined} baseline={reference ? 100 : undefined} baselineLabel={`${baselineLabel}${reference ? ' · 100%' : ''}`} events={events} height={190} gapThresholdMs={Math.max((signal?.freshness_s ?? 5) * 3000, 10_000)} tone={stale ? 'stale' : uncertain ? 'warning' : 'normal'} emptyMessage={!runLoaded || !plant ? 'Loading production history…' : 'Waiting for production samples. The graph will appear as readings arrive.'} />
-    <div className="production-footnote"><span>{reference ? `${baselineLabel}: ${reference.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${unit}${learning ? ' · learning in progress' : ''}` : 'Baseline unavailable · showing measured flow'}</span><span>{currentReading ? `Last sample ${formatTime(currentReading.observed_at)}` : 'No sample received'}</span></div>
+    <TrendPlot points={points} label="Water production over time" unit={reference ? `% of ${baseline?.source === 'learned' ? 'baseline' : 'nominal'}` : unit} domain={scale.domain} yTickValues={scale.ticks} baseline={reference ? 100 : undefined} baselineLabel={`${baselineLabel}${reference ? ' · 100%' : ''}`} events={events} height={138} compact gapThresholdMs={Math.max((signal?.freshness_s ?? 5) * 3000, 10_000)} tone={stale ? 'stale' : uncertain ? 'warning' : 'normal'} emptyMessage={!runLoaded || !plant ? 'Loading production history…' : 'Waiting for production samples. The graph will appear as readings arrive.'} />
+    <div className="production-footnote"><span>{reference ? `${baselineLabel}: ${reference.toLocaleString(undefined, { maximumFractionDigits: 0 })} ${unit}${learning ? ' · learning in progress' : ''}` : 'Baseline unavailable · showing measured flow'} · Auto-scaled axis</span><span>{currentReading ? `Last sample ${formatTime(currentReading.observed_at)}` : 'No sample received'}</span></div>
   </section>;
 };

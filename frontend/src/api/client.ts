@@ -49,6 +49,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
 const enc = encodeURIComponent;
 
+/** Only resolve incident-scoped evidence paths returned by this API. */
+export function evidenceUrl(path: string | null | undefined): string | null {
+  if (!path || !/^\/v1\/incidents\/[^/]+\/tasks\/[^/]+\/media\/[a-zA-Z0-9_-]+$/.test(path)) return null;
+  if (/%2f|%5c|\.\./i.test(path)) return null;
+  return `${API_BASE}${path}`;
+}
+
 export const api = {
   healthz: () => request<{ status: string }>('GET', '/v1/healthz'),
   plant: () => request<PlantInfo>('GET', '/v1/plant'),

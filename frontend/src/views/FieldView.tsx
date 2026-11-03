@@ -1,45 +1,33 @@
 import React, { useRef } from 'react';
-import { ApiUnreachable } from '../components/common/ApiUnreachable';
-import { Bi } from '../components/common/Bi';
 import { ConnectionBanner } from '../components/common/ConnectionBanner';
+import { EvidenceMedia } from '../components/common/EvidenceMedia';
+import { Icon } from '../components/common/Icon';
 import { Pill } from '../components/common/Pill';
 import { ObservationForm, GaugePhotoForm, ValveForm } from '../components/field/TaskForms';
 import { TaskResultView } from '../components/field/Results';
 import { PlantTwin, type PlantTwinHandle } from '../components/twin/PlantTwin';
 import { TwinLegend } from '../components/twin/TwinLegend';
-import { humanize } from '../lib/format';
+import { formatTime, humanize } from '../lib/format';
 import { usePlant } from '../state/PlantContext';
 import { useTwinState } from '../state/useTwinState';
 import type { FieldTask } from '../types';
 import '../styles/field.css';
 
-const TITLE: Record<FieldTask['kind'], { en: string; mr: string }> = {
-  gauge_photo: { en: 'Photograph the gauges', mr: 'गेजचा फोटो घ्या' },
-  valve_action: { en: 'Move the lever in stages', mr: 'झडप टप्प्याटप्पाने फिरवा' },
-  observation: { en: 'Field observation', mr: 'निरीक्षण' },
+const TITLE: Record<FieldTask['kind'], string> = {
+  gauge_photo: 'Photograph the gauges',
+  valve_action: 'Verify the staged valve action',
+  observation: 'Inspect and report',
 };
 
-const TaskCard: React.FC<{ incidentId: string; task: FieldTask }> = ({ incidentId, task }) => (
-  <article className="task-card" aria-label={TITLE[task.kind].en}>
-    <header>
-      <h2>
-        <Bi stack en={TITLE[task.kind].en} mr={TITLE[task.kind].mr} />
-      </h2>
-      <Pill tone="accent">To do</Pill>
-    </header>
+const TaskCard: React.FC<{ incidentId: string; task: FieldTask; index: number }> = ({ incidentId, task, index }) => (
+  <article className={`task-card task-card-${task.kind}`} aria-label={TITLE[task.kind]}>
+    <header><div><p className="field-section-label">Field task {String(index + 1).padStart(2, '0')}</p><h2>{TITLE[task.kind]}</h2></div><Pill tone="warning">Action needed</Pill></header>
     <p className="instruction">{task.instruction}</p>
-    {(task.asset_ids.length > 0 || task.tags.length > 0) && (
-      <div className="chips">
-        {[...task.asset_ids, ...task.tags].map((code) => (
-          <code className="tag tag-large" key={code}>
-            {code}
-          </code>
-        ))}
-      </div>
-    )}
+    {(task.asset_ids.length > 0 || task.tags.length > 0) && <div className="chips">{[...new Set([...task.asset_ids, ...task.tags])].map((code) => <code className="tag tag-large" key={code}>{code}</code>)}</div>}
     {task.kind === 'gauge_photo' && <GaugePhotoForm incidentId={incidentId} task={task} />}
     {task.kind === 'valve_action' && <ValveForm incidentId={incidentId} task={task} />}
     {task.kind === 'observation' && <ObservationForm incidentId={incidentId} task={task} />}
+    {Boolean(task.media?.length) && <div className="field-saved-media"><h3>Evidence already attached</h3><EvidenceMedia media={task.media} compact /></div>}
   </article>
 );
 
@@ -48,80 +36,47 @@ const TwinCard: React.FC = () => {
   const twin = useRef<PlantTwinHandle | null>(null);
   if (targets.frame.length === 0) return null;
   return (
-    <section className="panel twin-card" aria-label="Where to go">
-      <div className="twin-card-head">
-        <h2 className="panel-title">Where to go</h2>
-        <button type="button" className="btn btn-small btn-accent" onClick={() => twin.current?.flyToTargets()}>
-          Show on twin
-        </button>
-      </div>
-      <div className={`twin-card-frame ${targets.assets.length > 3 ? "labels-many" : "labels-few"}`}>
-        <PlantTwin ref={twin} targets={targets} />
-      </div>
-      <TwinLegend targets={targets} hasFlag={false} />
-    </section>
+    <aside className="field-location">
+      <section className="panel twin-card" aria-label="Task location">
+        <div className="twin-card-head"><div><p className="field-section-label">Plant context</p><h2 className="panel-title">Where to go</h2></div><button type="button" className="btn btn-small" onClick={() => twin.current?.flyToTargets()}>Locate target</button></div>
+        <div className={`twin-card-frame ${targets.assets.length > 3 ? 'labels-many' : 'labels-few'}`}><PlantTwin ref={twin} targets={targets} compactFraming /></div>
+        <TwinLegend targets={targets} hasFlag={false} />
+        <p className="capture-hint">Highlighted equipment belongs to the current field task. Drag to look around.</p>
+      </section>
+    </aside>
   );
 };
 
 export const FieldView: React.FC = () => {
-  const { plant, incident, selectedIncidentId, incidents } = usePlant();
-  if (!plant) return <ApiUnreachable />;
+  const { plant, incident, selectedIncidentId, connection, retry } = usePlant();
+  const connecting = connection === 'connecting';
+  if (!plant) return (
+    <div className="field"><section className="field-start-state" aria-live="polite"><div className="field-state-icon"><Icon name={connecting ? 'refresh' : 'alert'} size={24} /></div><p className="field-section-label">Field workspace</p><h1>{connecting ? 'Connecting to your plant…' : 'Plant connection unavailable'}</h1><p className="muted">{connecting ? 'Your current job and work instructions will appear here.' : 'Check the connection and try again. Work instructions will appear when the plant is reachable.'}</p>{!connecting && <button type="button" className="btn btn-primary" onClick={retry}><Icon name="refresh" size={18} />Retry connection</button>}</section></div>
+  );
 
-  const pending = incident?.field_tasks.filter((t) => t.status === 'pending') ?? [];
-  const completed = incident?.field_tasks.filter((t) => t.status === 'completed') ?? [];
-  const base = incident?.incident;
+  const detail = incident?.incident.incident_id === selectedIncidentId ? incident : null;
+  const pending = detail?.field_tasks.filter((task) => task.status === 'pending') ?? [];
+  const completed = detail?.field_tasks.filter((task) => task.status === 'completed') ?? [];
+  const cancelled = detail?.field_tasks.filter((task) => task.status === 'cancelled') ?? [];
+  const base = detail?.incident;
+  const loadingIncident = Boolean(selectedIncidentId && !detail);
+  const resolved = !!base && base.status !== 'open';
 
   return (
     <div className="field">
       <ConnectionBanner />
-      <div className="field-head">
-        <h1>
-          <Bi en="Field companion" mr="फील्ड सोबती" />
-        </h1>
-        <p className="eyebrow">
-          <Bi en="Current job" mr="सध्याचे काम" />
-        </p>
-        {base ? (
-          <p className="muted">
-            <code className="tag">{base.incident_id}</code> {base.title}
-            <span className="field-status"> - {humanize(incident!.investigation.status)}</span>
-          </p>
-        ) : (
-          <p className="muted">
-            {incidents.length > 0 && !selectedIncidentId ? 'No incident in this run.' : 'No incident is open.'} Field tasks appear here when the investigator needs a person to check something.
-          </p>
-        )}
+      <header className="field-head"><div><p className="field-section-label">Field operations</p><h1>Field workspace</h1><p className="field-subtitle">Capture evidence. Complete the requested action. Keep the investigation moving.</p></div><div className="field-job-count"><strong>{pending.length}</strong><span>{pending.length === 1 ? 'task waiting' : 'tasks waiting'}</span></div></header>
+      {base && <section className="field-current-job" aria-label="Current job"><div><p className="field-section-label">Current job</p><h2>{base.title}</h2><div className="field-job-meta"><code>{base.incident_id}</code><span>{humanize(detail!.investigation.status)}</span></div></div><Pill tone={resolved ? 'ok' : pending.length ? 'warning' : 'accent'}>{resolved ? 'Resolved' : pending.length ? 'Your input needed' : 'Investigation running'}</Pill></section>}
+
+      <div className="field-workspace">
+        <section className="field-active-tasks" aria-label="Current field tasks">
+          {loadingIncident ? <section className="panel field-waiting" role="status"><span className="field-spinner" aria-hidden="true" /><h2>Loading the current job…</h2><p className="muted">Checking for work instructions and previously submitted evidence.</p></section> : pending.length > 0 ? pending.map((task, index) => <TaskCard key={task.id} incidentId={base!.incident_id} task={task} index={index} />) : <section className="panel field-waiting"><span className="field-state-icon"><Icon name={completed.length ? 'check' : 'field'} size={24} /></span><p className="field-section-label">{resolved ? 'Work complete' : 'Standing by'}</p><h2>{resolved ? 'This incident is resolved' : completed.length ? 'Your evidence is with the investigator' : 'No field action needed'}</h2><p className="muted">{base ? resolved ? 'Submitted evidence and verification results remain available below.' : 'The investigator will request another check here if more evidence is needed.' : 'New jobs appear here automatically when the investigator needs a check on the plant.'}</p></section>}
+        </section>
+        {!loadingIncident && pending.length > 0 && <TwinCard />}
       </div>
 
-      <TwinCard />
-
-      {pending.length > 0 ? (
-        pending.map((task) => <TaskCard key={task.id} incidentId={base!.incident_id} task={task} />)
-      ) : (
-        <section className="panel quiet-state">
-          <h2 className="panel-title">No task waiting</h2>
-          <p className="muted">
-            {base ? 'All requested field evidence has been submitted. The investigator is working with it.' : 'This page checks for new tasks every few seconds.'}
-          </p>
-        </section>
-      )}
-
-      {completed.length > 0 && (
-        <section className="completed" aria-label="Submitted evidence">
-          <h2 className="panel-title">
-            <Bi en="Submitted evidence" mr="जमा पुरावा" />
-          </h2>
-          {completed.map((task) => (
-            <article className="card" key={task.id}>
-              <div className="card-head">
-                <strong>{TITLE[task.kind].en}</strong>
-                <Pill tone="ok">Done</Pill>
-              </div>
-              {task.result ? <TaskResultView result={task.result} /> : <p className="muted">No result recorded.</p>}
-            </article>
-          ))}
-        </section>
-      )}
+      {completed.length > 0 && <section className="completed" aria-label="Submitted evidence"><header className="field-completed-head"><div><p className="field-section-label">Evidence archive</p><h2>Submitted from the field</h2></div><Pill tone="ok">{completed.length} completed</Pill></header><div className="field-completed-grid">{[...completed].reverse().map((task) => <article className="card field-evidence-card" key={task.id}><div className="card-head"><strong>{TITLE[task.kind]}</strong><Pill tone="ok">Submitted</Pill></div>{task.completed_at && <p className="field-evidence-time">Submitted at {formatTime(task.completed_at)}</p>}{task.result ? <TaskResultView result={task.result} /> : <p className="muted">The task is complete. Analysis details have not been returned yet.</p>}<EvidenceMedia media={task.media} emptyMessage="Original media is unavailable for this earlier submission. Recorded results are shown above." /></article>)}</div></section>}
+      {cancelled.length > 0 && <details className="field-cancelled"><summary>{cancelled.length} cancelled {cancelled.length === 1 ? 'task' : 'tasks'}</summary>{cancelled.map((task) => <article key={task.id}><strong>{TITLE[task.kind]}</strong><p className="muted">{task.instruction}</p><Pill tone="neutral">No action required</Pill></article>)}</details>}
     </div>
   );
 };

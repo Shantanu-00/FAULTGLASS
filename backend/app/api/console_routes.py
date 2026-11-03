@@ -10,12 +10,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 
 from ..repositories.runs import ActiveRunExists
 from ..repositories.telemetry import Reading
 from .schemas import CompleteTaskIn, CreateRun, EventIn, PhotoTaskIn, VideoTaskIn, VoiceTaskIn
 from .sse import telemetry_events
+from .evidence_media import media_mime_type, media_record, public_media, public_task, safe_media_path, task_media_records
 
 router = APIRouter(prefix="/v1")
 log = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ def _save_upload(data: bytes, filename: str) -> tuple[str, str]:
     digest = hashlib.sha256(data).hexdigest()
     upload_dir = Path(os.environ.get("UPLOAD_DIR", "uploads"))
     upload_dir.mkdir(parents=True, exist_ok=True)
-    path = upload_dir / filename
+    path = upload_dir / f"{digest[:16]}-{Path(filename).name}"
     path.write_bytes(data)
     return digest, str(path)
 
@@ -64,6 +65,8 @@ async def _process_voice(state, incident_id: str, task: dict, audio_bytes: bytes
     from ..investigator.wonder import WonderClient
 
     digest, path = _save_upload(audio_bytes, f"{task['id']}-voice.wav")
+    await state.investigation.append_task_media(task["id"], [media_record(
+        path=path, sha256=digest, kind="audio", mime_type="audio/wav", label="Worker voice note")])
     voice = MetaVoiceClient(meta_key())
     wonder = WonderClient(meta_key())
     try:
@@ -284,13 +287,25 @@ async def incident_detail(request: Request, incident_id: str):
     if incident is None:
         raise HTTPException(404, "unknown incident")
     checkpoint = await inv.checkpoint(incident_id)
+    tasks = await inv.field_tasks(incident_id)
+    voices = await inv.voice_observations(incident_id)
+    public_voices = []
+    for voice in voices:
+        media = []
+        task = next((task for task in tasks if str(task["id"]) == str(voice.get("task_id"))), None)
+        if task:
+            records = [item for item in task_media_records(task, [voice])
+                       if item["path"] == voice.get("audio_path")]
+            media = public_media(incident_id, str(task["id"]), records)
+        public_voices.append({**{key: value for key, value in voice.items()
+                                if key not in {"audio_path", "audio_sha256"}}, "media": media})
     return jsonable_encoder({
         "incident": incident,
         "flag": await inv.flag_for_incident(incident_id),
         "hypotheses": await inv.hypotheses(incident_id),
-        "field_tasks": await inv.field_tasks(incident_id),
+        "field_tasks": [public_task(task, incident_id, voices) for task in tasks],
         "action_proposals": await inv.proposals(incident_id),
-        "voice_observations": await inv.voice_observations(incident_id),
+        "voice_observations": public_voices,
         "trace": await inv.trace(incident_id),
         "investigation": (
             {"status": checkpoint["status"], "steps_used": checkpoint["steps_used"], "focus": checkpoint["focus"],
@@ -298,6 +313,22 @@ async def incident_detail(request: Request, incident_id: str):
             if checkpoint else {"status": "not_started", "steps_used": 0, "focus": {}, "model": None}
         ),
     })
+
+
+@router.get("/incidents/{incident_id}/tasks/{task_id}/media/{media_id}")
+async def incident_task_media(request: Request, incident_id: str, task_id: UUID, media_id: str):
+    state = request.app.state
+    if await state.investigation.incident(incident_id) is None:
+        raise HTTPException(404, "unknown incident")
+    task = await _find_task(state, incident_id, task_id)
+    voices = await state.investigation.voice_observations(incident_id)
+    item = next((item for item in task_media_records(task, voices) if item["id"] == media_id), None)
+    path = safe_media_path(item.get("path"), item.get("sha256")) if item else None
+    mime = media_mime_type(item) if item else None
+    if path is None or mime is None:
+        raise HTTPException(404, "evidence file is unavailable")
+    return FileResponse(path, media_type=mime,
+        headers={"Cache-Control": "private, max-age=300", "X-Content-Type-Options": "nosniff"})
 
 
 @router.post("/incidents/{incident_id}/tasks/{task_id}/complete")
@@ -364,6 +395,14 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
         raise HTTPException(422, f"photos must be for this task's gauges {task['tags']}: {unknown}")
     images = {tag: _decode_base64(data, f"photos.{tag}") for tag, data in body.photos.items()}
     saved = {tag: _save_upload(data, f"{task_id}-{tag}.jpg") for tag, data in images.items()}
+    await inv.append_task_media(task_id, [media_record(path=path, sha256=digest, kind="image",
+        mime_type="image/jpeg", label=f"{tag} · gauge photo") for tag, (digest, path) in saved.items()])
+    # Preserve attached audio even when a gauge is missing or segmentation fails.
+    audio_bytes = _decode_base64(body.audio_base64, "audio_base64") if body.audio_base64 else None
+    if audio_bytes:
+        audio_digest, audio_path = _save_upload(audio_bytes, f"{task_id}-voice.wav")
+        await inv.append_task_media(task_id, [media_record(path=audio_path, sha256=audio_digest,
+            kind="audio", mime_type="audio/wav", label="Worker voice note")])
 
     from ..evidence.gauge import GaugePipeline, WonderGaugeReader
     from ..evidence.sam import SamClient, SamError
@@ -393,6 +432,8 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
         async with run_kept_alive(state):
             results = await run_isolated(read_gauges)
     except SamError as exc:
+        await inv.save_task_progress(task_id, {**(task["result"] or {}), "source": "gauge_photo",
+            "note": body.note, "error": f"Gauge photo analysis failed: {exc}. Submit a clearer photo to retry."})
         await inv.add_trace(incident_id, kind="observation", actor="code",
                             content=f"Gauge reading failed: {exc}. Re-send the photos.", evidence=sorted(images))
         raise HTTPException(502, f"segmentation failed: {exc}")
@@ -416,7 +457,8 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
             run_id=run.id if run else None)
     missing = [t for t in task["tags"] if t not in accepted]
     if missing:
-        await inv.save_task_progress(task_id, {"accepted": accepted, "gauges_by_tag": gauges})
+        await inv.save_task_progress(task_id, {"accepted": accepted, "gauges_by_tag": gauges,
+            "note": body.note, "source": "gauge_photo"})
         return {"completed": False, "readings": list(gauges.values()), "accepted": accepted, "missing": missing,
                 "reason": "Still needed: " + ", ".join(missing)
                           + ". Re-shoot that gauge with the whole dial and the red scale in frame, one dial per photo."}
@@ -424,7 +466,7 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
     if body.audio_base64:
         try:
             voice_payload = await _process_voice(
-                state, incident_id, task, _decode_base64(body.audio_base64, "audio_base64"),
+                state, incident_id, task, audio_bytes,
                 accepted, ["Marathi", "English"])
         except Exception as exc:  # voice must not erase valid photo evidence
             voice_payload = {"error": f"voice processing failed: {exc.__class__.__name__}"}
@@ -458,7 +500,8 @@ async def submit_task_voice(request: Request, incident_id: str, task_id: UUID, b
     state = request.app.state
     task = await _find_task(state, incident_id, task_id)
     result = task["result"] or {}
-    photo_readings = {str(k): float(v) for k, v in (result.get("readings") or {}).items()}
+    photo_readings = {str(k): float(v) for k, v in {
+        **(result.get("accepted") or {}), **(result.get("readings") or {})}.items()}
     try:
         payload = await _process_voice(
             state, incident_id, task, _decode_base64(body.audio_base64, "audio_base64"),
@@ -530,6 +573,8 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
     video_bytes = _decode_base64(body.video_base64, "video_base64")
     suffix = ".mov" if body.mime_type == "video/quicktime" else ".mp4"
     digest, video_path = _save_upload(video_bytes, f"{task_id}{suffix}")
+    await inv.append_task_media(task_id, [media_record(path=video_path, sha256=digest, kind="video",
+        mime_type=body.mime_type, label="Staged valve recording")])
 
     from ..evidence.sam import SamClient
     from ..evidence.valve import analyze_valve_clip
@@ -553,6 +598,8 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
         async with run_kept_alive(state):
             analysis = await run_isolated(track_lever)
     except Exception as exc:
+        await inv.save_task_progress(task_id, {"source": "valve_video", "note": body.note,
+            "error": f"Recording analysis failed ({exc.__class__.__name__}). Submit another clip to retry."})
         await inv.add_trace(incident_id, kind="observation", actor="code",
                             content=f"Lever clip analysis failed ({exc.__class__.__name__}). Re-send the clip.",
                             evidence=list(task["asset_ids"]))
@@ -563,12 +610,15 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
                    "video_path": video_path, "video_file_id": analysis["file_id"],
                    "duration_s": body.duration_s, "fps": body.fps,
                    "track": analysis["track"], "policy": policy, "analysis_s": analysis_s}
+    public_result = {key: value for key, value in base_result.items()
+                     if key not in {"video_path", "video_sha256", "video_file_id"}}
+    await inv.save_task_progress(task_id, base_result)
     if policy["status"] != "passed":
         await inv.add_trace(incident_id, kind="observation", actor="code",
                             content=f"Valve clip {policy['status']} (analysed in {analysis_s} s): "
                                     f"{'; '.join(policy['reasons'])}",
                             evidence=list(task["asset_ids"]))
-        return {"completed": False, **base_result,
+        return {"completed": False, **public_result,
                 "reason": "The staged rule was not proven. Keep the task open and submit a clearer continuous clip."}
 
     run = await state.runs.active(state.plant_id)
@@ -587,4 +637,5 @@ async def complete_task_video(request: Request, incident_id: str, task_id: UUID,
                         content="Staged V-113 sequence passed; simulator backwash action acknowledged. Awaiting verifier.",
                         evidence=["V-113"])
     await _resume(state, incident_id)
-    return {"completed": True, **result}
+    return {"completed": True, **public_result, "simulator_event_id": str(event_id),
+            "simulator_action": "backwash_completed"}

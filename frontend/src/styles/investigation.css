@@ -1,7 +1,7 @@
 .commander {
-  --investigation-blue: #2857b8;
-  --investigation-blue-soft: #edf2fb;
-  --investigation-coral: #cc643d;
+  --investigation-blue: #c84924;
+  --investigation-blue-soft: #fff1e9;
+  --investigation-coral: #e45c3b;
   --investigation-ink: #202d3b;
 }
 
@@ -16,12 +16,12 @@
 
 .commander .investigation-card {
   min-width: 0;
-  padding: 22px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: 9px;
   background: var(--surface);
   overflow-wrap: anywhere;
 }
