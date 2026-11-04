@@ -1,171 +1,245 @@
 # FAULTGLASS
 
+**An industrial investigation agent that connects telemetry, physical evidence, and verified recovery.**
+
+[**Open the live demo**](https://faultglass-teal.vercel.app/?view=operator) · [**Watch the demo video**](https://youtu.be/WYV7UClJFYk) · [Judge walkthrough](#judge-walkthrough) · [Model map](#where-the-meta-models-run) · [Local setup](#run-locally) · [Tests](#test-the-project)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-25625b.svg)](LICENSE)
 
-**Industrial fault investigation that connects telemetry, physical evidence and verified recovery.**
+When production falls but the PLC shows no fault, the explanation may be spread across a flow trend, an analog pressure gauge, a maintenance procedure, and the person beside the equipment. FAULTGLASS brings those observations into one investigation: detect drift, test competing explanations, request missing field evidence, propose an intervention, and check whether the process actually recovers.
 
-A production line can lose output while its PLC still reports normal operation. Flow, pressure, motor current and water quality may each tell part of the story; the decisive evidence may be on an analog pressure gauge or a manually operated valve with no digital connection. Finding the cause requires someone to connect those signals, understand the plant, consult procedures and check what actually happened in the field.
+Built for plant operators and maintenance engineers working with a mixture of digital instruments and manual equipment. The water-treatment prototype addresses **Push the Frontier**: giving an agent a practical way to understand a physical system through telemetry, vision, speech, and human decisions.
 
-FAULTGLASS brings that investigation into one workflow. Muse Spark Open on Baseten flags coordinated drift. Muse Wonder investigates competing explanations using plant topology, telemetry and retrieved procedures. A worker supplies the missing photos, Marathi voice observations and valve recordings. SAM 3.1 isolates gauges and tracks physical movement, while deterministic code checks measurements, action prerequisites and recovery.
+> **Demo scope:** process telemetry and recovery are simulated; model requests are real. Bundled gauge photographs, audio, and lever video are field-evidence samples. Procedures and historical cases are synthetic demonstration records. Actions affect the simulator, not factory equipment.
 
-The intended impact is faster, more traceable troubleshooting for plants with a mixture of digital instruments and manual equipment, without requiring every gauge and valve to be retrofitted first. The current demonstration covers a water-treatment plant and a supported backwash intervention.
+## Start here
 
-## Technical highlights
-
-- **SAM 3.1 verifies staged lever handling.** Video masks of valve handles and the worker's hand become a motion timeline. Code distinguishes two deliberate movements with a real intermediate hold from one continuous turn, camera movement or re-gripping.
-- **Wonder sustains an investigation across field work.** Goals, hypotheses, evidence, focus and continuation state persist between model calls and worker responses. New evidence resumes the existing investigation.
-- **Spark connects drift across separate signals.** Production, pressure, current and water-quality changes can trigger an incident even when PLC fault states remain normal. A live six-request Baseten test measured a **2.03 s median for decline classification** and **3.12 s overall**; [method and individual results](#measured-baseten-spark-latency) are below.
-- **Pressure evidence is calculated from photographed gauges.** SAM isolates each requested dial, Wonder reads its psi scale, and Python computes the inlet-to-outlet differential.
-- **Marathi observations become checked evidence.** Muse Voice Transcribe produces the transcript; Wonder extracts the stated readings; code compares them with the accepted photo readings.
-- **Recovery is verified from telemetry.** A model explanation or completed checklist cannot close an incident by itself.
-
-## The demonstration
-
-The scenario uses **simulated telemetry**, real plant gauge photos and valve recordings, and a browser-rendered plant twin. It demonstrates an investigation workflow rather than a validated hydraulic model or autonomous control of an operating factory. Procedures and past cases supplied with the repository are synthetic demonstration records.
-
-| Step | What happens |
+| Entry point | What to inspect |
 | --- | --- |
-| Detect | Permeate flow falls from about 2,000 to 1,500 L/h. Pressure and motor current fall while TDS rises; PLC fault states remain normal. Spark raises a validated drift flag. |
-| Investigate | Wonder checks plant connections, operating data, procedures and prior cases, then develops and revises possible causes. |
-| Inspect | The worker photographs the cartridge-bank inlet gauge, PI-201, and outlet gauge, PI-202. Accepted readings produce a pressure differential. A Marathi voice note can add a second observation. |
-| Propose | Sufficient evidence permits Wonder to propose the supported V-113 backwash procedure. Commander approval is required before the valve task is issued. |
-| Check handling | The worker records the staged lever operation. SAM tracks the handle and hand; Python checks the movement sequence and hold. |
-| Verify | A passing action updates the simulator. The verifier checks fresh recovery telemetry before recording the outcome. |
-| Follow up | The demonstration recovers to roughly 92% of baseline and retains cartridge replacement and upstream media inspection as follow-up work. The interface displays the percentage actually recorded by the verifier. |
+| [Live Commander](https://faultglass-teal.vercel.app/?view=operator) | Start the scenario; follow production, hypotheses, evidence, approval, and recovery. |
+| [Demo video](https://youtu.be/WYV7UClJFYk) | Watch the demonstrated workflow before trying it. |
+| [Field workspace](https://faultglass-teal.vercel.app/?view=field) | Complete requested photo, audio, and valve-video tasks. Start in Commander first. |
+| [Interactive plant](https://faultglass-teal.vercel.app/?view=twin) | Explore equipment, connections, and the investigation's location. |
+| [Local setup](#run-locally) | Run the six backend services and React frontend yourself. |
+| [Automated verification](#test-the-project) | Choose offline checks, database integration tests, or live-provider checks. |
 
-## How the Meta models are used
+The hosted workflow uses the project's configured backend; judges do not need to enter model keys in the browser. Use the app's **Commander**, **Field**, and **Plant** navigation during the same run.
 
-| Model | Role in FAULTGLASS | Implementation |
+## Judge walkthrough
+
+Open [Commander](https://faultglass-teal.vercel.app/?view=operator) and keep the application open while testing. It starts a simulation when no active run exists. If a previous demonstration is in progress, continue it or choose **Demo controls → Reset simulation** for a fresh run. Reset affects the shared demo session.
+
+| Step | What to do | What to verify |
 | --- | --- | --- |
-| **SAM 3.1** — `sam-3.1` | Segment and track handles and hands in valve video; isolate pressure-gauge dials in photographs. | [SAM client](backend/app/evidence/sam.py), [lever tracking](backend/app/evidence/lever.py), [valve policy](backend/app/evidence/valve.py) |
-| **Muse Wonder** — `muse-wonder-1.0` | Lead the investigation, retrieve context, maintain hypotheses and focus, read masked gauge images, and structure transcribed observations. | [Investigator](backend/app/investigator/), [gauge reader](backend/app/evidence/gauge.py), [voice observations](backend/app/evidence/voice.py) |
-| **Muse Spark Open on Baseten** — `meta-models/muse-spark-open-1026` | Classify computed telemetry summaries as `NORMAL`, `WATCH` or `FLAG`, naming the signals that moved. | [Watcher](backend/app/watcher/), [Baseten client](backend/app/watcher/spark.py) |
-| **Muse Voice Transcribe** — `muse-voice-transcribe-1.0` | Transcribe short Marathi, English or mixed-language field recordings with plant-specific vocabulary hints. | [Speech pipeline](backend/app/evidence/voice.py), [browser audio preparation](frontend/src/lib/media.ts) |
+| **1. Learn normal operation** | Wait for baseline learning. | Readings and the production trend establish normal operation. The default baseline is 120 simulated seconds: approximately 12 real seconds at 10× speed, plus polling. |
+| **2. Introduce the problem** | **Demo controls → Start production decline**. | Production falls while related pressures, motor current, and water quality drift. PLC fault states can remain normal. |
+| **3. Inspect the investigation** | Follow the incident. Open **Hypotheses → Expand map** and the **Investigation thread**. | Spark's validated flag leads to Wonder's investigation. Inspect recorded hypotheses, tool activity, retrieved context, and focus. |
+| **4. Supply missing observations** | When gauges are requested, open **Field**. Click **Use demo inlet photo** for PI-201 and **Use demo outlet photo** for PI-202. Optionally select **Use demo audio**. | Each file appears in the matching capture area. Sample controls appear only in the relevant pending task. |
+| **5. Analyze evidence** | Click **Submit gauge evidence**. | SAM isolates the dials, Wonder reads psi, and Python computes the differential. Supplied audio is transcribed, structured, and compared with accepted photo readings. |
+| **6. Approve an intervention** | Return to Commander. Inspect the proposed action and click **Approve backwash** when available. | Proposal and human approval are separate steps. Approval issues the valve task. |
+| **7. Check physical handling** | Field → **Use demo lever video → Submit for verification**. | SAM tracks the lever and hand. Code evaluates the movements and intermediate hold. A passing result acknowledges the simulator action. |
+| **8. Check the outcome** | Return to Commander and wait for verification. | The verifier records the measured recovery percentage and maintenance follow-up. The UI shows the recorded result, not a fixed success message. |
 
-### SAM 3.1: staged valve movement verification
+**Selecting a sample does not submit it or call a model.** Submit uses the same backend analysis as a user-selected file. All four samples are committed in [frontend/public/demo/](frontend/public/demo/); judges may also supply their own media.
 
-The valve workflow checks **how the lever was handled**, rather than accepting a worker's completion claim. SAM tracks valve handles and the worker's hand in parallel. Python associates tracks across frames, uses untouched handles or a pipe as a fixed reference to compensate for camera translation, and excludes hand-covered pixels that could otherwise make re-gripping look like movement.
+Live model processing is not accelerated by the simulation clock. Gauge analysis and video tracking can take minutes; progress remains visible. Model wording and decisions may vary. Insufficient evidence can lead to a retake or escalation.
 
-The resulting timeline must show:
+Use the evidence/approval path above for evaluation. **Simulator utilities → Record backwash complete** is a setup shortcut that bypasses evidence verification.
 
-1. A visible, still starting position.
-2. A hand-driven movement to a distinct partial position.
-3. A genuinely still intermediate hold of **at least two seconds**.
-4. A second hand-driven movement to a distinct final position, followed by rest.
+### If the demo appears to wait
 
-The policy returns `passed`, `violated` or `uncertain`, with reasons and timing evidence. One continuous turn violates the staged rule. Missing reference objects, poor visibility, ambiguous handles or a clip that ends during movement prevent a pass. Phone clips are normally prepared as 10 fps, up to 540p MP4 before analysis.
+| Situation | What to check |
+| --- | --- |
+| Start production decline is disabled | Wait for baseline learning and a connected backend. An existing scenario needs a reset before another can start. |
+| Field shows no task | Expected until Wonder requests evidence. Follow the incident in Commander first. |
+| Files are selected but nothing happens | Review them, then press Submit. Selection alone makes no request. |
+| A gauge needs a retake | Replace the requested photo. Previously accepted readings are retained. |
+| Video is uncertain or violates policy | Review the reasons and supply another clip. The action is not acknowledged on a failed check. |
+| Connection is interrupted | Use the retry control. Selected files and notes remain available in the current form. |
+| Recovery is not yet recorded | A passing clip starts a separate telemetry-verification stage. Keep the app open for the simulation heartbeat. |
 
-This is motion verification: the implementation does not measure a 45-degree stop or establish the valve's absolute closed state from video. The task identifies the intended valve, and subsequent telemetry establishes the process outcome. Only a passing policy result can acknowledge the simulated backwash action.
+## Judging rubric: evidence to inspect
 
-### Muse Wonder: an investigation that survives interruptions
+Weights follow the [official event waiver's project-judging rubric](https://cerebralvalley.ai/e/meta-ai-developer-hackathon/waiver). This maps evaluation criteria to inspectable work; it does not award the project its own score.
 
-Wonder starts with the incident brief and an explicit goal: explain the production drift and find an evidence-supported next action. Through the Meta Responses API, it selects tools to retrieve plant structure, upstream and downstream connections, instrument observability, current and windowed telemetry, SOP sections and prior incident records.
+| Official criterion | Weight | Evidence in FAULTGLASS | Where to verify |
+| --- | ---: | --- | --- |
+| **Impact** | **30%** | A concrete maintenance workflow connecting fragmented observations, preserving handoffs, and checking intervention outcomes. Intended benefit: shorter, more traceable investigations without digitizing every manual gauge. | [Problem and value](#the-problem-and-the-value), [live workflow](https://faultglass-teal.vercel.app/?view=operator), [plant pack](plants/waterplant/). Operational time/cost savings have not yet been measured. |
+| **Use of Meta AI Tooling** | **25%** | Four Meta model families with distinct runtime jobs: Spark detects drift; Wonder investigates and interprets evidence; SAM segments/tracks objects; Voice Transcribe captures speech. | [Model map](#where-the-meta-models-run), [Spark](backend/app/watcher/spark.py), [Wonder](backend/app/investigator/wonder.py), [SAM](backend/app/evidence/sam.py), [voice](backend/app/evidence/voice.py). |
+| **Technical Depth & Execution** | **20%** | Modbus ingestion, durable investigation, evidence-gated proposals, human approval, camera-compensated lever analysis, deterministic recovery, and correlated model-call logs. | [Engineering decisions](#what-distinguishes-the-implementation), [architecture](#architecture), [tests](#test-the-project), [observability](#inspect-real-model-call-telemetry). |
+| **Demo** | **25%** | Hosted product, video, exact walkthrough, contextual bundled samples, progress/retry states, and a recovery outcome grounded in measurements. | [Live demo](https://faultglass-teal.vercel.app/?view=operator), [video](https://youtu.be/WYV7UClJFYk), [walkthrough](#judge-walkthrough), [field forms](frontend/src/components/field/TaskForms.tsx). |
 
-The investigation keeps several explanations in play, such as insufficient feed, pump trouble, cartridge restriction or a membrane-related problem. Wonder records evidence for and against each hypothesis and changes its status through `open`, `rejected`, `supported` and `confirmed`. Its focus ledger preserves the **goal, current blocker, next step and relevant assets**, making the investigation's progress visible in Commander.
+The project addresses the physical-systems/manufacturing direction of **Push the Frontier** and uses Meta models in the running application. Original application work and third-party foundations are identified in [Hackathon contributions](#hackathon-contributions-and-provenance).
 
-Available telemetry is checked before requesting field work. When an instrument is only observable in person, the tool returns that a field task is required. The current plant workflow explicitly requests PI-201 and PI-202; their values are not available to the investigator through the simulator's private state. Once the required field task is completed, the investigator resumes the same incident with accepted measurements and any attached voice observation, rather than starting the diagnosis again. A standalone voice note enriches the record without completing the pending task.
+## The problem and the value
 
-PostgreSQL stores hypotheses, field tasks, focus checkpoints, tool results and the investigation trace. Responses use `store: false`; returned opaque encrypted reasoning items are persisted and replayed for continuation. Public explanations come from recorded summaries and tool activity, not exposed internal reasoning.
+An operator can see production dropping without enough evidence to identify the cause. Streamed instruments show part of the process; analog gauges and manual valves supply another part. Procedures and prior incidents explain what readings mean at that plant. A worker's spoken observation often never becomes structured evidence.
 
-The loop is bounded: by default, each segment has a 12-step model budget and an incident has a 36-step overall budget before escalation. This supports long tasks with pauses, evidence collection and re-planning; it is not a claim of unlimited unattended operation. The currently implemented plant-changing proposal is V-113 backwash, gated by accepted pressure evidence and Commander approval.
+FAULTGLASS turns the investigation into a shared record:
 
-### Muse Spark Open on Baseten: drift beyond a single alarm code
+- **Operators:** specific next checks, linked equipment, and field evidence capture.
+- **Maintenance engineers:** competing hypotheses, cited measurements, plant context, and explicit intervention prerequisites.
+- **Approvers:** an evidence-backed proposal followed by a separate, measured outcome.
 
-Spark addresses a practical gap between individual alarms and a production problem spread across several measurements. It can connect lower permeate flow, lower pump current, changed suction and discharge pressures, and higher TDS even while the PLC continues to report running equipment and no fault code. It does not need a named PLC alarm for that combined pattern.
+The scenario takes permeate flow from roughly **2,000 to 1,500 L/h**. Related signals move together while PLC fault states remain normal. A photographed cartridge-bank pressure differential supplies evidence unavailable in the streamed measurements. Backwash produces deliberately partial recovery, retaining cartridge replacement and upstream inspection as follow-up.
 
-Python builds the evidence card: learned baseline, recent mean, spread, percentage change, statistical distance and freshness for each signal, plus discrete equipment states. The watcher uses a 30-second recent window and a configurable polling interval, defaulting to 10 seconds between iterations. Spark judges the compact card and returns a plain-text verdict and cited tags.
+The value hypothesis is reduced investigation and handoff time. The repository demonstrates the workflow; it does not claim measured downtime savings, diagnosis accuracy across arbitrary plants, or a production deployment in an operating factory.
 
-Requests use Baseten's OpenAI-compatible `POST https://inference.baseten.co/v1/chat/completions`, `reasoning_effort: low` and a 1,024-token output limit. Python parses the response and checks the cited deviations against the card before persisting a flag or opening an incident. The current statistical gates are 3 sigma or 5% for watch-level drift and 5 sigma or 10% for flag-level drift; stale measurements cannot support a flag.
+## Where the Meta models run
 
-Spark provides an evidence-grounded escalation across signals. Wonder owns cause investigation. The demonstration does not establish detection of arbitrary unseen faults or replace the plant's protection systems.
+| Model and provider | Input → model responsibility → output | What deterministic code owns | Source |
+| --- | --- | --- | --- |
+| **Muse Spark Open / Baseten** `meta-models/muse-spark-open-1026` | Computed telemetry card → assess coordinated drift → `NORMAL`, `WATCH`, or `FLAG` with cited tags. | Statistics, freshness, deviation checks, validated flags, incident creation. Spark does not diagnose causes. | [Client](backend/app/watcher/spark.py) · [Cards](backend/app/watcher/card.py) · [Worker](backend/app/watcher/worker.py) |
+| **Muse Wonder / Meta Model API** `muse-wonder-1.0` | Incident/tool results → investigate and choose checks; masked dials → psi readings; transcripts → structured observations. | Tool execution, persistence, numeric validation, differential, speech/photo comparison, budgets, action prerequisites. | [Client](backend/app/investigator/wonder.py) · [Loop](backend/app/investigator/worker.py) · [Tools](backend/app/investigator/tools.py) · [Gauges](backend/app/evidence/gauge.py) · [Voice](backend/app/evidence/voice.py) |
+| **SAM 3.1 / Meta Model API** `sam-3.1` | Photos/video and concept prompts → locate dials, handles, hands, reference objects → boxes and masks across frames. | Mask decoding/cropping, track association, camera compensation, movement segmentation, policy. SAM does not read psi or measure valve angles. | [Client](backend/app/evidence/sam.py) · [Tracking](backend/app/evidence/lever.py) · [Policy](backend/app/evidence/valve.py) |
+| **Muse Voice Transcribe / Meta Model API** `muse-voice-transcribe-1.0` | WAV audio with Marathi/English bias and vocabulary hints → speech recognition → transcript and metadata. | Audio preparation, routing transcripts to Wonder, numerical agreement with photo readings. | [Speech pipeline](backend/app/evidence/voice.py) · [Audio preparation](frontend/src/lib/media.ts) |
 
-### Pressure gauges: SAM masks, Wonder reads, code compares
+Spark uses Baseten's `/chat/completions` endpoint with low reasoning effort and a 1,024-token output limit. Wonder uses Meta's `/responses` with `store: false` and opaque encrypted continuation replay. SAM uses streaming Responses and Meta's `meta_sam_parser`. Voice uses `/asr/transcribe` in `PUSH_TO_TALK` mode.
 
-The field task requests **multiple gauges as separate photographs**: one clear view of PI-201 at the cartridge-bank inlet and another of PI-202 at the outlet. Each image should include the complete dial, legible scale and needle, with enough detail to distinguish the needle tip from its counterweight.
+These are runtime integrations with explicit responsibilities. Muse Image, Muse Glimmer, and a runtime Muse Code verifier are not part of the implemented workflow.
 
-SAM's pressure-gauge prompt returns the dial mask and bounding box. Python blanks the surrounding image, crops and enlarges the dial, then Wonder reads the red psi scale. Unreadable, missing or ambiguous evidence remains unresolved. A photo containing two similarly sized dials is rejected as ambiguous rather than assigning an arbitrary gauge reading.
+## What distinguishes the implementation
 
-Accepted measurements retain their evidence references. Python calculates:
+### Investigation continues across field work
 
-```text
-pressure differential = PI-201 inlet pressure − PI-202 outlet pressure
-```
+Wonder's tools retrieve stored telemetry/windows, flag evidence, plant memory, SOPs, prior incidents, and graph neighbours; record hypotheses/focus; request field tasks; and propose actions. It checks available observations before requesting another measurement.
 
-For this plant, the normal differential is about 8 psi; the configured restriction threshold is 12 psi. That calculated differential is a prerequisite for a backwash proposal. SAM does not read the scale or calculate the pressure difference.
+PostgreSQL persists hypotheses, tool activity, focus, and continuation checkpoints. Field evidence resumes the same incident. Field-only instruments explicitly require field evidence; the investigation tools do not expose simulator ground truth. Default budgets allow 12 model turns per segment and 36 overall before escalation.
 
-### Marathi audio in a noisy plant
+The interface shows recorded summaries, tool results, and hypotheses. Encrypted continuation is replayed intact and is not exposed as internal reasoning. See the [investigation loop](backend/app/investigator/worker.py) and [tool contracts](backend/app/investigator/tools.py).
 
-The Field Companion lets a worker record or upload an observation in Marathi, English or mixed speech while standing near the equipment. In the team's reported factory demonstration, Marathi observations remained usable amid background machinery noise. This is a qualitative field observation; a retained, annotated noisy-Marathi accuracy benchmark is not yet included in the repository.
+### Multiple evidence types check one another
 
-Audio passes through a concrete processing chain:
+- **Gauge photos:** SAM isolates each dial; Wonder reads the red psi scale. Python computes **PI-201 inlet − PI-202 outlet**. The configured normal differential is 8 psi; the restriction gate is 12 psi. Unreadable or ambiguous evidence requires another observation.
+- **Worker speech:** the browser prepares mono 24 kHz, 16-bit PCM WAV. Voice Transcribe transcribes it; Wonder extracts explicitly stated readings; Python returns `AGREE`, `DISAGREE`, `PARTIAL`, or `AWAITING_PHOTO`. Comparison tolerance is the greater of 2 psi or 10% of the photo reading's magnitude.
+- **Lever video:** SAM tracks handles and the hand. Code compensates for camera translation and accounts for occlusion/re-gripping, then checks two hand-driven movements, a still intermediate hold of at least two seconds, and distinct rest positions.
 
-1. The browser decodes the recording, mixes it to mono, resamples to **24 kHz**, and encodes **16-bit PCM RIFF/WAV**.
-2. Muse Voice Transcribe receives the recording in `PUSH_TO_TALK` mode with Marathi/English language bias and keywords such as PI-201, PI-202, cartridge, pressure and psi.
-3. Wonder structures the transcript into explicitly stated gauge values, an English observation and any concerns, without filling in missing measurements.
-4. Python compares spoken values with accepted photo readings using a tolerance of the greater of 2 psi or 10% of the photo reading. It returns `AGREE`, `DISAGREE`, `PARTIAL` or `AWAITING_PHOTO`.
-5. The transcript, structured observation, comparison, model metadata and audio evidence reference become part of the investigation record.
+Video policy returns `passed`, `violated`, or `uncertain`. It evaluates the movement sequence; it does not establish an absolute 45° position or prove a final closed state. Implementation: [gauge evidence](backend/app/evidence/gauge.py), [voice comparison](backend/app/evidence/voice.py), [lever geometry](backend/app/evidence/lever.py), [policy](backend/app/evidence/valve.py).
 
-Language and vocabulary hints help contextual transcription; the current application does not contain a separate denoising stage. A disagreement is retained as evidence to revisit. A failed voice submission does not discard a valid gauge photo.
+### Proposal, approval, execution, and verification are separate
 
-## Measured Baseten Spark latency
+The supported intervention is **V-113 backwash**. Proposal requires a supported hypothesis and recorded inlet/outlet readings from a completed gauge task meeting the differential gate. In the demonstrated UI workflow, those readings come from the submitted photographs. Commander approval dispatches a task; passing lever evidence acknowledges the simulator action.
 
-A live test on **3 November 2026** sent six sequential requests through the production Spark client: three healthy cards and three production-decline cards, alternating cases. Inputs were synthetic telemetry matching the demonstration, with PLC states normal in both cases. The test made no database writes and did not affect the running incident.
+Only the [Python verifier](backend/app/verifier/worker.py) resolves the live incident. After settling and a sustained measurement window, it checks flow recovery to at least 88% of configured nominal flow, improvement of at least 200 L/h over the pre-action level, recovery of four related measurements, and absence of abnormal plant states. Its reported recovery percentage uses the configured nominal flow; Spark's drift detection uses the learned run baseline. The verifier records the outcome and remaining maintenance work. A model conclusion or checklist alone cannot close the incident.
 
-| Input | Requests | Returned verdicts | Request latencies | Median |
-| --- | ---: | --- | --- | ---: |
-| Healthy baseline | 3 | `NORMAL` × 3 | 8,451 / 3,112 / 3,625 ms | **3,625 ms** |
-| Production decline | 3 | `FLAG` × 3 | 3,122 / 2,027 / 1,961 ms | **2,027 ms** |
-| All requests | 6 | Expected verdict in each case | Range: 1,961–8,451 ms | **3,117 ms** |
-
-Every decline response cited the five drifting measurements, which passed the Python validation gates. These observations show that the configured Baseten endpoint can return a usable escalation within a few seconds for these cards. Six requests are a small demonstration sample, not a service-level guarantee or an accuracy evaluation across industrial faults.
-
-Timing uses `time.monotonic()` around the complete HTTP request and includes network, provider processing and response generation. All six requests, including the slower first request, are included. These are **full-response latencies**, not time to first token, isolated GPU inference time or time from the start of a physical fault to detection. Live detection also depends on sampling, the recent-data window and watcher cadence.
-
-The [saved report](docs/benchmarks/spark-2026-11-03.json) includes exact input cards, settings and each verdict. Re-run it with configured Baseten credentials:
-
-```bash
-cd backend
-uv run python scripts/smoke_spark.py --repeat 3 --output ../docs/benchmarks/spark-local.json
-```
-
-## Architecture and interfaces
+## Architecture
 
 ```mermaid
 flowchart TD
-    Simulator[Plant simulator / Modbus] --> Edge[Edge collector and local outbox]
-    Edge --> API[FastAPI and PostgreSQL]
-    API --> Spark[Muse Spark Open / Baseten]
-    Spark --> Incident[Validated drift incident]
-    Incident --> Wonder[Muse Wonder investigation]
-    Memory[Plant topology, SOPs and prior cases] --> Wonder
-    Wonder --> Field[Field tasks: photos, voice and video]
-    Field --> Evidence[SAM 3.1, Wonder vision and Voice Transcribe]
-    Evidence --> Checks[Deterministic evidence checks]
-    Checks --> Wonder
+    Simulator[Plant simulator] -->|Modbus TCP| Edge[Edge collector and SQLite outbox]
+    Edge -->|Authenticated ingest| API[FastAPI]
+    API --> DB[(PostgreSQL / Supabase)]
+    DB --> Watcher[Spark watcher]
+    Watcher --> Spark[Muse Spark Open / Baseten]
+    Spark --> Gate[Code validates drift and opens incident]
+    Gate --> DB
+    DB --> Wonder[Muse Wonder investigator and tools]
+    Context[Plant topology, SOPs, prior cases] --> Wonder
+    Wonder --> Field[Field tasks: photos, voice, video]
+    Field --> Evidence[SAM + Wonder vision + Voice Transcribe]
+    Evidence --> Checks[Evidence and policy checks]
+    Checks --> DB
     Wonder --> Approval[Commander approval]
-    Approval --> Handling[Staged valve task and policy check]
-    Handling --> Action[Simulator action acknowledgement]
-    Action --> Verify[Fresh telemetry recovery verifier]
-    Verify --> Outcome[Recorded outcome and maintenance follow-up]
+    Approval --> Field
+    Checks -->|Passing approved valve task| Action[Simulator action]
+    Action --> Simulator
+    DB --> Verifier[Deterministic recovery verifier]
+    Verifier --> Outcome[Recorded outcome and follow-up]
 ```
 
-- **Commander:** current system event, 3D plant context, production trend, investigation evidence, approvals and recorded recovery. Detailed measurements and earlier investigation activity remain available without crowding the main view.
-- **Field Companion:** equipment-linked assignments, gauge photography, voice capture and valve-video submission.
-- **Plant view:** interactive Three.js equipment and pipework generated from the plant pack, with shared asset identifiers across the scene and investigation tools.
+The watcher reads persisted telemetry, not the simulator directly. Shared equipment identifiers connect the plant scene, investigation tools, and field tasks, letting the interface locate the equipment involved in a check.
 
-The stack is Python/FastAPI, React/TypeScript/Vite, Three.js, PostgreSQL/Supabase and Modbus. The deployment configuration runs six backend services on AWS Lightsail, builds their shared image through GitHub Actions, and hosts the frontend on Vercel. Investigation records persist in PostgreSQL; the current container deployment uses temporary media storage and requires persistent object storage for durable evidence retention.
+| Layer | Implementation |
+| --- | --- |
+| Web app | React, TypeScript, Vite, Three.js; Commander, Field, Plant; SSE with polling fallback. |
+| Backend | Python/FastAPI; separate API, simulator, edge, watcher, investigator, verifier processes. |
+| Data | PostgreSQL/Supabase: telemetry, incidents, hypotheses, tasks, evidence metadata, approvals, checkpoints. |
+| Plant definition | YAML manifest, equipment, instruments, topology, routes, register mappings in [plants/waterplant/](plants/waterplant/). |
+| Hosting | Vercel frontend; six AWS Lightsail containers using one backend image built through GitHub Actions. |
+| Model telemetry | Structured Wonder/Spark events and an optional CloudShell-to-CloudWatch collector. |
+
+## Test the project
+
+Choose the level you want to inspect. Automated tests use fake provider responses; live-provider checks are explicitly separate.
+
+| Check | Requirements | What it verifies |
+| --- | --- | --- |
+| Hosted walkthrough | Browser and reachable demo/backend/providers | Complete runtime workflow with real model requests and sample media. |
+| Focused backend suite | Python/uv and dependencies; no database server or model keys | HTTP-boundary logs, failures, correlation, metadata filtering, collector behavior. |
+| Full backend suite | Dependencies; permission to run temporary PostgreSQL and local sockets | API/database, edge buffering, run lifecycle, persistent investigation, evidence, policy, recovery. |
+| Frontend tests/build | Node.js/npm; no model keys | State/presentation logic, TypeScript checking, production bundling. |
+| Live Spark check | Baseten key and network | Real classifications and complete-response timing. |
+
+### Offline checks
+
+From `backend/`:
+
+```bash
+uv sync --frozen
+
+# Isolated unit directory: no PostgreSQL server or provider requests.
+uv run pytest --confcutdir=../tests/unit ../tests/unit -q
+
+# Full suite: pgserver creates temporary PostgreSQL databases.
+uv run pytest -q
+```
+
+The full suite applies migrations to isolated databases; it does not use the production database or require model keys. The environment must permit PostgreSQL executables, child processes, temporary writes, and local sockets. On Linux, run PostgreSQL as a normal non-root user. FFmpeg/ffprobe exercise normalization; that check skips if FFmpeg is unavailable.
+
+From `frontend/`:
+
+```bash
+npm ci
+npm test
+npm run build
+```
+
+The collector has a Python-standard-library-only test, runnable from the repository root:
+
+```bash
+python3 -m unittest discover -s tests/unit -p test_cloudwatch_forwarder.py -v
+```
+
+Source checks: [watcher](tests/test_watcher.py), [investigator](tests/test_investigator.py), [gauges](tests/test_evidence.py), [lever motion](tests/test_lever_motion.py), [voice/recovery](tests/test_valve_voice.py), [edge](tests/test_edge.py), [observability](tests/unit/test_model_observability.py).
+
+### Live Spark smoke check
+
+This makes paid/credited provider requests using a configured Baseten key. It needs no database or private media. From `backend/`:
+
+```bash
+uv run --env-file ../.env python scripts/smoke_spark.py \
+  --repeat 3 --output ../docs/benchmarks/spark-local.json
+```
+
+Inspect verdicts, validated tags, and timing. `scripts/smoke_meta.py` references private local recordings absent from a fresh clone; use the hosted field workflow and committed samples to evaluate multimodal processing.
+
+### Retained live benchmark
+
+The [3 November 2026 Spark report](docs/benchmarks/spark-2026-11-03.json) retains all six sequential requests, exact synthetic cards, settings, and responses. No warm-up was excluded.
+
+| Case | Requests | Returned verdicts | Full-response median |
+| --- | ---: | --- | ---: |
+| Healthy card | 3 | `NORMAL` × 3 | 3,625 ms |
+| Production-decline card | 3 | `FLAG` × 3; deviations passed code checks | 2,027 ms |
+| Combined | 6 | Expected verdict in each case | 3,117 ms |
+
+Range: 1,961–8,451 ms. Timing includes network, provider processing, and response generation. It is not time to first token or end-to-end detection time, which also depends on sampling, the recent window, and watcher cadence. This small sample is a retained demonstration observation, not a diagnosis-accuracy benchmark or latency guarantee.
 
 ## Run locally
 
 ### Prerequisites
 
 - Python 3.12 and [uv](https://docs.astral.sh/uv/).
-- Node.js and npm compatible with the frontend dependencies.
-- PostgreSQL, or a Supabase PostgreSQL connection, and the `psql` client.
-- FFmpeg for valve-video normalization.
-- Meta Model API credentials and a Baseten key with access to the configured Spark model.
+- Node.js 22 and npm.
+- PostgreSQL or Supabase PostgreSQL, plus `psql`.
+- FFmpeg/ffprobe for video normalization.
+- Meta Model API access for Wonder, SAM, Voice Transcribe; Baseten access for Spark.
 
-### 1. Configure the project
+The live workflow uses external services. Offline checks require no provider keys.
+
+### 1. Install and configure
+
+From the repository root:
 
 ```bash
 cp .env.example .env
@@ -173,50 +247,54 @@ cd backend
 uv sync --frozen
 ```
 
-Set these values in the repository-root `.env`:
+Edit the root `.env` before starting services:
 
-| Setting | Purpose |
+| Setting | Value or purpose |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string. |
-| `MODEL_API_KEY` | Meta credentials for Wonder, SAM and Voice Transcribe. |
-| `BASETEN_API_KEY` | Baseten credentials for Muse Spark Open. |
-| `PLANT_DIR=../plants/waterplant` | Plant-pack path when running the backend commands below. |
-| `CORS_ORIGINS=http://localhost:5173` | Frontend origin; update it if using a different host or port. |
-| `API_URL=http://127.0.0.1:8000` | API destination for the edge collector. |
-| `EDGE_API_KEY` | Generated in the provisioning step below. |
+| `DATABASE_URL` | Your PostgreSQL connection string. |
+| `MODEL_API_KEY` | Meta Model API key. |
+| `BASETEN_API_KEY` | Baseten key with access to `meta-models/muse-spark-open-1026`. |
+| `PLANT_DIR` | **`../plants/waterplant`** when running from `backend/`. Override the root-relative example value. |
+| `CORS_ORIGINS` | `http://localhost:5173`. |
+| `API_URL` | `http://127.0.0.1:8000` for edge delivery. |
+| `EDGE_NODE_ID` | `EDGE-01`; provision its key below. |
+| `EDGE_API_KEY` | Generated by provisioning. |
+| `UPLOAD_DIR` | `../uploads` from `backend/`, placing captures in the ignored root uploads directory. |
 
-Other model names, endpoint settings, polling intervals and simulator options are listed in [.env.example](.env.example). Keep real credentials and plant recordings out of version control.
+Other endpoints, models, intervals, and simulator settings appear in [.env.example](.env.example). Model credentials belong in backend configuration, not frontend source.
 
-### 2. Initialize an empty database
+### 2. Initialize a fresh database
 
-From the repository root, with `DATABASE_URL` available in the shell, apply migrations followed by seed files in filename order:
+These Bash/WSL commands run from the repository root. Export `DATABASE_URL` with the same value placed in `.env`; `psql` does not load that file automatically.
 
 ```bash
+export DATABASE_URL='YOUR_POSTGRES_CONNECTION_STRING'
+
 (
 set -e
 for migration in supabase/migrations/*.sql; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"
 done
-
-# Seed only after every migration succeeds, against a fresh database.
 for seed in supabase/seed/*.sql; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$seed"
 done
 )
 ```
 
-The seed scripts populate the demonstration plant, procedures and prior cases. They are intended for an empty database and are not an idempotent reset command.
+Apply every migration before seeding. Seeds create the demonstration plant, procedures, and prior incidents; they target an empty database and are not an idempotent reset command.
 
-Provision the edge identity, then privately copy the generated key into `.env` as `EDGE_API_KEY`:
+Provision the edge node:
 
 ```bash
 cd backend
 uv run --env-file ../.env python -m app.edge.provision EDGE-01
 ```
 
-### 3. Start the services
+Copy its generated key into `.env` as `EDGE_API_KEY`.
 
-Run each command in its own terminal from `backend/`:
+### 3. Start all six backend services
+
+Run **each command in its own terminal**, with `backend/` as its working directory:
 
 ```bash
 uv run --env-file ../.env python -m app.api
@@ -227,9 +305,11 @@ uv run --env-file ../.env python -m app.investigator
 uv run --env-file ../.env python -m app.verifier
 ```
 
-The API listens on port 8000 and the simulator's Modbus endpoint on port 5020. Starting the API alone does not start the other five services. Watcher and investigator services make external model calls when processing work.
+The API does not start the other processes. It listens on port 8000; the simulator exposes Modbus on 5020. Explicit `--env-file` loads configuration for each process.
 
-Start the frontend in another terminal:
+### 4. Start the frontend
+
+In another terminal, from the repository root:
 
 ```bash
 cd frontend
@@ -237,32 +317,9 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`. The frontend defaults to `http://127.0.0.1:8000` for its API; set `VITE_API_URL` to use another backend. Commander contains the demonstration scenario controls.
+Open [local Commander](http://localhost:5173/?view=operator) and follow the [walkthrough](#judge-walkthrough). The API defaults to `http://127.0.0.1:8000`; set `VITE_API_URL` for another backend. A basic API check is `curl http://127.0.0.1:8000/v1/healthz`.
 
-## Verification and development
-
-```bash
-# Backend tests, including isolated database fixtures
-cd backend
-uv run pytest
-
-# Live provider checks; require credentials and make external requests
-uv run python scripts/smoke_meta.py
-uv run python scripts/smoke_spark.py
-```
-
-The full Meta smoke check also requires locally supplied factory photo/video fixtures at the paths defined in [smoke_meta.py](backend/scripts/smoke_meta.py); those private files are not committed. The Spark check uses synthetic cards and needs no media fixtures or database connection.
-
-```bash
-# Frontend state tests and production build
-cd frontend
-npm test
-npm run build
-```
-
-Tests cover telemetry ingest, edge buffering, plant topology, simulator behavior, watcher validation, investigator persistence, gauge evidence, voice comparisons, lever tracking and verification policy. The focused evidence/lever suite passed **28 tests** during this README update. Mocked provider tests are distinct from the live Spark measurement above.
-
-To validate a plant pack and regenerate its frontend scene:
+Validate the plant pack and rebuild its scene:
 
 ```bash
 cd backend
@@ -271,30 +328,66 @@ cd ../frontend
 npm run plant
 ```
 
-## Repository guide
+## Inspect real model-call telemetry
 
-```text
-backend/app/api/           API, incident workflow and evidence submission
-backend/app/watcher/       Baseten Spark client and telemetry summary cards
-backend/app/investigator/  Wonder tools, hypotheses, focus and continuation
-backend/app/evidence/      SAM, gauge, valve and speech processing
-backend/app/verifier/      Deterministic recovery checks
-backend/app/edge/          Modbus collection, buffering and telemetry delivery
-backend/app/simulator/     Demonstration plant and action response
-frontend/                 Commander, Field Companion and plant visualization
-plants/waterplant/        Equipment, instruments, topology and scene definitions
-supabase/                 Database migrations and demonstration seed records
-deploy/                   Backend container and Lightsail deployment configuration
-tests/                    Backend tests
-docs/benchmarks/          Recorded model timing results and methodology
+[Structured events](backend/app/observability.py) record actual Wonder/Spark request starts, successes, and failures: provider/model, call ID, duration, HTTP status, provider request ID, returned token usage, correlation IDs, and declared Wonder tool names. Spark assessments add numerical current/baseline measurements, validated tags, verdicts, and outcomes.
+
+The model events exclude API keys, prompts, response bodies, tool arguments, transcripts, and internal/encrypted reasoning. Current instrumentation covers Wonder and Spark; direct SAM and Voice Transcribe requests are not yet in this event stream. HTTP success and an accepted application verdict remain separate events.
+
+Lightsail exposes `api`, `watcher`, and `investigator` logs separately. Combine their events for a recording by running this from the checkout in AWS CloudShell after deploying the instrumented image:
+
+```bash
+python3 deploy/forward_model_logs.py \
+  --region eu-west-3 --service faultglass \
+  --group /faultglass/model-calls --initialize
 ```
 
-Detailed implementation notes: [Wonder investigator](docs/INVESTIGATOR.md), [gauge and SAM evidence](docs/SAM_EVIDENCE.md), [valve and voice workflows](docs/VALVE_VOICE_FIELD.md), and [deployment guide](docs/QUICKEST_DEPLOY_PLAN.md). Some design documents describe earlier plans; the code paths and measured results linked here describe the current implementation.
+Keep the collector and CloudShell active. In CloudWatch, use the same region, open **Logs → Live Tail**, select **`/faultglass/model-calls`**, and start. Polling and ingestion add delay; this is a demo-session collector, not permanent log collection. See [setup, permissions, queries, and recording instructions](docs/MODEL_LOGGING.md). A [PowerShell alternative](deploy/forward-model-logs.ps1) is included.
+
+## Hackathon contributions and provenance
+
+Original FAULTGLASS application work includes the plant pack/simulator, Modbus/edge ingestion, Spark watcher, persistent Wonder investigation/tools, multimodal evidence pipelines, proposal/approval/recovery workflow, Three.js operator interfaces, contextual sample controls, and model-call instrumentation.
+
+The [commit history](https://github.com/Shantanu-00/FAULTGLASS/commits/main/) records development from initial application commit [`c18e2c0`](https://github.com/Shantanu-00/FAULTGLASS/commit/c18e2c0) on 2 November 2026 through asset/logging commit [`95f8535`](https://github.com/Shantanu-00/FAULTGLASS/commit/95f8535), timestamped **4 November 2026, 16:21 EST**. Its local timestamp is 5 November, 02:51 IST; both identify the same instant. This README is evaluation documentation for the implemented application.
+
+Third-party foundations are separate: React/Three.js, FastAPI/httpx, PostgreSQL, Modbus libraries, Meta's SAM parser, model services, and other declared dependencies. Vendor documentation/cookbook examples under `docs/meta/` are reference material, not original FAULTGLASS features. Manifests and lockfiles identify the dependencies used.
+
+## Current boundaries and next steps
+
+| Current boundary | Next engineering step |
+| --- | --- |
+| One demonstrated water-treatment scenario and supported intervention | Evaluate other faults, conflicting evidence, and plant packs against retained labelled cases. |
+| Simulated response and approximate plant geometry | Validate site-specific models and instrument mappings with plant engineers. |
+| Commander/Field are interface views; console workflows lack user authentication/RBAC | Add authenticated users, plant membership, and server-enforced approval permissions. Edge ingest already uses provisioned node keys. |
+| Uploaded media uses temporary container-local storage and can disappear on redeploy | Add durable private object storage and evidence lifecycle controls. Investigation metadata persists separately in PostgreSQL. |
+| Small Spark timing sample; no retained noisy-audio or broad diagnosis benchmark | Evaluate unreadable gauges, contradictory speech, occlusion, failed actions, and incomplete recovery. |
+| Demo-session CloudWatch forwarding | Add persistent collection and instrument direct SAM/Voice requests. |
+
+## Repository guide
+
+| Path | Responsibility |
+| --- | --- |
+| [backend/app/api/](backend/app/api/) | API, ingestion, incidents, evidence submission. |
+| [backend/app/edge/](backend/app/edge/) | Modbus polling, local outbox, uplink, node provisioning. |
+| [backend/app/watcher/](backend/app/watcher/) | Spark, telemetry cards, validation, flags. |
+| [backend/app/investigator/](backend/app/investigator/) | Wonder, tools, focus, durable continuation. |
+| [backend/app/evidence/](backend/app/evidence/) | SAM, gauges, speech, lever tracking, policy. |
+| [backend/app/verifier/](backend/app/verifier/) | Deterministic recovery checks. |
+| [backend/app/simulator/](backend/app/simulator/) | Plant dynamics, Modbus state, action response. |
+| [frontend/](frontend/) | Commander, Field, interactive plant. |
+| [frontend/public/demo/](frontend/public/demo/) | Committed photos, audio, lever video. |
+| [plants/waterplant/](plants/waterplant/) | Plant manifest, instruments, topology, routes. |
+| [supabase/](supabase/) | Migrations and synthetic demonstration records. |
+| [deploy/](deploy/) | Lightsail configuration and CloudWatch collectors. |
+| [tests/](tests/) · [frontend/tests/](frontend/tests/) | Backend and frontend verification. |
+| [docs/benchmarks/](docs/benchmarks/) | Retained live-provider timing evidence. |
+
+Further notes: [Spark watcher](docs/SPARK_WATCHER.md), [Wonder investigator](docs/INVESTIGATOR.md), [SAM/gauge evidence](docs/SAM_EVIDENCE.md), [valve and voice](docs/VALVE_VOICE_FIELD.md), [model logging](docs/MODEL_LOGGING.md). Earlier planning documents may describe superseded designs; linked source and this walkthrough describe the current implementation.
 
 ## Contributing
 
-Open an issue with the problem, expected behavior and relevant plant context, then submit a focused pull request with appropriate verification. For a new plant, add a validated plant pack and explicit procedures rather than embedding site-specific assumptions in the investigation core. Reports about model or evidence failures should include reproducible, non-sensitive examples without credentials or private factory media.
+Open an issue with the problem, expected behavior, and a reproducible non-sensitive example. Submit focused pull requests with appropriate verification. New plant support should introduce a validated plant pack and explicit procedures instead of embedding site-specific assumptions in the investigation core. Include evidence-failure cases alongside successful examples.
 
-## License
+## License and attribution
 
-The original FAULTGLASS code is available under the [MIT License](LICENSE). Third-party packages and the documentation/examples retained under `docs/meta/` remain subject to their own licenses and notices. Model APIs and hosted services have separate provider terms.
+Original FAULTGLASS code is available under the [MIT License](LICENSE). Third-party dependencies and mirrored documentation/examples retain their own licenses and notices. Model APIs and hosted services have separate provider terms. Bundled media is included for evaluating the demonstration.
