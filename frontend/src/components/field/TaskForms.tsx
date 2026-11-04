@@ -5,6 +5,7 @@ import { encodeWavBase64, fileToBase64, prepareImage, videoDuration } from '../.
 import { usePlant } from '../../state/PlantContext';
 import type { FieldTask, PhotoResponse, VideoResponse } from '../../types';
 import { Icon } from '../common/Icon';
+import { DemoAssetButton } from './DemoAssetButton';
 import { FileCapture } from './FileCapture';
 import { Pill } from '../common/Pill';
 import { DifferentialResult, GaugeResults, PolicyResult, VoiceResult } from './Results';
@@ -101,6 +102,7 @@ export const GaugePhotoForm: React.FC<FormProps> = ({ incidentId, task }) => {
             <div className="gauge-box-head"><span className="field-step-number">{index + 1}</span><h3>{GAUGE_ROLES[tag] ?? 'Gauge'} <code className="tag">{tag}</code></h3></div>
             {accepted[tag] !== undefined && !photos[tag] && <p className="gauge-read"><Pill tone="ok">Accepted</Pill><strong>{accepted[tag].toFixed(1)} psi</strong></p>}
             <FileCapture kind="image" label={`Capture ${(GAUGE_ROLES[tag] ?? 'gauge').toLowerCase()}`} retakeLabel="Replace photo" accept="image/*" icon="camera" file={photos[tag] ?? null} onChange={(file) => setPhotos((current) => ({ ...current, [tag]: file }))} disabled={locked} />
+            {(tag === 'PI-201' || tag === 'PI-202') && <DemoAssetButton asset={tag === 'PI-201' ? 'inletGauge' : 'outletGauge'} onSelect={(file) => setPhotos((current) => ({ ...current, [tag]: file }))} disabled={locked} />}
           </section>
         ))}
       </div>
@@ -156,6 +158,7 @@ export const ValveForm: React.FC<FormProps> = ({ incidentId, task }) => {
       <ol className="stage-guide">{STAGES.map((stage, index) => <li key={stage.angle}><span className="field-step-number">{index + 1}</span><strong>{stage.name} <span>{stage.angle}</span></strong><small>{stage.hint}</small></li>)}</ol>
       <p className="hint-text">Keep the lever, your hand and a straight section of pipe visible throughout the recording. Follow the approved work instruction above.</p>
       <FileCapture kind="video" label="Record or select lever video" retakeLabel="Replace recording" accept="video/mp4,video/quicktime,.mp4,.mov" icon="video" file={clip} onChange={setClip} disabled={locked} />
+      <DemoAssetButton asset="lever" onSelect={setClip} disabled={locked} />
       {unsupported && <p className="result-error" role="alert">This file format is not supported. Choose an MP4 or MOV recorded with your camera.</p>}
       <details className="field-advanced"><summary>Recording details <span>Optional</span></summary><label className="form-field"><span>Frames per second</span><input type="number" inputMode="numeric" min={1} max={240} value={fps} onChange={(event) => setFps(event.target.value)} placeholder="Detect automatically" disabled={locked} aria-invalid={invalidFps} /></label>{invalidFps && <p className="result-error">Enter a whole number from 1 to 240, or leave this blank.</p>}</details>
       <label className="form-field"><span>Additional note <small>Optional</small></span><textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} maxLength={1000} placeholder="Add any relevant detail about the action." disabled={locked} /></label>

@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from typing import Protocol
 from uuid import UUID
 
+from ..observability import model_log_context, watcher_assessment, watcher_state
 from ..plant.models import Instrument
 from ..repositories.flags import FlagRepository
 from ..repositories.runs import RunRepository, SimRun
@@ -68,27 +69,54 @@ class SparkWatcher:
         self._spark = spark
         self._instruments = instruments
         self._config = config
+        self._last_state: tuple[str, str | None] | None = None
+
+    def _state(self, state: str, run: SimRun | None = None) -> None:
+        identity = (state, str(run.id) if run else None)
+        if identity != self._last_state:
+            watcher_state(state, plant_id=self._config.plant_id, run_id=identity[1])
+            self._last_state = identity
+
+    def _assessment(self, run: SimRun, card: Card, verdict: Verdict,
+                    outcome: str, validated: list[str], incident_id: str | None = None) -> None:
+        known = {instrument.tag for instrument in self._instruments}
+        watcher_assessment(
+            plant_id=self._config.plant_id, run_id=run.id,
+            incident_id=incident_id,
+            verdict=verdict.verdict, outcome=outcome, validated_tags=[tag for tag in validated if tag in known],
+            measurements={signal.tag: {"current": signal.current, "baseline": signal.baseline}
+                          for signal in card.signals if signal.tag in known},
+        )
 
     async def tick(self) -> str:
         """One watcher pass. Returns a short status string for logging/tests."""
         run = await self._runs.active(self._config.plant_id)
         if run is None:
+            self._state("no-run")
             return "no-run"
         if run.status != "running" or run.baseline_ready_at is None:
+            self._state(f"skipped-{run.status}", run)
             return f"skipped-{run.status}"
         card = await self._build_card(run)
         if not any(s.current is not None for s in card.signals):
+            self._state("no-data", run)
             return "no-data"
-        reply = await self._spark.classify(card.text())
+        self._state("classifying", run)
+        with model_log_context(plant_id=self._config.plant_id, run_id=run.id, purpose="telemetry_classification"):
+            reply = await self._spark.classify(card.text())
         verdict = parse_verdict(reply.content, card)
         if verdict.verdict == "NORMAL":
+            self._assessment(run, card, verdict, "normal", [])
             log.info("run %s NORMAL (%s ms)", run.id, reply.latency_ms)
             return "normal"
         validated, severity = check_against_card(verdict, card)
         if not validated or severity is None:
+            self._assessment(run, card, verdict, "rejected", [])
             log.info("run %s %s rejected by card check (cited %s)", run.id, verdict.verdict, verdict.tags)
             return "rejected"
-        if await self._flags.open_flag_for(run.id, validated):
+        existing_flag = await self._flags.open_flag_for(run.id, validated)
+        if existing_flag:
+            self._assessment(run, card, verdict, "duplicate", validated, existing_flag.get("incident_id"))
             log.info("run %s %s already flagged for %s", run.id, verdict.verdict, validated)
             return "duplicate"
         incident_id = None
@@ -124,6 +152,7 @@ class SparkWatcher:
                 tool_name="spark_watcher",
             )
         log.info("run %s %s -> flag %s (%s, %s)", run.id, verdict.verdict, flag["id"], severity, validated)
+        self._assessment(run, card, verdict, "flagged" if verdict.verdict == "FLAG" else "watched", validated, incident_id)
         return "flagged" if verdict.verdict == "FLAG" else "watched"
 
     async def _build_card(self, run: SimRun) -> Card:

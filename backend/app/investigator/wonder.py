@@ -19,6 +19,8 @@ from typing import Any
 
 import httpx
 
+from ..observability import ModelCall
+
 DEFAULT_BASE_URL = "https://api.meta.ai/v1"
 DEFAULT_MODEL = "muse-wonder-1.0"
 
@@ -82,31 +84,34 @@ class WonderClient:
         *,
         reasoning_effort: str = "medium",
     ) -> WonderReply:
-        started = time.monotonic()
-        try:
-            response = await self._client.post(
-                "/responses",
-                json={
-                    "model": self._model,
-                    "input": input_items,
-                    "tools": tools,
-                    "reasoning": {"effort": reasoning_effort, "summary": "concise"},
-                    "store": False,
-                    "include": ["reasoning.encrypted_content"],
-                    "max_output_tokens": 4096,
-                },
-            )
-        except httpx.HTTPError as exc:
-            raise WonderError(f"Meta Model API request failed: {exc.__class__.__name__}") from exc
-        latency_ms = int((time.monotonic() - started) * 1000)
-        if response.status_code != 200:
-            raise WonderError(f"Meta Model API returned HTTP {response.status_code}")
-        try:
-            data = response.json()
-            output = data["output"]
-        except (ValueError, KeyError, TypeError) as exc:
-            raise WonderError("Meta Model API response had no output") from exc
-        return WonderReply(output=output, latency_ms=latency_ms, usage=data.get("usage") or {}, model=self._model)
+        with ModelCall(provider="meta", model=self._model, operation="responses") as call:
+            started = time.monotonic()
+            try:
+                response = await self._client.post(
+                    "/responses",
+                    json={
+                        "model": self._model,
+                        "input": input_items,
+                        "tools": tools,
+                        "reasoning": {"effort": reasoning_effort, "summary": "concise"},
+                        "store": False,
+                        "include": ["reasoning.encrypted_content"],
+                        "max_output_tokens": 4096,
+                    },
+                )
+            except httpx.HTTPError as exc:
+                raise WonderError(f"Meta Model API request failed: {exc.__class__.__name__}") from exc
+            latency_ms = int((time.monotonic() - started) * 1000)
+            call.response(response)
+            if response.status_code != 200:
+                raise WonderError(f"Meta Model API returned HTTP {response.status_code}")
+            try:
+                data = response.json()
+                output = data["output"]
+            except (ValueError, KeyError, TypeError) as exc:
+                raise WonderError("Meta Model API response had no output") from exc
+            call.result(usage=data.get("usage"), output=output, tools=tools)
+            return WonderReply(output=output, latency_ms=latency_ms, usage=data.get("usage") or {}, model=self._model)
 
     async def aclose(self) -> None:
         await self._client.aclose()

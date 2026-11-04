@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '../common/Icon';
+import { DemoAssetButton } from './DemoAssetButton';
 
 interface Props {
   blob: Blob | null;
@@ -133,6 +134,7 @@ export const VoiceRecorder: React.FC<Props> = ({ blob, onChange, disabled, onRec
         </label>
         {blob && !recording && <button type="button" className="btn btn-quiet" onClick={() => onChange(null)} disabled={disabled || requesting}>Discard</button>}
       </div>
+      <DemoAssetButton asset="audio" onSelect={(file) => { setError(null); onChange(file); }} disabled={locked} />
       {!canRecord && <p className="muted small">Microphone recording is unavailable here. Choose an audio file to continue.</p>}
       {url && !recording && <audio controls preload="metadata" src={url} className="audio-preview" aria-label="Review your voice note" />}
       {error && <p className="result-error" role="alert">{error}</p>}

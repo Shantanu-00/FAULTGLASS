@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from ..evidence.differential import compute_differential
+from ..observability import model_log_context
 from ..plant.models import PlantPack
 from ..repositories.investigation import InvestigationRepository
 from ..repositories.runs import RunRepository
@@ -149,7 +150,9 @@ class Investigator:
 
         while (steps - segment_start < self._config.max_steps
                and steps < self._config.max_steps * STEP_CAP_FACTOR):
-            reply = await self._wonder.create(continuation, TOOL_DEFS)
+            with model_log_context(plant_id=self._config.plant_id, incident_id=incident_id,
+                                   purpose="investigation", step=steps + 1):
+                reply = await self._wonder.create(continuation, TOOL_DEFS)
             steps += 1
             continuation.extend(reply.output)  # reasoning items replayed intact, never edited
             calls = reply.function_calls

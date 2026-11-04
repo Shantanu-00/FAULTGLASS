@@ -14,6 +14,7 @@ from pathlib import Path
 
 from ..db import create_pool
 from ..env import optional, require
+from ..observability import configure_event_logging
 from ..plant import load_pack
 from ..repositories.flags import FlagRepository
 from ..repositories.runs import RunRepository
@@ -49,6 +50,7 @@ def baseten_key() -> str:
 async def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
     logging.getLogger("httpx").setLevel(logging.WARNING)
+    configure_event_logging("watcher")
     load_repo_env()
     pack = load_pack(Path(optional("PLANT_DIR", str(DEFAULT_PLANT_DIR))))
     config = WatcherConfig(

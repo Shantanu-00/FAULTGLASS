@@ -63,6 +63,10 @@
 .field .capture-actions > .file-btn { flex: 1; }
 .field .capture-actions > .btn-quiet { flex: 0 0 auto; padding: 8px; min-height: 44px; font-size: 12px; }
 .field .capture-hint { color: var(--text-3); font-size: 12px; line-height: 1.5; }
+.field-demo-asset { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; }
+.field .btn-demo { min-height: 40px; padding: 8px 11px; border-color: #e7ac91; background: #fff7f0; color: #9e3f1a; font-size: 12px; }
+.field .btn-demo:hover:not(:disabled) { background: #ffecde; border-color: #cf825f; }
+.field .btn-demo:disabled { opacity: .65; }
 .gauge-capture-grid, .field-reading-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .field .gauge-box { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 14px; border: 1px solid #d3dce1; border-radius: 6px; background: #fcfdfe; }
 .field .gauge-box-head { display: flex; align-items: center; gap: 8px; }

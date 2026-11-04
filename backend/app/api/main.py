@@ -12,6 +12,7 @@ from psycopg_pool import AsyncConnectionPool
 
 from ..db import create_pool
 from ..env import optional, require
+from ..observability import configure_event_logging
 from ..plant import PlantPack, load_pack
 from ..repositories.edge_nodes import EdgeNodeRepository
 from ..repositories.flags import FlagRepository
@@ -74,6 +75,7 @@ def create_app(
 
 def create_app_from_env() -> FastAPI:
     logging.basicConfig(level=logging.INFO)
+    configure_event_logging("api")
     pack = load_pack(Path(optional("PLANT_DIR", str(DEFAULT_PLANT_DIR))))
     pool = create_pool(require("DATABASE_URL"))
     origins = [o.strip() for o in optional("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { runInNewContext } from 'node:vm';
 import { buildSync } from 'esbuild';
@@ -8,7 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 const require = createRequire(import.meta.url);
 function load(relative) {
-  const { outputFiles } = buildSync({ entryPoints: [new URL(relative, import.meta.url).pathname],
+  const { outputFiles } = buildSync({ entryPoints: [fileURLToPath(new URL(relative, import.meta.url))],
     write: false, bundle: true, format: 'cjs', platform: 'node', packages: 'external',
     loader: { '.css': 'empty' }, define: { 'import.meta.env.VITE_API_URL': '"http://localhost:8000"' } });
   const compiled = { exports: {} };

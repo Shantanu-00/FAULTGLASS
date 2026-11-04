@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, StreamingResponse
 
+from ..observability import model_log_context
 from ..repositories.runs import ActiveRunExists
 from ..repositories.telemetry import Reading
 from .schemas import CompleteTaskIn, CreateRun, EventIn, PhotoTaskIn, VideoTaskIn, VoiceTaskIn
@@ -73,8 +74,10 @@ async def _process_voice(state, incident_id: str, task: dict, audio_bytes: bytes
         transcript = await voice.transcribe_wav(
             audio_bytes, language_bias=language_bias,
             keywords=[*task["tags"], "cartridge", "pressure", "psi", "V-113", "backwash"])
-        analyzed = await WonderObservationAnalyzer(wonder).analyze(
-            transcript.text, photo_readings, list(task["tags"]))
+        with model_log_context(plant_id=state.plant_id, incident_id=incident_id,
+                               task_id=task["id"], purpose="voice_structure"):
+            analyzed = await WonderObservationAnalyzer(wonder).analyze(
+                transcript.text, photo_readings, list(task["tags"]))
     finally:
         await voice.aclose()
         await wonder.aclose()
@@ -416,7 +419,9 @@ async def complete_task_photo(request: Request, incident_id: str, task_id: UUID,
         wonder = WonderClient(meta_key())
         try:
             pipeline = GaugePipeline(sam=sam, reader=WonderGaugeReader(wonder))
-            return await asyncio.gather(*(pipeline.read_photo(data, by_tag[tag]) for tag, data in images.items()))
+            with model_log_context(plant_id=state.plant_id, incident_id=incident_id,
+                                   task_id=task_id, purpose="gauge_reading"):
+                return await asyncio.gather(*(pipeline.read_photo(data, by_tag[tag]) for tag, data in images.items()))
         finally:
             await sam.aclose()
             await wonder.aclose()

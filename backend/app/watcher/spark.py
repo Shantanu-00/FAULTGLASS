@@ -22,6 +22,7 @@ from dataclasses import dataclass
 
 import httpx
 
+from ..observability import ModelCall
 from .card import Card
 
 DEFAULT_BASE_URL = "https://inference.baseten.co/v1"
@@ -91,36 +92,40 @@ class BasetenSparkClient:
         return self._model
 
     async def classify(self, card_text: str) -> SparkReply:
-        started = time.monotonic()
-        try:
-            response = await self._client.post(
-                "/chat/completions",
-                json={
-                    "model": self._model,
-                    "messages": [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": card_text},
-                    ],
-                    # Spark Open always reasons; low keeps the 10 s watcher cheap.
-                    # Baseten maps none/minimal to low for this model.
-                    "reasoning_effort": "low",
-                    "max_tokens": 1024,
-                },
-            )
-        except httpx.HTTPError as exc:
-            raise SparkError(f"Baseten request failed: {exc.__class__.__name__}") from exc
-        latency_ms = int((time.monotonic() - started) * 1000)
-        if response.status_code != 200:
-            raise SparkError(f"Baseten returned HTTP {response.status_code}")
-        try:
-            message = response.json()["choices"][0]["message"]
-        except (ValueError, KeyError, IndexError, TypeError) as exc:
-            raise SparkError("Baseten response had no choices[0].message") from exc
-        content = (message.get("content") or "").strip()
-        if not content:
-            raise SparkError("Baseten returned empty content")
-        # message may also carry reasoning_content; it is deliberately ignored.
-        return SparkReply(content=content, latency_ms=latency_ms, model=self._model)
+        with ModelCall(provider="baseten", model=self._model, operation="chat.completions") as call:
+            started = time.monotonic()
+            try:
+                response = await self._client.post(
+                    "/chat/completions",
+                    json={
+                        "model": self._model,
+                        "messages": [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": card_text},
+                        ],
+                        # Spark Open always reasons; low keeps the 10 s watcher cheap.
+                        # Baseten maps none/minimal to low for this model.
+                        "reasoning_effort": "low",
+                        "max_tokens": 1024,
+                    },
+                )
+            except httpx.HTTPError as exc:
+                raise SparkError(f"Baseten request failed: {exc.__class__.__name__}") from exc
+            latency_ms = int((time.monotonic() - started) * 1000)
+            call.response(response)
+            if response.status_code != 200:
+                raise SparkError(f"Baseten returned HTTP {response.status_code}")
+            try:
+                data = response.json()
+                message = data["choices"][0]["message"]
+            except (ValueError, KeyError, IndexError, TypeError) as exc:
+                raise SparkError("Baseten response had no choices[0].message") from exc
+            content = (message.get("content") or "").strip()
+            if not content:
+                raise SparkError("Baseten returned empty content")
+            call.result(usage=data.get("usage"))
+            # message may also carry reasoning_content; it is deliberately ignored.
+            return SparkReply(content=content, latency_ms=latency_ms, model=self._model)
 
     async def aclose(self) -> None:
         await self._client.aclose()
